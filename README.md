@@ -27,9 +27,11 @@ yarn add tanglepay
 ```
 ``` javascript
 // app
-import {Base, ...} from 'tanglepay/lib/app/common';
+import {Base, I18n, IotaSDK, ...} from 'tanglepay/lib/app/common';
 import {useStore, ...} from 'tanglepay/lib/app/store'
+import { useAddWallet } from 'anglepay/lib/app/store/common'
 // browser
-import {Base, ...} from 'tanglepay/lib/browser/common';
+import {Base, I18n, IotaSDK, ...} from 'tanglepay/lib/browser/common';
 import {useStore, ...} from 'tanglepay/lib/browser/store'
+import { useAddWallet } from 'anglepay/lib/browser/store/common'
 ```
