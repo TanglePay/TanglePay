@@ -1,0 +1,33 @@
+{
+    "name": "tanglepay",
+    "version": "1.0.0",
+    "homepage": "./",
+    "dependencies": {},
+    "license": "Apache-2.0",
+    "scripts": {
+        "build-app": "node ./index.js --env app",
+        "build-browser": "node ./index.js --env browser"
+    },
+    "eslintConfig": {
+        "extends": [
+            "react-app",
+            "react-app/jest"
+        ]
+    },
+    "browserslist": {
+        "production": [
+            ">0.2%",
+            "not dead",
+            "not op_mini all"
+        ],
+        "development": [
+            "last 1 chrome version",
+            "last 1 firefox version",
+            "last 1 safari version"
+        ]
+    },
+    "devDependencies": {
+        "fs-extra": "^10.0.0",
+        "klaw-sync": "^6.0.0"
+    }
+}

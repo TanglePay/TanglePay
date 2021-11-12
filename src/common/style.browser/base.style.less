@@ -1,0 +1,267 @@
+@nav-height: 64px;
+.c {
+    align-items: center;
+    justify-content: center;
+}
+.ac {
+    align-items: center;
+}
+.as {
+    align-items: flex-start;
+}
+.ae {
+    align-items: flex-end;
+}
+.jc {
+    justify-content: center;
+}
+.js {
+    justify-content: flex-start;
+}
+.jsb {
+    justify-content: space-between;
+}
+.jsa {
+    justify-content: space-around;
+}
+.je {
+    justify-content: flex-end;
+}
+.acr {
+    align-items: center;
+    flex-direction: row;
+}
+.flex {
+    display: flex;
+}
+.flex1 {
+    flex: 1;
+}
+.row {
+    flex-direction: row;
+}
+.column {
+    flex-direction: column;
+}
+.pr {
+    position: relative;
+}
+.pa {
+    position: absolute;
+}
+.w100 {
+    width: 100%;
+}
+.h100 {
+    height: 100%;
+}
+.bgP {
+    background-color: var(--adm-color-primary);
+}
+.bgT {
+    background-color: transparent;
+}
+.bgW {
+    background-color: #fff;
+}
+.bgS {
+    background-color: #f2f2f2;
+}
+.cW {
+    color: #fff;
+}
+.cS {
+    color: #777;
+}
+.cP {
+    color: var(--adm-color-primary);
+}
+.cR {
+    color: var(--adm-color-danger);
+}
+.cB {
+    color: #000;
+}
+.radius10 {
+    border-radius: 10px;
+}
+.tr {
+    text-align: right;
+}
+.tl {
+    text-align: left;
+}
+.tc {
+    text-align: center;
+}
+.border-box {
+    box-sizing: border-box;
+}
+// 粗体
+.fw500 {
+    font-weight: 500;
+}
+.fw600 {
+    font-weight: 600;
+}
+// 字体大小
+.loopFont(@i) when (@i<=30) {
+    .fz@{i} {
+        @fz:@i - 2;
+        font-size: ~'@{fz}px';
+    }
+    .loopFont(@i+1);
+}
+.loopFont(10);
+
+// 间距，输出 m-l-16,p-t-32等....
+@typeList1: m, p;
+@typeList2: margin, padding;
+@dirList1: t, r, b, l, v, h;
+@dirList2: top, right, bottom, left, v, h;
+@typeLen: length(@typeList1);
+@dirLen: length(@dirList1);
+.genSpacing(@type1,@type2,@i,@value) when(@i = 5) {
+    @dir1: extract(@dirList1, @i);
+    .@{type1}@{dir1}@{value} {
+        @{type2}-top: ~'@{value}px';
+        @{type2}-bottom: ~'@{value}px';
+    }
+}
+.genSpacing(@type1,@type2,@i,@value) when(@i = 6) {
+    @dir1: extract(@dirList1, @i);
+    .@{type1}@{dir1}@{value} {
+        @{type2}-left: ~'@{value}px';
+        @{type2}-right: ~'@{value}px';
+    }
+}
+.genSpacing(@type1,@type2,@i,@value) when(@i < 5) {
+    @dir1: extract(@dirList1, @i);
+    @dir2: extract(@dirList2, @i);
+    .@{type1}@{dir1}@{value} {
+        @{type2}-@{dir2}: ~'@{value}px';
+    }
+}
+.loopDir(@i,@type1,@type2,@value) when (@i <= @dirLen) {
+    .genSpacing(@type1,
+    @type2,
+    @i,
+    @value
+  );
+    .loopDir(@i+1, @type1, @type2, @value);
+}
+.loopType(@i,@value) when (@i <= @typeLen) {
+    @type1: extract(@typeList1, @i);
+    @type2: extract(@typeList2, @i);
+    .loopDir(1, @type1, @type2, @value);
+    .loopType(@i+1, @value);
+    .@{type1}@{value} {
+        @{type2}: ~'@{value}px';
+    }
+}
+.loop(@i,@gap,@total) when (@i <= @total) {
+    .loopType(1, @i);
+    .loop(@i + @gap, @gap, @total);
+}
+.loop(0, 5, 80);
+
+.page {
+    height: 100vh;
+    width: 100vw;
+}
+.page-content {
+    overflow-y: scroll;
+    height: calc(100vh - @nav-height);
+}
+
+.border {
+    border: 1px solid #eee;
+}
+.border-t {
+    border-top: 1px solid #eee;
+}
+.border-r {
+    border-right: 1px solid #eee;
+}
+.border-b {
+    border-bottom: 1px solid #eee;
+}
+.border-l {
+    border-left: 1px solid #eee;
+}
+// 点击效果
+.press {
+    cursor: pointer;
+    // *{
+
+    // }
+    &:active {
+        opacity: 0.6;
+    }
+}
+// ...
+.ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}
+// 绝对定位居中
+.pa-c {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+// 样式覆盖
+.adm-form {
+    .adm-list-default {
+        border: 0;
+    }
+    .adm-input,
+    .adm-text-area {
+        font-size: 13px;
+    }
+    .adm-list-item-content {
+        padding: 10px 10px 10px 0;
+    }
+    .form-error {
+        .adm-list-item-content {
+            border-color: var(--adm-color-danger);
+        }
+    }
+}
+.adm-nav-bar {
+    height: @nav-height;
+    .adm-nav-bar-title {
+        font-size: 15px;
+    }
+}
+.adm-button {
+    --border-radius: 10px;
+}
+.adm-button-large {
+    padding: 10px 22px;
+    font-size: 16px;
+}
+.adm-toast-mask .adm-toast-wrap {
+    word-break: normal;
+}
+
+.mask-content-je {
+    .adm-mask-content {
+        position: absolute;
+        width: 100%;
+        bottom: 0;
+        > div {
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+    }
+}
+
+// 隐藏滚动条
+::-webkit-scrollbar {
+    display: none;
+}

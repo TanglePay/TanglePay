@@ -14,3 +14,22 @@ Here are some ideas to get you started:
 - 😄 Pronouns: ...
 - ⚡ Fun fact: ...
 -->
+
+### Build
+```
+yarn build-app
+yarn build-browser
+```
+
+### Install
+```
+yarn add tanglepay
+```
+``` javascript
+// app
+import {Base, ...} from 'tanglepay/lib/app/common';
+import {useStore, ...} from 'tanglepay/lib/app/store'
+// browser
+import {Base, ...} from 'tanglepay/lib/browser/common';
+import {useStore, ...} from 'tanglepay/lib/browser/store'
+```
