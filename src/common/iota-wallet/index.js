@@ -22,22 +22,24 @@ const {
 } = Iota
 const IotaSDK = {
     IOTA_MI: 1000000, // 1mi = 1000000i
-    nodes: [
-        {
-            id: 1,
-            url: 'https://chrysalis-nodes.iota.org',
-            name: 'Chrysalis mainnet',
-            type: 1, //1mainnet，2devnet,
-            mqtt: 'wss://chrysalis-nodes.iota.org:443/mqtt'
-        },
-        {
-            id: 2,
-            url: 'https://api.lb-0.h.chrysalis-devnet.iota.cafe',
-            name: 'Chrysalis devnet',
-            type: 2, //1mainnet，2devnet
-            mqtt: 'wss://api.lb-0.h.chrysalis-devnet.iota.cafe:443/mqtt'
-        }
-    ],
+    get nodes() {
+        return [
+            {
+                id: 1,
+                url: 'https://chrysalis-nodes.iota.org',
+                name: I18n.t('account.mainnet'),
+                type: 1, //1mainnet，2devnet,
+                mqtt: 'wss://chrysalis-nodes.iota.org:443/mqtt'
+            },
+            {
+                id: 2,
+                url: 'https://api.lb-0.h.chrysalis-devnet.iota.cafe',
+                name: I18n.t('account.devnet'),
+                type: 2, //1mainnet，2devnet
+                mqtt: 'wss://api.lb-0.h.chrysalis-devnet.iota.cafe:443/mqtt'
+            }
+        ]
+    },
     async init(id) {
         try {
             const curNode = this.nodes.find((e) => e.id === id) || this.nodes[0]

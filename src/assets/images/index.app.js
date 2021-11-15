@@ -33,7 +33,8 @@ export default {
         add_1: require('./com/add_1.png'),
         search: require('./com/search.png'),
         reduce: require('./com/reduce.png'),
-        logo: require('./com/logo.png')
+        logo: require('./com/logo.png'),
+        logo_nobg: require('./com/logo_nobg.png')
     },
     coin: {
         IOTA: require('./coin/IOTA.png')

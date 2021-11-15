@@ -285,34 +285,57 @@ const useUpdateHisList = () => {
         let preTransactionId = null
         const iotaPrice = new BigNumber(price.IOTA || 0)
         activityList.forEach((e, i) => {
-            let { outputIndex, transactionId, inputs, timestamp, outputs, messageId } = e
-            inputs = inputs || []
-            // Send or receive is judged by matching the outpuIndex of last message and transaction index of current, combining with a few other factors
-            const inputData = inputs.find((e) => e.transactionId === preTransactionId) || inputs[0] || {}
-            const transactionOutputIndex = inputData?.transactionOutputIndex || 0
-            const otherData = outputs[1 - outputIndex] || outputs[0]
-            const selfData = outputs[outputIndex] || outputs[0]
+            let { outputIndex, transactionId, inputs, timestamp, outputs, messageId, payloadData } = e
+
             const obj = {
                 id: messageId,
                 coin: 'IOTA',
-                timestamp,
-                address: otherData?.bech32Address || ''
+                timestamp
             }
-            if (transactionOutputIndex !== preOutputIndex || outputs.length === 1) {
-                // receive record
+            const { from, to, amount } = payloadData
+            if (from && to && amount) {
+                // send in [TanglePay]
                 Object.assign(obj, {
-                    type: 0,
-                    num: selfData.amount
+                    type: from === address ? 1 : 0,
+                    num: amount,
+                    address: from === address ? to : from
                 })
             } else {
-                // send record
-                Object.assign(obj, {
-                    type: 1,
-                    num: otherData.amount
-                })
+                const outputsLen = outputs.length
+                if (outputsLen === 1) {
+                    // balance = 0 after send
+                    Object.assign(obj, {
+                        type: 0,
+                        num: outputs[0].amount,
+                        address: outputs[0].bech32Address,
+                        fromUnknown: true
+                    })
+                } else {
+                    // balance != 0 after send
+                    inputs = inputs || []
+                    // Send or receive is judged by matching the outpuIndex of last message and transaction index of current, combining with a few other factors
+                    const inputData = inputs.find((e) => e.transactionId === preTransactionId) || inputs[0] || {}
+                    const transactionOutputIndex = inputData?.transactionOutputIndex || 0
+                    const otherData = outputs[1 - outputIndex] || outputs[0]
+                    const selfData = outputs[outputIndex] || outputs[0]
+                    obj.address = otherData?.bech32Address || ''
+                    if (transactionOutputIndex !== preOutputIndex) {
+                        // receive record
+                        Object.assign(obj, {
+                            type: 0,
+                            num: selfData.amount
+                        })
+                    } else {
+                        // send record
+                        Object.assign(obj, {
+                            type: 1,
+                            num: otherData.amount
+                        })
+                    }
+                    preOutputIndex = outputIndex
+                    preTransactionId = transactionId
+                }
             }
-            preOutputIndex = outputIndex
-            preTransactionId = transactionId
             const num = new BigNumber(obj.num || '').div(IotaSDK.IOTA_MI)
             const assets = num.times(iotaPrice)
             hisList.push({

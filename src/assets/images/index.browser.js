@@ -33,7 +33,8 @@ export default {
         add_1: require('./com/add_1@2x.png').default,
         search: require('./com/search.png').default,
         reduce: require('./com/reduce@2x.png').default,
-        logo: require('./com/logo.png').default
+        logo: require('./com/logo.png').default,
+        logo_nobg: require('./com/logo_nobg.png').default
     },
     coin: {
         IOTA: require('./coin/IOTA.png').default

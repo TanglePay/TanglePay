@@ -74,7 +74,14 @@ This data has been aggregated to meet the requirements of EU Regulation 2016/679
         testBackup: 'Test your backup',
         checkPasswrod: 'The passwords you entered do not match, please try again.',
         mnemonicWordError: 'The mnemonic contains a word not in the wordlist {word}',
-        mnemonicOtherError: 'Invalid mnemonic. Please enter the correct mnemonic phrase.'
+        mnemonicOtherError: 'Invalid mnemonic. Please enter the correct mnemonic phrase.',
+
+        dearFam: 'Dear IOTA fam,',
+        betaReady: `TanglePay Beta Version is ready!
+It is a privilege for us to invite you to use it and ask for valuable feedback from you.`,
+        changeTips: 'Please choose the network you want to use first and you can always switch network in Setting.',
+        devnet: 'Chrysalis devnet',
+        mainnet: 'Chrysalis mainnet'
     },
     assets: {
         myAssets: 'My Assets',
@@ -155,7 +162,9 @@ encrypleted backup of your wallet and latest transaction history`,
         website: 'Website',
         telegramGroup: 'Telegram Group',
         discord: 'Discord',
-        groupEmail: 'Email'
+        groupEmail: 'Email',
+
+        latestVersion: 'Latest Version already installed.'
     }
 }
 

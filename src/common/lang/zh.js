@@ -70,7 +70,13 @@ Tangle Pay 永远不会
 
         checkPasswrod: '两次输入的密码不一致，请重新输入',
         mnemonicWordError: '助记词中包含无法识别的单词{word}',
-        mnemonicOtherError: '助记词错误，请重新输入'
+        mnemonicOtherError: '助记词错误，请重新输入',
+
+        dearFam: 'Dear IOTA fam,',
+        betaReady: `TanglePay Beta Version 已经上线！我们很荣幸邀请您使用并提供您的宝贵意见。`,
+        changeTips: '请选择您希望使用的网络，您也可以在应用内随时切换。',
+        devnet: 'Chrysalis 测试网',
+        mainnet: 'Chrysalis 主网'
     },
     assets: {
         myAssets: '我的资产',
@@ -150,7 +156,9 @@ Tangle Pay 永远不会
         website: '官方网站',
         telegramGroup: 'Telegram Group',
         discord: 'Discord',
-        groupEmail: '邮箱'
+        groupEmail: '邮箱',
+
+        latestVersion: '当前已是最新版本'
     }
 }
 
