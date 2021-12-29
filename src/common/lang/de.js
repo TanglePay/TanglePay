@@ -188,7 +188,7 @@ Es wäre uns eine Ehre dich einzuladen Tangle Pay auszuprobieren um uns Feedback
         estimatedReceived: 'geschätzte Airdrop-Belohnung',
         airdropsList: 'Airdrops Liste',
         add: 'Hinzufügen',
-        unstake: 'Ent-staken',
+        unstake: 'Staking unterbrechen',
         staked: 'Gestaked',
         enterAmount: 'Anzahl eingeben',
         max: 'Max',
