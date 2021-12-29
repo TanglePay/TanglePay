@@ -1,6 +1,6 @@
 const DE = {
     account: {
-        title: 'Tangle Pay Wallet',
+        title: 'TanglePay Wallet',
         subTitle: `IOTA Tangle\n
 Weit mehr als eine Blockchain`,
         create: 'Erstelle eine neue Wallet',
@@ -55,7 +55,7 @@ Bitte verwahre deine Wiederherstellungsphrase und ein Backup an einem sicheren O
         registerSucc: `Erlaube Tanglepay Nutzerdaten zu sammeln, um das Nutzungserlebnis der App zu verbessern.
 
 
-<##Tangle Pay wird##>
+<##TanglePay wird##>
 
 es dir immer erlauben Einstellungen abzulehnen 
 
@@ -63,7 +63,7 @@ anonyme Nutzerdaten zu Seitenaufrufen sammeln
 
 Informationen zu ihrer Position (Land, Region, Stadt) übermitteln. Dabei findet keine genaue Ortung ihrer Position statt. 
 
-<##Tangle Pay wird niemals##>
+<##TanglePay wird niemals##>
 
 dein Passwort, Adressen, Transaktionen, Guthaben oder andere persönliche Informationen auswerten. 
 
@@ -86,7 +86,7 @@ Um den Anforderungen der Verordnung (EU) 2016/679 über den Schutz personenbezog
 
         dearFam: 'Liebe IOTA Familie,',
         betaReady: `TanglePay Beta Version ist Startklar!
-Es wäre uns eine Ehre dich einzuladen Tangle Pay auszuprobieren um uns Feedback für die Weiterentwicklung zu geben.`,
+Es wäre uns eine Ehre dich einzuladen TanglePay auszuprobieren um uns Feedback für die Weiterentwicklung zu geben.`,
         changeTips: 'Bitte wähle das Netzwerk aus welches du nutzen möchtest. Du kannst es jederzeit in den Netzwerkeinstellungen ändern',
         devnet: 'Chrysalis devnet',
         mainnet: 'Chrysalis mainnet'
@@ -119,8 +119,8 @@ Es wäre uns eine Ehre dich einzuladen Tangle Pay auszuprobieren um uns Feedback
         addAssetsTips: 'Gib den Token Namen oder die Smart Contract Adresse ein',
 
         scanTitle: 'Scanne den QR-Code',
-        scanPermissionsTitle: 'Erlaube Tangle Pay auf deine Kamera zuzugreifen',
-        scanPermissionsTips: 'Tangle Pay braucht Zugriff auf deine Kamera um den QR-Code zu scannen',
+        scanPermissionsTitle: 'Erlaube TanglePay auf deine Kamera zuzugreifen',
+        scanPermissionsTips: 'TanglePay braucht Zugriff auf deine Kamera um den QR-Code zu scannen',
         scanTips: 'Bitte richte deine Kamera auf den QR-Code',
         scanError: 'Kein Zugriff auf die Kamera, kann QR-Code nicht scannen',
 
