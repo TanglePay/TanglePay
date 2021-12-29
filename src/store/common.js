@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react'
-import { Base, IotaSDK, Toast, I18n, Http, images, Trace } from '../common'
+import { Base, IotaSDK, I18n, Http, Trace } from '../common'
 import _get from 'lodash/get'
 import { StoreContext } from './context'
 import BigNumber from 'bignumber.js'
@@ -27,6 +27,7 @@ export const initState = {
     hisList: [], //transtion history data filtered for display
     isRequestAssets: false, // indicator for account sync status
     isRequestHis: false, // indicator for account history sync status
+    isRequestStakeHis: false, // indicator for account stake history sync status
     forceRequest: 0 //force data sync indicator
 }
 
@@ -155,14 +156,14 @@ export const useEditWallet = () => {
 export const useChangeNode = (dispatch) => {
     const changeNode = async (id) => {
         id = id || 1
-        Toast.showLoading()
+        Base.globalToast.showLoading()
         await IotaSDK.init(id)
         dispatch({
             type: 'common.curNodeId',
             data: id
         })
         Base.setLocalData('common.curNodeId', id)
-        Toast.hideLoading()
+        Base.globalToast.hideLoading()
     }
     return changeNode
 }
@@ -244,7 +245,6 @@ export const useUpdateBalance = () => {
                 balance: Base.formatNum(balance),
                 unit: 'Mi',
                 name: 'IOTA',
-                icon: images.coin.IOTA,
                 assets: Base.formatNum(assets)
             }
         ]
@@ -269,6 +269,12 @@ const setRequestHis = (isRequestHis, dispatch) => {
         data: isRequestHis
     })
 }
+const setRequestStakeHis = (isRequestStakeHis, dispatch) => {
+    dispatch({
+        type: 'common.isRequestStakeHis',
+        data: isRequestStakeHis
+    })
+}
 
 const useUpdateHisList = () => {
     const { store, dispatch } = useContext(StoreContext)
@@ -280,21 +286,34 @@ const useUpdateHisList = () => {
         if (!activityList || !activityList.length) {
             activityList = activityData[address] || []
         }
+        const stakeHisList = []
         const hisList = []
         let preOutputIndex = null
         let preTransactionId = null
         const iotaPrice = new BigNumber(price.IOTA || 0)
         activityList.forEach((e, i) => {
-            let { outputIndex, transactionId, inputs, timestamp, outputs, messageId, payloadData } = e
-
+            let { outputIndex, transactionId, inputs, timestamp, outputs, messageId, payloadIndex, payloadData } = e
             const obj = {
                 id: messageId,
                 coin: 'IOTA',
                 timestamp
             }
-            const { from, to, amount } = payloadData
-            if (from && to && amount) {
-                // send in [TanglePay]
+            // type：0-》receive，1-》send，2-》stake，3-》unstake
+            // stake
+            if (payloadIndex === 'PARTICIPATE') {
+                const amount = outputs[0].amount
+                Object.assign(obj, {
+                    type: payloadData?.length ? 2 : 3,
+                    num: amount,
+                    address: address
+                })
+                stakeHisList.push({
+                    tokens: payloadData,
+                    amount: new BigNumber(amount).div(IotaSDK.IOTA_MI).valueOf(),
+                    time: timestamp
+                })
+            } else if (payloadIndex === 'TanglePay') {
+                const { from, to, amount } = payloadData
                 Object.assign(obj, {
                     type: from === address ? 1 : 0,
                     num: amount,
@@ -353,7 +372,7 @@ const useUpdateHisList = () => {
         })
         hisList.sort((a, b) => b.timestamp - a.timestamp)
         const lastData = hisList[0]
-        if (Base.globalTemData.isGetMqttMessage && lastData.type === 0) {
+        if (Base.globalTemData.isGetMqttMessage && lastData?.type === 0) {
             // prompt users when receiving transfers from mqtt messages
             Base.globalTemData.isGetMqttMessage = false
             Trace.transaction(
@@ -363,7 +382,7 @@ const useUpdateHisList = () => {
                 address,
                 new BigNumber(lastData.num || '').times(IotaSDK.IOTA_MI).valueOf()
             )
-            Toast.success(I18n.t('assets.receivedSucc').replace('{num}', lastData.num))
+            Base.globalToast.success(I18n.t('assets.receivedSucc').replace('{num}', lastData.num))
         }
         dispatch({
             type: 'common.activityData',
@@ -373,6 +392,57 @@ const useUpdateHisList = () => {
             type: 'common.hisList',
             data: hisList
         })
+
+        // stake history
+        const eventids = []
+        stakeHisList.forEach(({ tokens }) => {
+            tokens.forEach((e) => {
+                if (!eventids.includes(e)) {
+                    eventids.push(e)
+                }
+            })
+        })
+        IotaSDK.requestEventsByIds(eventids).then((res) => {
+            const tokenDic = {}
+            eventids.forEach((e, i) => {
+                tokenDic[e] = _get(res[i], 'payload.symbol')
+            })
+            stakeHisList.forEach((e) => {
+                e.tokens = e.tokens.map((d) => {
+                    return { eventId: d, token: tokenDic[d] }
+                })
+            })
+            stakeHisList.sort((a, b) => a.timestamp - b.timestamp)
+            let preInfo = null
+            stakeHisList.forEach((e) => {
+                const { tokens } = e
+                const tLen = tokens.length
+                const pLen = preInfo?.tokens?.length
+                if (preInfo === null && tLen) {
+                    e.type = 1
+                } else if (pLen && tLen > 0) {
+                    const preEventId = preInfo.tokens.map((e) => e.eventId)[0]
+                    const findEvt = tokens.find((e) => e.eventId === preEventId)
+                    if (pLen === tLen && findEvt) {
+                        e.type = 2
+                    } else {
+                        e.type = 4
+                    }
+                } else if (preInfo) {
+                    e.type = 3
+                    e.tokens = [...preInfo.tokens]
+                }
+                preInfo = { ...e }
+            })
+
+            dispatch({
+                type: 'staking.historyList',
+                data: stakeHisList
+            })
+            setRequestStakeHis(true, dispatch)
+        })
+        // stake end
+
         setRequestHis(true, dispatch)
     }
     return updateHisList
@@ -390,12 +460,18 @@ export const useGetAssetsList = (curWallet) => {
     useEffect(async () => {
         setRequestAssets(false, dispatch)
         setRequestHis(false, dispatch)
+        setRequestStakeHis(false, dispatch)
         if (!curWallet.seed) {
             setRequestAssets(true, dispatch)
             setRequestHis(true, dispatch)
+            setRequestStakeHis(true, dispatch)
             setAssetsData({}, [], dispatch)
             dispatch({
                 type: 'common.hisList',
+                data: []
+            })
+            dispatch({
+                type: 'staking.historyList',
                 data: []
             })
             return
@@ -441,7 +517,7 @@ export const useCreateCheck = (callBack) => {
     useEffect(() => {
         if (curNodeId === 2) {
             const nodeUrl = (IotaSDK.nodes.find((e) => e.id === curNodeId) || {}).url
-            nodeUrl && Toast.show(`${I18n.t('user.network')} : ${nodeUrl}`)
+            nodeUrl && Base.globalToast.show(`${I18n.t('user.network')} : ${nodeUrl}`)
         }
     }, [curNodeId])
 }

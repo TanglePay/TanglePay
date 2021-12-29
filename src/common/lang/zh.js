@@ -1,6 +1,6 @@
 const ZH = {
     account: {
-        title: 'Tanglepay Wallet',
+        title: 'TanglepPay Wallet',
         subTitle: `IOTA Tangle Technology
 Going Beyond Blockchain`,
         create: '创建新钱包',
@@ -44,16 +44,15 @@ Going Beyond Blockchain`,
         registerSucc: `允许 Tanglepay 收集您的数据并帮助我们持续改善产品的用户体验。
 
 
-Tangle Pay 将
-
+<##Tangle Pay 将##>
 始终允许您通过“设置”退出 
 
 发送匿名点击和页面查看事件
 
 发送城市、国家、地区信息（不包含具体地址）
 
-Tangle Pay 永远不会
 
+<##Tangle Pay 永远不会##>
 收集您的密码、地址、交易、余额或任何个人信息
 
 收集您的 IP 地址
@@ -73,7 +72,7 @@ Tangle Pay 永远不会
         mnemonicOtherError: '助记词错误，请重新输入',
 
         dearFam: 'Dear IOTA fam,',
-        betaReady: `TanglePay Beta Version 已经上线！我们很荣幸邀请您使用并提供您的宝贵意见。`,
+        betaReady: `TanglePay 已经上线！我们很荣幸邀请您使用并提供您的宝贵意见。`,
         changeTips: '请选择您希望使用的网络，您也可以在应用内随时切换。',
         devnet: 'Chrysalis 测试网',
         mainnet: 'Chrysalis 主网'
@@ -123,7 +122,10 @@ Tangle Pay 永远不会
 
         receivedSucc: '成功接收IOTA {num} Mi',
         album: '相册',
-        readFail: '二维码识别失败'
+        readFail: '二维码识别失败',
+
+        residueBelow1Tips: '剩余数量不能是小于1的小数，请重新输入金额。',
+        sendBelow1Tips: '发送金额不能少于1 Mi，请重新输入金额。'
     },
     user: {
         me: '个人',
@@ -159,6 +161,35 @@ Tangle Pay 永远不会
         groupEmail: '邮箱',
 
         latestVersion: '当前已是最新版本'
+    },
+    staking: {
+        title: 'Staking',
+        preStake: 'Pre-stake',
+        his: 'Staking记录',
+        stake: 'Stake',
+        airdrops: 'Airdrops',
+        startAt: '开始于',
+        amount: '数量',
+        available: '可用',
+        availableToStake: '可以stake',
+        estimatedReceived: '预期已获得收益',
+        airdropsList: 'Airdrops列表',
+        add: '添加',
+        unstake: 'Unstake',
+        staked: 'Staked',
+        enterAmount: '添加数量',
+        max: '最大化',
+        password: '密码',
+        confirm: '确认',
+        addAirdrop: '添加 {name} Airdrop',
+        token: '代币',
+        viewAll: '查看全部',
+        addAmount: '添加数量',
+        addAirdrop: '添加 Airdrop',
+        noAvailableTips: '您的账户没有可用IOTA，请转入IOTA参与空投。',
+        stakeBelow1Tips: '数量不能少于1Mi，请重新输入。',
+        soon: '即将开始',
+        limitAmount: '至少需要 {num} MIOTA 才可参与 {token} staking.'
     }
 }
 

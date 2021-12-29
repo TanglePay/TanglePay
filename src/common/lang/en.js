@@ -1,6 +1,6 @@
 const EN = {
     account: {
-        title: 'Tanglepay Wallet',
+        title: 'TanglepPay Wallet',
         subTitle: `IOTA Tangle Technology\n
 Going Beyond Blockchain`,
         create: 'Create a new wallet',
@@ -48,16 +48,15 @@ The mnemonic consists of English words. Please transcribe and keep them in a saf
         registerSucc: `Allow Tanglepay to collect your data and help us to continue improving the user experience of the product.
 
 
-Tangle Pay will
-
+<##Tangle Pay will##>
 always allow you to sign out through “setting” 
 
 Send anonymous clicks and page viewing event
 
 Send the information of the city, country, and region (do not include a specific address)
 
-Tangle pay will NEVER
 
+<##Tangle pay will NEVER##>
 collect your password, address, trades, balance, or any personal information 
 
 collect your IP address
@@ -77,7 +76,7 @@ This data has been aggregated to meet the requirements of EU Regulation 2016/679
         mnemonicOtherError: 'Invalid mnemonic. Please enter the correct mnemonic phrase.',
 
         dearFam: 'Dear IOTA fam,',
-        betaReady: `TanglePay Beta Version is ready!
+        betaReady: `TanglePay is ready!
 It is a privilege for us to invite you to use it and ask for valuable feedback from you.`,
         changeTips: 'Please choose the network you want to use first and you can always switch network in Setting.',
         devnet: 'Chrysalis devnet',
@@ -129,7 +128,9 @@ It is a privilege for us to invite you to use it and ask for valuable feedback f
         receivedSucc: '{num} Mi IOTA has been received!',
 
         album: 'album',
-        readFail: 'QR code recognition failed'
+        readFail: 'QR code recognition failed',
+        residueBelow1Tips: 'The remaining amount cannot be a decimal number below 1. Please enter the amount again.',
+        sendBelow1Tips: 'Sending amount cannot be less than 1 Mi, please enter the amount again.'
     },
     user: {
         me: 'Me',
@@ -165,6 +166,35 @@ encrypleted backup of your wallet and latest transaction history`,
         groupEmail: 'Email',
 
         latestVersion: 'Latest Version already installed.'
+    },
+    staking: {
+        title: 'Staking',
+        preStake: 'Pre-stake',
+        his: 'Staking History',
+        stake: 'Stake',
+        airdrops: 'Airdrops',
+        startAt: 'Start at',
+        amount: 'Amount',
+        available: 'Available',
+        availableToStake: 'Available to stake',
+        estimatedReceived: 'Estimated Airdrops Received',
+        airdropsList: 'Airdrops List',
+        add: 'Add',
+        unstake: 'Unstake',
+        staked: 'Staked',
+        enterAmount: 'Enter Amount',
+        max: 'Max',
+        password: 'Password',
+        confirm: 'Confirm',
+        addAirdropTitle: 'Add {name} Airdrop',
+        token: 'Token',
+        viewAll: 'view all',
+        addAmount: 'Add Amount',
+        addAirdrop: 'Add Airdrop',
+        noAvailableTips: 'There is no available IOTA to stake. Please deposit to stake.',
+        stakeBelow1Tips: 'Staking amount cannot be less than 1 Mi, please enter the amount again.',
+        soon: 'soon',
+        limitAmount: 'You need at least {num} MIOTA to join the {token} staking.'
     }
 }
 
