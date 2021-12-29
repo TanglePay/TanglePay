@@ -18,42 +18,42 @@ export const Base = {
     isBrowser: false,
     globalTemData: {},
     setNavigator(ref) {
-        this._navigator = ref
+        this.navigator = ref
     },
     push(path, props) {
-        if (!path || !this._navigator) {
+        if (!path || !this.navigator) {
             return
         }
         if (/http(s?):\/\//.test(path)) {
             props = { ...this.handlerParams(path), ...props }
-            return this._navigator.navigate('common/webview', { ...props, url: path })
+            return this.navigator.navigate('common/webview', { ...props, url: path })
         }
         if (/\?/.test(path)) {
             props = { ...this.handlerParams(path), ...props }
             path = path.split('?')[0]
         }
         try {
-            this._navigator.navigate(path, props)
+            this.navigator.navigate(path, props)
         } catch (error) {
             console.log(error)
         }
     },
     goBack(n = 1) {
         try {
-            this._navigator && this._navigator.canGoBack() && this._navigator.dispatch(StackActions.pop(n))
+            this.navigator && this.navigator.canGoBack() && this.navigator.dispatch(StackActions.pop(n))
         } catch (error) {
             console.log(error)
         }
     },
     popToTop() {
         try {
-            this._navigator && this._navigator.dispatch(StackActions.popToTop())
+            this.navigator && this.navigator.dispatch(StackActions.popToTop())
         } catch (error) {
             console.log(error)
         }
     },
     replace(path, props) {
-        this._navigator && this._navigator.dispatch(StackActions.replace(path, props))
+        this.navigator && this.navigator.dispatch(StackActions.replace(path, props))
     },
     async getLocalData(s_key) {
         try {
@@ -101,5 +101,10 @@ export const Base = {
     },
     getClientType() {
         return Platform.OS === 'ios' ? 'IOS' : 'Android'
+    },
+    globalInit({ store, dispatch, Toast }) {
+        this.globalStore = store
+        this.globalDispatch = dispatch
+        this.globalToast = Toast
     }
 }

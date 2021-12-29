@@ -5,14 +5,11 @@ export const Base = {
     ...Utils,
     globalTemData: {},
     isBrowser: true,
-    set navigator(ref) {
-        this._navigator = ref
-    },
-    get navigator() {
-        return this._navigator
+    setNavigator(ref) {
+        this.navigator = ref
     },
     push(path, props = {}) {
-        if (!path || !this._navigator) {
+        if (!path || !this.navigator) {
             return
         }
         const blank = props.blank
@@ -32,14 +29,14 @@ export const Base = {
             }
             return
         }
-        this._navigator.history.push(path)
+        this.navigator.history.push(path)
     },
     goBack() {
-        this._navigator.history.goBack()
+        this.navigator.history.goBack()
     },
     replace(path, props) {
         path = this.handlerUrl(path, props)
-        this._navigator.history.replace(path)
+        this.navigator.history.replace(path)
     },
     chromeGetStorage(s_key) {
         console.log(s_key)
@@ -91,5 +88,10 @@ export const Base = {
     },
     getClientType() {
         return 'Web'
+    },
+    globalInit({ store, dispatch, Toast }) {
+        this.globalStore = store
+        this.globalDispatch = dispatch
+        this.globalToast = Toast
     }
 }
