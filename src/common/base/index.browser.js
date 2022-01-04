@@ -39,11 +39,9 @@ export const Base = {
         this.navigator.history.replace(path)
     },
     chromeGetStorage(s_key) {
-        console.log(s_key)
         return new Promise((resolve, reject) => {
             window.chrome.storage.local.get([s_key], (res) => {
                 if (res[s_key]) {
-                    console.log(res[s_key], '=========')
                     resolve(res[s_key])
                 } else {
                     reject(null)

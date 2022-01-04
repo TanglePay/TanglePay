@@ -1,7 +1,7 @@
 const ZH = {
     account: {
         title: 'TanglepPay Wallet',
-        subTitle: `IOTA Tangle Technology
+        subTitle: `IOTA Tangle Technology\n
 Going Beyond Blockchain`,
         create: '创建新钱包',
         hasWallet: '登陆钱包',

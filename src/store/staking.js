@@ -21,22 +21,28 @@ export const reducer = (state, action) => {
             const list = data || []
             let statedTokens = []
             let statedAmount = 0
+            let eventIds = {}
+            const lastData = list[list.length - 1] || {}
+            let lastAddress = lastData.address || ''
+            if (lastData.type !== 3) {
+                statedAmount = lastData.amount || 0
+            }
             list.forEach((e) => {
-                const { tokens, amount, type } = e
-                statedTokens = [...statedTokens, ...tokens]
-                switch (type) {
-                    case 1:
-                    case 2:
-                        statedAmount += parseFloat(amount)
-                        break
-                    case 3:
-                        statedAmount -= parseFloat(amount)
-                        break
-                    default:
-                        break
-                }
+                const { tokens } = e
+                tokens.forEach((d) => {
+                    const { eventId } = d
+                    if (!eventIds[eventId]) {
+                        statedTokens.push({
+                            ...d
+                        })
+                    }
+                    eventIds[eventId] = 1
+                })
             })
-            statedTokens = _uniqWith(statedTokens, _isEqual)
+            statedTokens = statedTokens.map((e) => {
+                e.address = lastAddress
+                return { ...e }
+            })
             return { ...state, [type]: list, statedTokens, statedAmount }
         }
     }
@@ -114,19 +120,39 @@ export const useGetParticipationEvents = () => {
 }
 
 export const useGetRewards = (address) => {
-    const { _, dispatch } = useContext(StoreContext)
+    const { store, dispatch } = useContext(StoreContext)
     const [rewards, setRewards] = useState({})
+    const historyList = _get(store, 'staking.historyList')
     useEffect(() => {
         let timeHandler = null
         if (!address) {
             setRewards({})
         } else {
             const requestData = async () => {
-                const res = await IotaSDK.getAddressRewards(address)
-                setRewards(res)
+                let addressList = historyList.map((e) => e.address)
+                addressList = _uniqWith(addressList, _isEqual)
+                const resList = await Promise.all(
+                    addressList.map((e) => {
+                        return IotaSDK.getAddressRewards(e)
+                    })
+                )
+                const dic = {}
+                if (resList.length > 0) {
+                    resList.forEach((e) => {
+                        for (const i in e) {
+                            if (dic[i]) {
+                                dic[i].amount += e[i].amount
+                            } else {
+                                dic[i] = { ...e[i] }
+                            }
+                        }
+                    })
+                }
+                // const res = await IotaSDK.getAddressRewards(address)
+                setRewards(dic)
                 dispatch({
                     type: 'staking.stakedRewards',
-                    data: res
+                    data: dic
                 })
             }
             requestData()
@@ -135,6 +161,6 @@ export const useGetRewards = (address) => {
         return () => {
             clearInterval(timeHandler)
         }
-    }, [address])
+    }, [address, historyList])
     return rewards
 }
