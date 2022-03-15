@@ -1,6 +1,6 @@
 const ZH = {
     account: {
-        title: 'TanglepPay Wallet',
+        title: 'TanglePay Wallet',
         subTitle: `IOTA Tangle Technology\n
 Going Beyond Blockchain`,
         create: '创建新钱包',
@@ -132,6 +132,8 @@ Going Beyond Blockchain`,
         manageWallets: '管理钱包',
         setting: '设置',
         network: 'Network',
+        privacy: '隐私',
+        privacyTips: '参加TangleMetrics',
         aboutUs: '关于我们',
         language: '语言',
 
@@ -190,6 +192,21 @@ Going Beyond Blockchain`,
         stakeBelow1Tips: '数量不能少于1Mi，请重新输入。',
         soon: '即将开始',
         limitAmount: '至少需要 {num} MIOTA 才可参与 {token} staking.'
+    },
+    apps: {
+        title: 'Dapps',
+        sendFrom: '来自',
+        sendFor: '用于购买',
+        send: `您有一个支付申请#merchant##item_desc#，将支付到以下地址，
+#address#
+支付金额为 #amount# MIOTA。
+请填写密码完成支付。`,
+        sign: `来自 #merchant# 的签名请求
+您在签名：
+#content#`,
+        execute: '确认',
+        cancel: '取消',
+        signLabel: 'TanglePay 签名'
     }
 }
 

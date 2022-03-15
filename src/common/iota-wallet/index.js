@@ -10,6 +10,7 @@ import CryptoJS from 'crypto-js'
 import Iota from './iota'
 import _chunk from 'lodash/chunk'
 import BigNumber from 'bignumber.js'
+import { convertUnits } from '@iota/unit-converter'
 const {
     Bech32Helper,
     Bip32Path,
@@ -24,6 +25,9 @@ const {
 } = Iota
 const IotaSDK = {
     IOTA_MI: 1000000, // 1mi = 1000000i
+    convertUnits(value, fromUnit, toUnit) {
+        return convertUnits(value, fromUnit, toUnit)
+    },
     get nodes() {
         return [
             {
@@ -34,22 +38,22 @@ const IotaSDK = {
                 mqtt: 'wss://chrysalis-nodes.iota.org:443/mqtt',
                 apiPath: 'mainnet'
             },
-            // {
-            // 	id: 2,
-            // 	url: 'https://api.lb-0.h.chrysalis-devnet.iota.cafe',
-            // 	name: I18n.t('account.devnet'),
-            // 	type: 2, //1mainnet，2devnet
-            // 	mqtt: 'wss://api.lb-0.h.chrysalis-devnet.iota.cafe:443/mqtt',
-            // 	apiPath: 'devnet'
-            // },
             {
                 id: 2,
-                url: 'http://node.iotaichi.com',
+                url: 'https://api.lb-0.h.chrysalis-devnet.iota.cafe',
                 name: I18n.t('account.devnet'),
                 type: 2, //1mainnet，2devnet
                 mqtt: 'wss://api.lb-0.h.chrysalis-devnet.iota.cafe:443/mqtt',
                 apiPath: 'devnet'
             }
+            // {
+            // 	id: 2,
+            // 	url: 'http://node.iotaichi.com',
+            // 	name: I18n.t('account.devnet'),
+            // 	type: 2, //1mainnet，2devnet
+            // 	mqtt: 'wss://api.lb-0.h.chrysalis-devnet.iota.cafe:443/mqtt',
+            // 	apiPath: 'devnet'
+            // }
         ]
     },
     explorerApiUrl: 'https://explorer-api.iota.org',
@@ -365,6 +369,7 @@ const IotaSDK = {
         }
 
         Trace.transaction('pay', messageId, address, toAddress, sendAmount)
+        return sendOut
     },
     // Save transfer output when the balance remindar is 0
     // The data structure is identical to what being used in main/assets/list/ActivityList
@@ -442,7 +447,8 @@ const IotaSDK = {
         const transactionFrom = await Promise.all(
             newOutputDatas.map((e) => this.transactionIncludedMessage(e.transactionId))
         )
-        const allList = milestoneList.map((e, i) => {
+        const allList = []
+        milestoneList.forEach((e, i) => {
             const { isSpent, output, transactionId, outputIndex } = newOutputDatas[i]
             const { payload } = transactionFrom[i]
             const address = output.address.address
@@ -467,10 +473,9 @@ const IotaSDK = {
                     payloadData = JSON.parse(payloadData)
                 }
             } catch (error) {
-                console.log(error)
-                payloadData = {}
+                payloadData = payload?.essence?.payload?.data || {}
             }
-            return {
+            allList.push({
                 ...e,
                 isSpent,
                 transactionId,
@@ -488,7 +493,7 @@ const IotaSDK = {
                         bech32Address: this.hexToBech32(d.address.address)
                     }
                 })
-            }
+            })
         })
         allList.sort((a, b) => a.timestamp - b.timestamp)
         return allList
@@ -638,8 +643,35 @@ const IotaSDK = {
             }
         )
         return res
-    }
+    },
     /**************** Staking end *******************/
+    /**************** Sign start ********************/
+    async sign(content, wallet, amount) {
+        const { seed, password, address } = wallet
+        const baseSeed = this.getSeed(seed, password)
+        const res = await sendMultiple(
+            this.client,
+            baseSeed,
+            0,
+            [
+                {
+                    addressBech32: address,
+                    amount,
+                    isDustAllowance: false
+                }
+            ],
+            {
+                key: Converter.utf8ToBytes('TanglePay.Sign'),
+                data: Converter.utf8ToBytes(content)
+            },
+            {
+                startIndex: 0,
+                zeroCount: 20
+            }
+        )
+        return res
+    }
+    /**************** Sign end **********************/
 }
 
 export default IotaSDK
