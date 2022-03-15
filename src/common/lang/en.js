@@ -1,6 +1,6 @@
 const EN = {
     account: {
-        title: 'TanglepPay Wallet',
+        title: 'TanglePay Wallet',
         subTitle: `IOTA Tangle Technology\n
 Going Beyond Blockchain`,
         create: 'Create a new wallet',
@@ -137,6 +137,8 @@ It is a privilege for us to invite you to use it and ask for valuable feedback f
         manageWallets: 'Manage Wallets',
         setting: 'Setting',
         network: 'Network',
+        privacy: 'Privacy',
+        privacyTips: 'Participate TangleMetrics',
         aboutUs: 'About Us',
         language: 'Language',
 
@@ -195,6 +197,19 @@ encrypleted backup of your wallet and latest transaction history`,
         stakeBelow1Tips: 'Staking amount cannot be less than 1 Mi, please enter the amount again.',
         soon: 'soon',
         limitAmount: 'You need at least {num} MIOTA to join the {token} staking.'
+    },
+    apps: {
+        title: 'Dapps',
+        send: `Payment request #from merchant# #for item_desc# to the following address,
+#address#
+The payment amount is #amount# MIOTA.
+Please enter your password to complete the payment.`,
+        sign: `Signature Request #merchant#
+You are signing:
+#content#`,
+        execute: 'Execute',
+        cancel: 'Cancel',
+        signLabel: 'TanglePay.Sign'
     }
 }
 

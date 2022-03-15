@@ -1,4 +1,5 @@
 import { API_URL } from '../http'
+import PubSub from 'pubsub-js'
 const Utils = {
     handlerUrl(path, props) {
         let urlParam = ''
@@ -41,13 +42,24 @@ const Utils = {
         return (parseFloat(numStr) || 0).toFixed(len)
     },
     checkPassword(password) {
-        if (password.length < 8 || !/\d/.test(password) || !/[a-zA-Z]/.test(password)) {
+        if (password.length < 8 || password.length > 20 || !/\d/.test(password) || !/[a-zA-Z]/.test(password)) {
             return false
         }
         return true
     },
     getIcon(token) {
         return `${API_URL}/icon/${token}.png`
+    },
+    sendEvt(key, data) {
+        PubSub.publish(key, data)
+    },
+    addEvt(key, func) {
+        return PubSub.subscribe(key, (name, data) => {
+            func(data)
+        })
+    },
+    removeEvt(key) {
+        PubSub.unsubscribe(key)
     }
 }
 
