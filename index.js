@@ -4,8 +4,8 @@ const klawSync = require('klaw-sync')
 const env = process.env.npm_lifecycle_event.split('-')[1]
 const otherEnv = env === 'app' ? 'browser' : 'app'
 
+const reg = new RegExp(`\\.${otherEnv}\\.`)
 const filterFn = (item) => {
-    const reg = new RegExp(`.${otherEnv}`)
     return !reg.test(item.path)
 }
 
