@@ -334,7 +334,7 @@ const useUpdateHisList = () => {
                     address: from === address ? to : from
                 })
             } else {
-                const outputsLen = outputs.length
+                const outputsLen = outputs?.length
                 if (outputsLen === 1) {
                     // balance = 0 after send
                     Object.assign(obj, {
@@ -343,7 +343,7 @@ const useUpdateHisList = () => {
                         address: outputs[0].bech32Address,
                         fromUnknown: true
                     })
-                } else {
+                } else if (outputsLen > 1) {
                     // balance != 0 after send
                     inputs = inputs || []
                     // Send or receive is judged by matching the outpuIndex of last message and transaction index of current, combining with a few other factors
