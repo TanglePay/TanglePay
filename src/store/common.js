@@ -326,6 +326,13 @@ const useUpdateHisList = () => {
                     num: 0,
                     address
                 })
+            } else if (payloadIndex === 'Soonaverse' && activityList[i - 1]?.payloadIndex === 'TanglePay') {
+                const prePayloadData = activityList[i - 1]?.payloadData
+                Object.assign(obj, {
+                    type: 0,
+                    num: prePayloadData?.amount,
+                    address: prePayloadData?.to || ''
+                })
             } else if (payloadIndex === 'TanglePay') {
                 const { from, to, amount } = payloadData
                 Object.assign(obj, {
