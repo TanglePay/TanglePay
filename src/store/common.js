@@ -500,6 +500,10 @@ export const useGetAssetsList = (curWallet) => {
                 type: 'staking.historyList',
                 data: []
             })
+            dispatch({
+                type: 'staking.stakedRewards',
+                data: {}
+            })
             return
         }
         if (!price || !price.hasOwnProperty('IOTA')) {
@@ -531,6 +535,21 @@ export const useGetAssetsList = (curWallet) => {
                         updateHisList([], address)
                     })
             })
+
+            // Sync stake rewards
+            IotaSDK.getAddressListRewards(addressList)
+                .then((dic) => {
+                    dispatch({
+                        type: 'staking.stakedRewards',
+                        data: dic
+                    })
+                })
+                .catch(() => {
+                    dispatch({
+                        type: 'staking.stakedRewards',
+                        data: {}
+                    })
+                })
         })
     }, [price, curWallet.address, store.common.forceRequest])
 }

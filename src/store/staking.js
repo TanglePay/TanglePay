@@ -126,40 +126,31 @@ export const useGetParticipationEvents = () => {
     return [eventInfo, setInfo, filter]
 }
 
-export const useGetRewards = (address) => {
-    const { store, dispatch } = useContext(StoreContext)
+export const useGetRewards = (curWallet) => {
+    const { dispatch } = useContext(StoreContext)
     const [rewards, setRewards] = useState({})
-    const historyList = _get(store, 'staking.historyList')
     useEffect(() => {
         let timeHandler = null
-        if (!address) {
+        if (!curWallet.address) {
             setRewards({})
         } else {
             const requestData = async () => {
-                let addressList = historyList.map((e) => e.address)
-                addressList = _uniqWith(addressList, _isEqual)
-                const resList = await Promise.all(
-                    addressList.map((e) => {
-                        return IotaSDK.getAddressRewards(e)
-                    })
-                )
-                const dic = {}
-                if (resList.length > 0) {
-                    resList.forEach((e) => {
-                        for (const i in e) {
-                            if (dic[i]) {
-                                dic[i].amount += e[i].amount
-                            } else {
-                                dic[i] = { ...e[i] }
-                            }
-                        }
-                    })
-                }
-                // const res = await IotaSDK.getAddressRewards(address)
-                setRewards(dic)
-                dispatch({
-                    type: 'staking.stakedRewards',
-                    data: dic
+                IotaSDK.getValidAddresses(curWallet).then((addressList) => {
+                    IotaSDK.getAddressListRewards(addressList)
+                        .then((dic) => {
+                            setRewards(dic)
+                            dispatch({
+                                type: 'staking.stakedRewards',
+                                data: dic
+                            })
+                        })
+                        .catch(() => {
+                            setRewards({})
+                            dispatch({
+                                type: 'staking.stakedRewards',
+                                data: {}
+                            })
+                        })
                 })
             }
             requestData()
@@ -168,6 +159,6 @@ export const useGetRewards = (address) => {
         return () => {
             clearInterval(timeHandler)
         }
-    }, [address, historyList])
+    }, [curWallet.address])
     return rewards
 }
