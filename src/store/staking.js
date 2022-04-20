@@ -138,11 +138,13 @@ export const useGetRewards = (curWallet) => {
                 IotaSDK.getValidAddresses(curWallet).then((addressList) => {
                     IotaSDK.getAddressListRewards(addressList)
                         .then((dic) => {
-                            setRewards(dic)
-                            dispatch({
-                                type: 'staking.stakedRewards',
-                                data: dic
-                            })
+                            if (JSON.stringify(rewards) !== JSON.stringify(dic)) {
+                                setRewards(dic)
+                                dispatch({
+                                    type: 'staking.stakedRewards',
+                                    data: dic
+                                })
+                            }
                         })
                         .catch(() => {
                             setRewards({})
