@@ -117,10 +117,11 @@ It is a privilege for us to invite you to use it and ask for valuable feedback f
 
         noWallet: 'You have not yet added a wallet',
 
-        sendSucc: 'Transaction succeeded',
+        sendSucc: 'Transaction succeeded. Please remember to restake.',
         sendError: "Transaction failed. Please check the receiver's address",
         passwordError: 'Please enter the password correctly.',
         balanceError: 'Insufficient balance.',
+        balanceStakeError: 'Insufficient fund. Please unstake first.',
 
         requestAssets: 'Loading asset data.',
         requestHis: 'Loading transaction history.',

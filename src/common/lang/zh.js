@@ -116,6 +116,7 @@ Going Beyond Blockchain`,
         sendError: '发送失败，请检查收取地址是否正确',
         passwordError: '钱包密码错误',
         balanceError: '余额不足',
+        balanceStakeError: '资金不足。请先unstake。',
 
         requestAssets: '正在获取资产数据',
         requestHis: '正在获取历史交易记录',
