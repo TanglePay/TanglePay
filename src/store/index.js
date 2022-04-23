@@ -16,8 +16,7 @@ const storeReducer = (store, action) => {
     const { type, data } = action
     // skip processing if the data is not change.
     // only primitives are supported while deep compare of complex objects would fallback to corresponding reducers
-    // if (_get(store, type) === data) {
-    if (JSON.stringify(_get(store, type)) === JSON.stringify(data)) {
+    if (_get(store, type) === data) {
         return store
     }
     const [module, act] = type.split('.')
