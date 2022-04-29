@@ -338,9 +338,18 @@ const IotaSDK = {
         return this.getLocalSeed(seed, password)
     },
     async send(fromInfo, toAddress, sendAmount) {
+        let isAddress = false
+        try {
+            isAddress = Bech32Helper.fromBech32(toAddress, this.info.bech32HRP)
+        } catch (error) {}
+        if (!isAddress) {
+            Base.globalToast.error(I18n.t('assets.sendError'))
+            return false
+        }
         const amount = Base.formatNum(BigNumber(sendAmount).div(this.IOTA_MI))
         if (!this.client) {
-            return Base.globalToast.error(I18n.t('user.nodeError'))
+            Base.globalToast.error(I18n.t('user.nodeError'))
+            return false
         }
         const { seed, address, password } = fromInfo
         const baseSeed = this.getSeed(seed, password)
