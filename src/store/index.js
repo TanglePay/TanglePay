@@ -2,6 +2,7 @@ import { useReducer, useContext } from 'react'
 import * as CommonStore from './common'
 import * as StakingStore from './staking'
 import * as DappsStore from './dapps'
+import * as NftStore from './nft'
 import _get from 'lodash/get'
 import { StoreContext as Context } from './context'
 export const StoreContext = Context
@@ -9,7 +10,8 @@ export const StoreContext = Context
 const stores = {
     common: CommonStore,
     staking: StakingStore,
-    dapps: DappsStore
+    dapps: DappsStore,
+    nft: NftStore
 }
 
 const storeReducer = (store, action) => {

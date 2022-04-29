@@ -213,6 +213,12 @@ You are signing:
         execute: 'Confirm',
         cancel: 'Cancel',
         signLabel: 'TanglePay.Sign'
+    },
+    nft: {
+        collectibles: 'Collectibles',
+        zeroTips: 'You have no {name} ',
+        clearCache: 'Clear your cache',
+        goBuy: 'Get one'
     }
 }
 

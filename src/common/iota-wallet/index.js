@@ -214,7 +214,7 @@ const IotaSDK = {
         })
         return list
     },
-    async getValidAddresses({ seed, password }) {
+    async getValidAddresses({ seed, password, address }) {
         if (!seed) return []
         let num = 0
         let addressList = []
@@ -248,7 +248,7 @@ const IotaSDK = {
             }
         }
         await getAddressList(accountState)
-        return addressList
+        return { addressList, requestAddress: address }
     },
     async getBalanceAddress({ seed, password }) {
         const accountState = {
