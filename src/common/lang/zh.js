@@ -208,6 +208,12 @@ Going Beyond Blockchain`,
         execute: '确认',
         cancel: '取消',
         signLabel: 'TanglePay 签名'
+    },
+    nft: {
+        collectibles: '收藏品',
+        zeroTips: '您暂时还没有{name}',
+        clearCache: '清理缓存',
+        goBuy: '去购买'
     }
 }
 

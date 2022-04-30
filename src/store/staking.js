@@ -59,7 +59,7 @@ export const reducer = (state, action) => {
 export const useGetEventsConfig = () => {
     const { _, dispatch } = useContext(StoreContext)
     useEffect(() => {
-        fetch(`${API_URL}/events.json`)
+        fetch(`${API_URL}/events.json?v=${new Date().getTime()}`)
             .then((res) => res.json())
             .then((res) => {
                 const airdrops = res?.airdrops || []
