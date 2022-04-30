@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useState,useRef } from 'react'
 import { API_URL, Http } from '../common'
 import { StoreContext } from './context'
 import { Base } from '../common'
@@ -6,6 +6,7 @@ import { Soon } from 'soonaverse'
 import _get from 'lodash/get'
 import _chunk from 'lodash/chunk'
 import _flatten from 'lodash/flatten'
+import { useGetNodeWallet } from './common'
 const soon = new Soon(true)
 export const initState = {
     list: []
@@ -15,10 +16,12 @@ export const reducer = (state, action) => {
     return { ...state, [type]: data }
 }
 
-export const useGetNftList = (curWallet) => {
+export const useGetNftList = () => {
+    const [curWallet] = useGetNodeWallet()
     const { store, dispatch } = useContext(StoreContext)
     const validAddresses = _get(store, 'common.validAddresses')
     const [config, setConfig] = useState({ list: [], bigAssets: [] })
+    const addressRef = useRef(curWallet.address)
     useEffect(() => {
         fetch(`${API_URL}/nft.json?v=${new Date().getTime()}`)
             .then((res) => res.json())
@@ -27,29 +30,36 @@ export const useGetNftList = (curWallet) => {
             })
             .catch((err) => console.log(err))
     }, [])
+    useEffect(async ()=>{
+        addressRef.current = curWallet.address
+        dispatch({
+            type: 'nft.list',
+            data: (await Base.getLocalData(`${curWallet.address}.nft.list`)) || []
+        })
+    },[curWallet.address])
     useEffect(
         () => {
             const request = async (address) => {
-                if (!curWallet.address) {
+                if (!address) {
                     dispatch({
                         type: 'nft.list',
                         data: []
                     })
                 } else {
-                    if (curWallet.address !== address || !config?.list?.length) {
+                    if (validAddresses.length===0 || !config?.list?.length) {
+                        dispatch({
+                            type: 'nft.list',
+                            data: []
+                        })
                         return
                     }
-                    const key = `${curWallet.address}.nft.list`
-                    dispatch({
-                        type: 'nft.list',
-                        data: (await Base.getLocalData(key)) || []
-                    })
                     const list = _chunk(validAddresses, 10)
                     let res = await Promise.all(
                         list.map((e) => {
                             return soon.getNftsByIotaAddress(e)
                         })
                     )
+
                     res = _flatten(res)
                     let configList = JSON.parse(JSON.stringify(config.list)).map((e) => {
                         return {
@@ -101,12 +111,11 @@ export const useGetNftList = (curWallet) => {
                         type: 'nft.list',
                         data: configList
                     })
-                    Base.setLocalData(key, configList)
+                    Base.setLocalData(`${address}.nft.list`, configList)
                 }
             }
-            request(curWallet.address)
+            request(addressRef.current)
         },
-        [JSON.stringify(validAddresses)],
-        JSON.stringify(config)
+        [JSON.stringify(validAddresses),JSON.stringify(config)],
     )
 }
