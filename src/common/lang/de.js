@@ -225,7 +225,9 @@ Sie unterschreiben:
         collectibles: 'NFT-Kunst',
         zeroTips: 'du besitzt kein {name} ',
         clearCache: 'Leere deinen Cache',
-        goBuy: 'Jetzt kaufen!'
+        goBuy: 'Jetzt kaufen!',
+        permissions: 'Please allow TanglePay to save NFT pictures on your phone.',
+        saved: 'Saved.'
     }
 }
 
