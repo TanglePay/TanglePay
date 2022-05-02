@@ -10,7 +10,7 @@ import DeviceInfo from 'react-native-device-info'
 const storage = new Storage({
     size: 1000,
     storageBackend: AsyncStorage,
-    defaultExpires: null, //过期时间
+    defaultExpires: null, //expiration time
     enableCache: true
 })
 export const Base = {
