@@ -1,13 +1,11 @@
 import { useContext, useEffect, useState, useRef } from 'react'
-import { API_URL, Http } from '../common'
+import { API_URL, Http, IotaSDK } from '../common'
 import { StoreContext } from './context'
 import { Base } from '../common'
-import { Soon } from 'soonaverse'
 import _get from 'lodash/get'
 import _chunk from 'lodash/chunk'
 import _flatten from 'lodash/flatten'
 import { useGetNodeWallet } from './common'
-const soon = new Soon(true)
 export const initState = {
     list: [],
     isRequestNft: false
@@ -85,14 +83,8 @@ export const useGetNftList = () => {
                         data: false
                     })
                 }
-                const list = _chunk(validAddresses, 10)
-                let res = await Promise.all(
-                    list.map((e) => {
-                        return soon.getNftsByIotaAddress(e)
-                    })
-                )
 
-                res = _flatten(res)
+                const res = await IotaSDK.getNfts(validAddresses)
 
                 // const bigAssets = JSON.parse(JSON.stringify(config.bigAssets || []));
                 const ipfsMediaObj = {}

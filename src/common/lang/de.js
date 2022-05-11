@@ -217,7 +217,12 @@ Sie unterschreiben:
 #content#`,
         execute: 'Bestätigen',
         cancel: 'Abbrechen',
-        signLabel: 'TanglePay.Sign'
+        signLabel: 'TanglePay.Sign',
+        connect: `#origin#
+Verbinde mit
+#address#
+Erlaube der Seite: Adressen und Kontostände einsehen
+`
     },
     nft: {
         collectibles: 'NFT-Kunst',

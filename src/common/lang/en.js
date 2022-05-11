@@ -212,7 +212,12 @@ You are signing:
 #content#`,
         execute: 'Confirm',
         cancel: 'Cancel',
-        signLabel: 'TanglePay.Sign'
+        signLabel: 'TanglePay.Sign',
+        connect: `#origin#
+Connect to
+#address#
+Allow the site to: See address, account balance
+`
     },
     nft: {
         collectibles: 'Collectibles',
