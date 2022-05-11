@@ -212,7 +212,8 @@ Going Beyond Blockchain`,
 连接
 #address#
 允许网站: 查看地址, 钱包余额
-`
+`,
+        ConnectBtn: '连接'
     },
     nft: {
         collectibles: '收藏品',
