@@ -7,7 +7,7 @@ Going Beyond Blockchain`,
         hasWallet: 'Already have a wallet',
         intoTitle1: 'Mnemonic Import',
         intoTitle2: 'Backup File Import',
-        mnemonicTips: 'Enter mnemonic phrases seprated by spaces',
+        mnemonicTips: 'Enter mnemonic phrases SEPARATED by spaces',
         intoSelectFile: 'Select the stronghold file',
         intoName: 'Set wallet name ',
         intoNameTips: 'Please enter a name ',
@@ -79,8 +79,17 @@ This data has been aggregated to meet the requirements of EU Regulation 2016/679
         betaReady: `TanglePay is ready!
 It is a privilege for us to invite you to use it and ask for valuable feedback from you.`,
         changeTips: 'Please choose the network you want to use first and you can always switch network in Setting.',
-        devnet: 'Chrysalis devnet',
-        mainnet: 'Chrysalis mainnet'
+        devnet: 'Chrysalis Devnet',
+        mainnet: 'Chrysalis Mainnet',
+        evmnet: 'IOTA EVM',
+        selectNode: 'Select network',
+        exportKey: 'Export Private Key',
+        showKey: 'Show Private Keys',
+        showKeyInputPassword: 'Type your My wallet 2 password',
+        copyKeyTips: 'This is your private key (click to copy)',
+        showKeyTips:
+            'Warning: Never disclose this key. Anyone with your private keys can steal any assets held in your account.',
+        done: 'Done'
     },
     assets: {
         myAssets: 'My Assets',

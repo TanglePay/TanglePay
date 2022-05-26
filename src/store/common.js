@@ -72,7 +72,12 @@ export const reducer = (state, action) => {
             Base[saveFunc]('common.activityData', data)
             break
         case 'walletsList': {
-            const list = data || []
+            const list = (data || []).map((e) => {
+                if (!e.nodeId) {
+                    e.nodeId = IotaSDK.nodes.find((d) => d.bech32HRP === e.bech32HRP)?.id
+                }
+                return e
+            })
             let localList = list
             if (Base.isBrowser) {
                 localList = list.map((e) => {
@@ -115,13 +120,17 @@ export const useAddWallet = () => {
 
 export const useSelectWallet = () => {
     const { store, dispatch } = useContext(StoreContext)
+    const changeNode = useChangeNode(dispatch)
     const updateHisList = useUpdateHisList()
-    const selectWallet = (id) => {
+    const selectWallet = async (id) => {
         let walletsList = _get(store, 'common.walletsList')
-        let address = ''
+        const curWallet = walletsList.find((e) => e.id === id)
+        if (IotaSDK.curNode?.id !== curWallet?.nodeId) {
+            await changeNode(curWallet?.nodeId)
+        }
+        let address = curWallet?.address
         walletsList.forEach((e) => {
             e.isSelected = e.id === id
-            e.id === id && (address = e.address)
         })
         dispatch({
             type: 'common.walletsList',
