@@ -209,24 +209,23 @@ export const useGetLegal = () => {
 }
 
 // get exchange rate
-export const useGetPrice = () => {
-    const { store, dispatch } = useContext(StoreContext)
-    const getPrice = async () => {
-        try {
-            const res = await Http.GET('method=token.getPrice', {
-                code: 'MIOTA'
-            })
-            dispatch({
-                type: 'common.price',
-                data: {
-                    IOTA: res
-                }
-            })
-        } catch (error) {
-            console.log(error)
-        }
+const getPrice = async (code) => {
+    if (IotaSDK.priceDic[code]) {
+        return IotaSDK.priceDic[code]
     }
-    return [_get(store, 'common.price'), getPrice]
+    let codeStr = code
+    if (code === 'IOTA') {
+        codeStr = 'MIOTA'
+    }
+    try {
+        const res = await Http.GET('method=token.getPrice', {
+            code: codeStr,
+            isHandlerError: true
+        })
+        IotaSDK.priceDic[code] = res
+    } catch (error) {
+        IotaSDK.priceDic[code] = 0
+    }
 }
 
 // request for asset sync
@@ -251,32 +250,39 @@ const setAssetsData = (totalAssets, list, dispatch) => {
 export const useUpdateBalance = () => {
     const { store, dispatch } = useContext(StoreContext)
     const curNodeId = _get(store, 'common.curNodeId')
-    const updateBalance = (balance, address) => {
-        const price = curNodeId !== 2 ? _get(store, 'common.price') || {} : { IOTA: 0 }
-        const balanceMi = new BigNumber(balance).div(IotaSDK.IOTA_MI)
-        const assets = price.IOTA ? balanceMi.times(new BigNumber(price.IOTA || 0)) : 0
-        const list = [
-            {
-                balance: Base.formatNum(balanceMi),
-                realBalance: Number(balance),
-                unit: 'Mi',
-                name: 'IOTA',
+    const updateBalance = async (address, list) => {
+        // const price = curNodeId !== 2 ? _get(store, 'common.price') || {} : { IOTA: 0, ETH: 0 }
+        // if()
+        await Promise.all(
+            list.map((e) => {
+                return getPrice(e.token)
+            })
+        )
+        let total = BigNumber(0)
+        const newList = list.map(({ realBalance, token, contract, balance, decimal }) => {
+            const price = IotaSDK.priceDic[token]
+            const assets = price && curNodeId !== 2 ? BigNumber(balance).times(price || 0) : 0
+            total = total.plus(assets)
+            return {
+                decimal,
+                balance: Base.formatNum(balance),
+                realBalance: Number(realBalance),
+                unit: token === 'IOTA' ? 'Mi' : '',
+                name: token,
+                contract,
                 assets: Base.formatNum(assets)
             }
-        ]
+        })
+
         const totalAssets = {
-            iotaBalance: Base.formatNum(balanceMi),
-            realIotaBalance: Number(balance),
-            iotaUnit: 'Mi',
-            assets: Base.formatNum(assets),
-            realAssets: Number(assets)
+            assets: Base.formatNum(total)
         }
         Base.setLocalData(address, {
-            assetsList: list,
+            assetsList: newList,
             totalAssets
         })
         setRequestAssets(true, dispatch)
-        setAssetsData(totalAssets, list, dispatch)
+        setAssetsData(totalAssets, newList, dispatch)
     }
     return updateBalance
 }
@@ -506,10 +512,6 @@ export const useGetAssetsList = (curWallet) => {
     const { store, dispatch } = useContext(StoreContext)
     const updateBalance = useUpdateBalance()
     const updateHisList = useUpdateHisList()
-    const [price, getPrice] = useGetPrice()
-    useEffect(() => {
-        getPrice()
-    }, [])
     useEffect(async () => {
         setRequestAssets(false, dispatch)
         setRequestHis(false, dispatch)
@@ -537,14 +539,15 @@ export const useGetAssetsList = (curWallet) => {
             })
             return
         }
-        if (!price || !price.hasOwnProperty('IOTA')) {
-            return
-        }
+        // if (!price || !price.hasOwnProperty('IOTA')) {
+        //     return
+        // }
         let newCurWallet = curWallet
         if (Base.isBrowser) {
             newCurWallet = await IotaSDK.inputPassword(curWallet)
         }
         const curAddress = newCurWallet.address
+        IotaSDK?.client?.eth && (IotaSDK.client.eth.defaultAccount = curAddress)
         IotaSDK.getValidAddresses(newCurWallet).then(({ addressList, requestAddress }) => {
             // if(requestAddress !== newCurWallet.address){
             //     return;
@@ -556,8 +559,8 @@ export const useGetAssetsList = (curWallet) => {
             })
             // Sync balance
             IotaSDK.getBalance(newCurWallet, addressList)
-                .then((balance) => {
-                    updateBalance(balance, curAddress)
+                .then((list) => {
+                    updateBalance(curAddress, list)
                 })
                 .catch(() => {
                     setRequestAssets(true, dispatch)
@@ -565,32 +568,33 @@ export const useGetAssetsList = (curWallet) => {
                 })
 
             // Sync transaction history
-            IotaSDK.getAllOutputIds(addressList).then((outputList) => {
-                IotaSDK.getHisList(outputList)
-                    .then((activityList) => {
-                        updateHisList(activityList, curAddress)
+            if (!IotaSDK.checkWeb3Node(newCurWallet.nodeId)) {
+                IotaSDK.getAllOutputIds(addressList).then((outputList) => {
+                    IotaSDK.getHisList(outputList)
+                        .then((activityList) => {
+                            updateHisList(activityList, curAddress)
+                        })
+                        .catch(() => {
+                            updateHisList([], curAddress)
+                        })
+                })
+                // Sync stake rewards
+                IotaSDK.getAddressListRewards(addressList)
+                    .then((dic) => {
+                        dispatch({
+                            type: 'staking.stakedRewards',
+                            data: dic
+                        })
                     })
                     .catch(() => {
-                        updateHisList([], address)
+                        dispatch({
+                            type: 'staking.stakedRewards',
+                            data: {}
+                        })
                     })
-            })
-
-            // Sync stake rewards
-            IotaSDK.getAddressListRewards(addressList)
-                .then((dic) => {
-                    dispatch({
-                        type: 'staking.stakedRewards',
-                        data: dic
-                    })
-                })
-                .catch(() => {
-                    dispatch({
-                        type: 'staking.stakedRewards',
-                        data: {}
-                    })
-                })
+            }
         })
-    }, [price, curWallet.address, store.common.forceRequest])
+    }, [curWallet.address, store.common.forceRequest])
 }
 
 // Display devnet url when it is being selected

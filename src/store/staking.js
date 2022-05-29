@@ -129,7 +129,9 @@ export const useGetParticipationEvents = () => {
             }
             setInfo(info)
         }
-        getData()
+        if (IotaSDK.hasEvents(curNodeId)) {
+            getData()
+        }
     }, [curNodeId])
     return [eventInfo, setInfo, filter]
 }

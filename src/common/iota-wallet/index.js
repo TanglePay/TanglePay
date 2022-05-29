@@ -15,6 +15,11 @@ import _uniqWith from 'lodash/uniqWith'
 import _isEqual from 'lodash/isEqual'
 import { Soon } from 'soonaverse'
 import _flatten from 'lodash/flatten'
+import Web3 from 'web3'
+import * as Web3Bip39 from 'bip39'
+import { hdkey as ethereumjsHdkey } from 'ethereumjs-wallet'
+import * as ethereumjsUtils from 'ethereumjs-util'
+
 const soon = new Soon(true)
 const {
     Bech32Helper,
@@ -35,6 +40,8 @@ const IotaSDK = {
         return convertUnits(value, fromUnit, toUnit)
     },
     // type:1.iota, 2.evm,
+    // filterMenuList:['assets','apps','staking','me']
+    // filterAssetsList: ['stake', 'soonaverse']
     get nodes() {
         return [
             {
@@ -44,7 +51,11 @@ const IotaSDK = {
                 type: 1,
                 mqtt: 'wss://chrysalis-nodes.iota.org:443/mqtt',
                 apiPath: 'mainnet',
-                bech32HRP: 'iota'
+                bech32HRP: 'iota',
+                token: 'IOTA',
+                filterMenuList: [],
+                filterAssetsList: [],
+                decimal: Math.log10(this.IOTA_MI)
             },
             {
                 id: 2,
@@ -53,32 +64,74 @@ const IotaSDK = {
                 type: 1,
                 mqtt: 'wss://api.lb-0.h.chrysalis-devnet.iota.cafe:443/mqtt',
                 apiPath: 'devnet',
-                bech32HRP: 'atoi'
+                bech32HRP: 'atoi',
+                token: 'IOTA',
+                filterMenuList: [],
+                filterAssetsList: [],
+                decimal: Math.log10(this.IOTA_MI)
             },
             {
                 id: 3,
-                url: 'https://chrysalis-nodes.iota.org',
+                // url: 'https://evm.wasp.sc.iota.org',
+                // url: 'https://polygon-rpc.com',
+                url: 'wss://rpc-mainnet.maticvigil.com/ws/v1/83175c2d5054c552149865de81125bf1d62a003b',
                 name: I18n.t('account.evmnet'),
                 type: 2,
-                mqtt: 'wss://chrysalis-nodes.iota.org:443/mqtt',
+                mqtt: '',
                 apiPath: 'evmnet',
-                bech32HRP: ''
+                bech32HRP: 'evm',
+                token: 'MATIC',
+                filterMenuList: ['apps', 'staking'],
+                filterAssetsList: ['stake', 'soonaverse'],
+                contractList: [
+                    {
+                        contract: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
+                        token: 'USDT',
+                        abi: require('./TokenERC20.json')
+                    }
+                ],
+                decimal: 18,
+                gasLimit: 21000
             }
         ]
     },
+    get isWeb3Node() {
+        return this.curNode?.id === 3
+    },
+    checkWeb3Node(nodeId) {
+        return nodeId === 3
+    },
+    hasEvents(nodeId) {
+        return nodeId == 1 || nodeId == 2
+    },
+    hasMqtt(nodeId) {
+        return nodeId == 1 || nodeId == 2
+    },
+    // token price
+    priceDic: {},
     explorerApiUrl: 'https://explorer-api.iota.org',
     async init(id) {
         Base.globalToast.showLoading()
         try {
             const curNode = this.nodes.find((e) => e.id === id) || this.nodes[0]
             this.curNode = curNode
-            this.client = new SingleNodeClient(curNode.url)
-            this.info = await this.client.info()
+            if (this.web3Subscription) {
+                this.web3Subscription.unsubscribe(() => {})
+                this.web3Subscription = null
+            }
             if (this.mqttClient && this.subscriptionId) {
                 this.mqttClient.unsubscribe(this.subscriptionId)
                 this.subscriptionId = null
             }
-            this.mqttClient = new MqttClient(curNode.mqtt)
+            if (this.isWeb3Node) {
+                this.client = new Web3(curNode.url)
+                this.info = this.client
+                window.xxxx = this.client
+            } else {
+                this.client = new SingleNodeClient(curNode.url)
+                this.info = await this.client.info()
+                this.mqttClient = new MqttClient(curNode.mqtt)
+            }
             Base.globalToast.hideLoading()
         } catch (error) {
             console.log(error)
@@ -101,25 +154,68 @@ const IotaSDK = {
             this.mqttClient.unsubscribe(this.subscriptionId)
             this.subscriptionId = null
         }
+        if (this.web3Subscription) {
+            this.web3Subscription.unsubscribe(() => {})
+            this.web3Subscription = null
+        }
         if (address) {
             const self = this
-            this.subscriptionId = this.mqttClient.addressOutputs(
-                address,
-                _debounce(async () => {
-                    try {
-                        Base.globalTemData.isGetMqttMessage = true
-                        self.refreshAssets()
-                        // SyncAccounts
-                        // Data are tagged with isGetMqttMessage for subsequent processing and differentiates against manual refresh
-                    } catch (error) {
-                        console.log(error)
-                    }
-                }),
-                1000
-            )
+            if (this.isWeb3Node) {
+                if (this.client?.eth) {
+                    this.web3Subscription = this.client.eth
+                        .subscribe(
+                            'logs',
+                            {
+                                address: '0x9A2c058A5020FAC6e316f11A0f1075DC930ac720',
+                                topics: [
+                                    // 0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885
+                                    '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+                                    null,
+                                    null,
+                                    null
+                                ]
+                            },
+                            function (error, result) {
+                                console.log(error, result, '++++++')
+                                if (!error) {
+                                    self.refreshAssets()
+                                }
+                            }
+                        )
+                        .on('connected', function (subscriptionId) {
+                            console.log(subscriptionId)
+                        })
+                        .on('data', function (log) {
+                            console.log(log, '+++++++')
+                        })
+                        .on('changed', function (log) {
+                            console.log(log, '+++++++-----')
+                        })
+                }
+            } else {
+                if (this.mqttClient) {
+                    this.subscriptionId = this.mqttClient.addressOutputs(
+                        address,
+                        _debounce(async () => {
+                            try {
+                                Base.globalTemData.isGetMqttMessage = true
+                                self.refreshAssets()
+                                // SyncAccounts
+                                // Data are tagged with isGetMqttMessage for subsequent processing and differentiates against manual refresh
+                            } catch (error) {
+                                console.log(error)
+                            }
+                        }),
+                        1000
+                    )
+                }
+            }
         }
     },
     getMnemonic() {
+        if (this.isWeb3Node) {
+            return Web3Bip39.generateMnemonic(256)
+        }
         return Bip39.randomMnemonic()
     },
     async importMnemonic({ mnemonic, name, password }) {
@@ -136,7 +232,11 @@ const IotaSDK = {
                 let isChecked = false
                 try {
                     // Mnemonic is checked with Bip39 library, throw if validation failed.
-                    Bip39.mnemonicToEntropy(mnemonic)
+                    if (this.isWeb3Node) {
+                        Web3Bip39.mnemonicToEntropy(mnemonic)
+                    } else {
+                        Bip39.mnemonicToEntropy(mnemonic)
+                    }
                     isChecked = true
                 } catch (error) {
                     let err = error.toString()
@@ -151,25 +251,49 @@ const IotaSDK = {
                     reject()
                 }
                 if (isChecked) {
-                    // calculate seed
-                    const baseSeed = Ed25519Seed.fromMnemonic(mnemonic)
-                    const addressKeyPair = this.getPair(baseSeed)
-                    const indexEd25519Address = new Ed25519Address(addressKeyPair.publicKey)
-                    const indexPublicKeyAddress = indexEd25519Address.toAddress()
-                    const bech32Address = this.hexToBech32(indexPublicKeyAddress)
                     const uuid = Base.guid()
-                    Trace.createWallet(uuid, name, bech32Address)
-                    // encrypt the seed and save to local storage
-                    resolve({
-                        address: bech32Address,
-                        name,
-                        isSelected: true,
-                        password,
-                        id: uuid,
-                        nodeId: this.curNode?.id,
-                        seed: this.getLocalSeed(baseSeed, password),
-                        bech32HRP: this.info.bech32HRP
-                    })
+                    // evm
+                    if (this.isWeb3Node) {
+                        const baseSeed = Web3Bip39.mnemonicToSeedSync(mnemonic)
+                        const hdWallet = ethereumjsHdkey.fromMasterSeed(baseSeed)
+                        const key = hdWallet.derivePath("m/44'/60'/0'/0/0")
+                        // let privateKey = ethereumjsUtils.bufferToHex(key._hdkey._privateKey)
+                        // let publicKey = ethereumjsUtils.bufferToHex(key._hdkey._publicKey)
+                        let address = ethereumjsUtils.pubToAddress(key._hdkey._publicKey, true)
+                        address = ethereumjsUtils.toChecksumAddress(ethereumjsUtils.bufferToHex(address))
+                        // const keystore = this.client.eth.accounts.encrypt(privateKey, password)
+                        Trace.createWallet(uuid, name, address)
+                        resolve({
+                            address,
+                            name,
+                            isSelected: true,
+                            password,
+                            id: uuid,
+                            nodeId: this.curNode?.id,
+                            seed: this.getLocalSeed(baseSeed, password),
+                            bech32HRP: this.curNode?.bech32HRP
+                            // keystore
+                        })
+                    } else {
+                        // calculate seed
+                        const baseSeed = Ed25519Seed.fromMnemonic(mnemonic)
+                        const addressKeyPair = this.getPair(baseSeed)
+                        const indexEd25519Address = new Ed25519Address(addressKeyPair.publicKey)
+                        const indexPublicKeyAddress = indexEd25519Address.toAddress()
+                        const bech32Address = this.hexToBech32(indexPublicKeyAddress)
+                        Trace.createWallet(uuid, name, bech32Address)
+                        // encrypt the seed and save to local storage
+                        resolve({
+                            address: bech32Address,
+                            name,
+                            isSelected: true,
+                            password,
+                            id: uuid,
+                            nodeId: this.curNode?.id,
+                            seed: this.getLocalSeed(baseSeed, password),
+                            bech32HRP: this.info.bech32HRP
+                        })
+                    }
                 }
             }
         })
@@ -224,40 +348,44 @@ const IotaSDK = {
         })
         return list
     },
-    async getValidAddresses({ seed, password, address }) {
+    async getValidAddresses({ seed, password, address, nodeId }) {
         if (!seed) return []
-        let num = 0
         let addressList = []
-        const accountState = {
-            accountIndex: 0,
-            addressIndex: 0,
-            isInternal: false
-        }
-        const baseSeed = this.getSeed(seed, password)
-        const getAddressList = async (accountState) => {
-            const LIMIT = 1
-            const temAddress = this.getBatchBech32Address(baseSeed, accountState, 20)
-            const addressOutputs = await Promise.all(
-                temAddress.map((e) => this.client.addressOutputs(e, undefined, true))
-            )
-            let flag = false
-            temAddress.forEach((e, i) => {
-                const { outputIds } = addressOutputs[i]
-                if (!!outputIds.length) {
-                    if (!addressList.includes(e)) {
-                        addressList.push(e)
+        if (this.checkWeb3Node(nodeId)) {
+            addressList = [address]
+        } else {
+            let num = 0
+            const accountState = {
+                accountIndex: 0,
+                addressIndex: 0,
+                isInternal: false
+            }
+            const baseSeed = this.getSeed(seed, password)
+            const getAddressList = async (accountState) => {
+                const LIMIT = 1
+                const temAddress = this.getBatchBech32Address(baseSeed, accountState, 20)
+                const addressOutputs = await Promise.all(
+                    temAddress.map((e) => this.client.addressOutputs(e, undefined, true))
+                )
+                let flag = false
+                temAddress.forEach((e, i) => {
+                    const { outputIds } = addressOutputs[i]
+                    if (!!outputIds.length) {
+                        if (!addressList.includes(e)) {
+                            addressList.push(e)
+                        }
+                        flag = true
                     }
-                    flag = true
+                })
+                if (!flag) {
+                    num++
                 }
-            })
-            if (!flag) {
-                num++
+                if (num < LIMIT) {
+                    await getAddressList(accountState)
+                }
             }
-            if (num < LIMIT) {
-                await getAddressList(accountState)
-            }
+            await getAddressList(accountState)
         }
-        await getAddressList(accountState)
         return { addressList, requestAddress: address }
     },
     async getBalanceAddress({ seed, password }) {
@@ -279,19 +407,42 @@ const IotaSDK = {
         }
         return await getAddressList(accountState)
     },
-    async getBalance({ id, address }, addressList) {
+    async getBalance({ id, address, nodeId }, addressList) {
         if (!this.client) {
             return 0
         }
-        const res = await Promise.all(addressList.map((e) => this.client.address(e)))
+        const node = IotaSDK.nodes.find((e) => e.id === nodeId)
+        const token = node?.token
+        const decimal = node?.decimal
+        let realBalance = BigNumber(0)
         let balance = BigNumber(0)
-        res.forEach((e) => {
-            balance = balance.plus(e.balance)
-        })
-        balance = Number(balance)
-        // const balance = _sumBy(res, 'balance')
-        Trace.updateAddressAmount(id, address, balance)
-        return balance
+        if (this.checkWeb3Node(nodeId)) {
+            const res = await Promise.all(addressList.map((e) => this.client.eth.getBalance(e)))
+            res.forEach((e) => {
+                realBalance = realBalance.plus(e)
+            })
+        } else {
+            const res = await Promise.all(addressList.map((e) => this.client.address(e)))
+            res.forEach((e) => {
+                realBalance = realBalance.plus(e.balance)
+            })
+        }
+        balance = realBalance.div(Math.pow(10, decimal))
+        realBalance = Number(realBalance)
+        Trace.updateAddressAmount(id, address, realBalance)
+        const contractAssets = await this.getContractAssets(nodeId, address)
+
+        const balanceList = [
+            {
+                realBalance,
+                balance: Number(balance),
+                decimal,
+                token
+            },
+
+            ...contractAssets
+        ]
+        return balanceList
     },
     getPair(seed, isFirst = true, accountState) {
         accountState = accountState || {
@@ -338,7 +489,7 @@ const IotaSDK = {
         return new Ed25519Seed(seed)
     },
     getLocalSeed(seed, password) {
-        const localSeed = Array.from(seed._secretKey)
+        const localSeed = Array.from(seed._secretKey || seed)
         const localHex = Converter.bytesToHex(localSeed)
         const localHexNew = this.encryptSeed(localHex, password)
         return localHexNew
@@ -347,56 +498,98 @@ const IotaSDK = {
         const seed = this.getSeed(oldSeed, old)
         return this.getLocalSeed(seed, password)
     },
-    async send(fromInfo, toAddress, sendAmount) {
-        const amount = Base.formatNum(BigNumber(sendAmount).div(this.IOTA_MI))
+    async send(fromInfo, toAddress, sendAmount, ext) {
         if (!this.client) {
             return Base.globalToast.error(I18n.t('user.nodeError'))
         }
-        const { seed, address, password } = fromInfo
+        const { seed, address, password, nodeId } = fromInfo
         const baseSeed = this.getSeed(seed, password)
-        const sendOut = await sendMultiple(
-            this.client,
-            baseSeed,
-            0,
-            [
-                {
-                    addressBech32: toAddress,
-                    amount: sendAmount,
-                    isDustAllowance: false
+        if (this.checkWeb3Node(nodeId)) {
+            const eth = this.client.eth
+            const nodeInfo = this.nodes.find((e) => e.id === nodeId) || []
+            const gasLimit = nodeInfo?.gasLimit || 0
+            const gasPrice = await eth.getGasPrice()
+            const nonce = await eth.getTransactionCount(address)
+            const { contract, token } = ext || {}
+            if (contract) {
+                const contractInfo = (nodeInfo.contractList || []).find((e) => e.token === token)
+                if (!contractInfo) {
+                    return Base.globalToast.error('contract error')
                 }
-            ],
-            {
-                key: Converter.utf8ToBytes('TanglePay'),
-                data: Converter.utf8ToBytes(
-                    JSON.stringify({
-                        from: address, //main address
+                const web3Contract = new eth.Contract(contractInfo.abi, contractInfo.contract)
+                window.web3Contract = web3Contract
+                console.log(toAddress, sendAmount)
+                console.log({ from: address, gasLimit, gasPrice })
+                // await window.web3Contract.methods.approve(contractInfo.contract, 100000000).send({ from: '0x56d7cf1A853175fA7856B8D251116ce36bEd2bCD',gasPrice:30000000013,gas:21000,nonce:1 })
+                const res = await web3Contract.methods
+                    .transfer(toAddress, sendAmount)
+                    .send({ from: address, gas: gasLimit, gasPrice, nonce })
+                console.log(res)
+            } else {
+                const privateKey = this.getPrivateKey(seed, password)
+                const chainId = await eth.getChainId()
+                const signed = await eth.accounts.signTransaction(
+                    {
                         to: toAddress,
-                        amount: sendAmount
-                    })
+                        value: sendAmount,
+                        from: address,
+                        chainId,
+                        nonce,
+                        gasLimit,
+                        gasPrice
+                    },
+                    privateKey
                 )
-            },
-            {
-                startIndex: 0,
-                zeroCount: 20
+                const res = await eth.sendSignedTransaction(signed.rawTransaction)
+                Trace.transaction('pay', res.transactionHash, address, toAddress, sendAmount)
+                return res
             }
-        )
-        const { messageId } = sendOut
-        // Save transfer output when the balance remindar is 0
-        // Context: in IOTA sdk, when remaining balance is 0, it transfer operation is not included in the messages sent to Tangle.
-        const outputs = _get(sendOut, 'message.payload.essence.outputs') || []
-        if (outputs.length === 1) {
-            this.setSendList(address, {
-                id: messageId,
-                coin: 'IOTA',
-                num: amount,
-                type: 1,
-                timestamp: parseInt(new Date().getTime() / 1000),
-                address: toAddress
-            })
-        }
+        } else {
+            const amount = Base.formatNum(BigNumber(sendAmount).div(this.IOTA_MI))
+            const sendOut = await sendMultiple(
+                this.client,
+                baseSeed,
+                0,
+                [
+                    {
+                        addressBech32: toAddress,
+                        amount: sendAmount,
+                        isDustAllowance: false
+                    }
+                ],
+                {
+                    key: Converter.utf8ToBytes('TanglePay'),
+                    data: Converter.utf8ToBytes(
+                        JSON.stringify({
+                            from: address, //main address
+                            to: toAddress,
+                            amount: sendAmount
+                        })
+                    )
+                },
+                {
+                    startIndex: 0,
+                    zeroCount: 20
+                }
+            )
+            const { messageId } = sendOut
+            // Save transfer output when the balance remindar is 0
+            // Context: in IOTA sdk, when remaining balance is 0, it transfer operation is not included in the messages sent to Tangle.
+            const outputs = _get(sendOut, 'message.payload.essence.outputs') || []
+            if (outputs.length === 1) {
+                this.setSendList(address, {
+                    id: messageId,
+                    coin: 'IOTA',
+                    num: amount,
+                    type: 1,
+                    timestamp: parseInt(new Date().getTime() / 1000),
+                    address: toAddress
+                })
+            }
 
-        Trace.transaction('pay', messageId, address, toAddress, sendAmount)
-        return sendOut
+            Trace.transaction('pay', messageId, address, toAddress, sendAmount)
+            return sendOut
+        }
     },
     // Save transfer output when the balance remindar is 0
     // The data structure is identical to what being used in main/assets/list/ActivityList
@@ -574,6 +767,9 @@ const IotaSDK = {
         if (!this.client) {
             return
         }
+        if (!this.hasEvents(this.curNode?.id)) {
+            return
+        }
         const data = await this.requestParticipation(`addresses/${address}`)
         const rewards = data?.rewards || {}
         for (const i in rewards) {
@@ -615,6 +811,9 @@ const IotaSDK = {
             setTimeout(() => {
                 this.getParticipationEvents()
             }, 500)
+            return
+        }
+        if (!this.hasEvents(this.curNode?.id)) {
             return
         }
         const data = await this.requestParticipation(`events`)
@@ -761,9 +960,51 @@ const IotaSDK = {
         )
         res = _flatten(res)
         return res
-    }
+    },
 
     /**************** Nft end *******************/
+
+    /**************** EVM start *******************/
+    //get evm privatekey
+    getPrivateKey(seed, password) {
+        const baseSeed = this.getSeed(seed, password)
+        const hdWallet = ethereumjsHdkey.fromMasterSeed(baseSeed?._secretKey)
+        const key = hdWallet.derivePath("m/44'/60'/0'/0/0")
+        let privateKey = ethereumjsUtils.bufferToHex(key._hdkey._privateKey)
+        return privateKey
+    },
+    async getContractAssets(nodeId, address) {
+        const nodeInfo = this.nodes.find((e) => e.id === nodeId)
+        if (!nodeInfo?.contractList?.length) {
+            return []
+        }
+        const token0Contract = nodeInfo.contractList.map((e) => {
+            return new this.client.eth.Contract(e.abi, e.contract)
+        })
+        const decimals = await Promise.all(
+            token0Contract.map((e) => {
+                return e.methods.decimals().call()
+            })
+        )
+        // const coinbase = await this.client.eth.getCoinbase()
+        let balanceList = await Promise.all(
+            token0Contract.map((e) => {
+                return e.methods.balanceOf(address).call()
+            })
+        )
+        balanceList = balanceList.map((e, i) => {
+            const token = nodeInfo.contractList[i].token
+            return {
+                token,
+                balance: Number(BigNumber(e).div(Math.pow(10, decimals[i]))),
+                realBalance: e,
+                contract: true,
+                decimal: decimals[i]
+            }
+        })
+        return balanceList
+    }
+    /**************** EVM end *******************/
 }
 
 export default IotaSDK
