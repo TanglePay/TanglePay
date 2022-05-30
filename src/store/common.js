@@ -20,7 +20,6 @@ export const initState = {
         }
     ],
     assetsList: [], // list of assets
-    price: { IOTA: 1 }, // current exchange rate，{IOTA:1.65}
     totalAssets: {},
     activityRequest: 0, //data sync indicator
     activityData: {}, //transaction history data
@@ -57,12 +56,6 @@ export const reducer = (state, action) => {
                 data = true
             }
             Base.setLocalData('common.showAssets', !!data)
-            break
-        case 'price':
-            if (!data) {
-                data = { IOTA: 0 }
-            }
-            Base.setLocalData('common.price', data)
             break
         case 'activityData':
             if (data === undefined) {
@@ -143,7 +136,7 @@ export const useSelectWallet = () => {
                 setAssetsData(res.totalAssets || {}, res.assetsList || [], dispatch)
             })
             // On address switch, read transaction history from local cache
-            updateHisList([], address)
+            updateHisList([], curWallet)
         }
     }
     return selectWallet
@@ -177,6 +170,10 @@ export const useChangeNode = (dispatch) => {
         dispatch({
             type: 'common.curNodeId',
             data: id
+        })
+        dispatch({
+            type: 'common.hisList',
+            data: []
         })
         Base.setLocalData('common.curNodeId', id)
     }
@@ -251,8 +248,6 @@ export const useUpdateBalance = () => {
     const { store, dispatch } = useContext(StoreContext)
     const curNodeId = _get(store, 'common.curNodeId')
     const updateBalance = async (address, list) => {
-        // const price = curNodeId !== 2 ? _get(store, 'common.price') || {} : { IOTA: 0, ETH: 0 }
-        // if()
         await Promise.all(
             list.map((e) => {
                 return getPrice(e.token)
@@ -302,129 +297,173 @@ const setRequestStakeHis = (isRequestStakeHis, dispatch) => {
 
 const useUpdateHisList = () => {
     const { store, dispatch } = useContext(StoreContext)
-    const curNodeId = _get(store, 'common.curNodeId')
     // read from cache if activityList===[]
-    const updateHisList = async (activityList, address) => {
-        const price = curNodeId !== 2 ? _get(store, 'common.price') || {} : { IOTA: 0 }
+    const updateHisList = async (activityList, { address, nodeId }) => {
+        let tokenList = activityList.map((e) => e.token)
+        tokenList = tokenList.filter((e) => !!e)
+        await Promise.all(
+            tokenList.map((e) => {
+                return getPrice(e)
+            })
+        )
+        const price = IotaSDK.priceDic
         const activityData = _get(store, 'common.activityData') || {}
-        if (!activityList || !activityList.length) {
-            activityList = activityData[address] || []
-        }
-        const stakeHisList = []
+        // if (!activityList || !activityList.length) {
+        //     activityList = activityData[address] || []
+        // }
         const hisList = []
-        let preOutputIndex = null
-        let preTransactionId = null
-        const iotaPrice = new BigNumber(price.IOTA || 0)
-        activityList.forEach((e, i) => {
-            let { outputIndex, transactionId, inputs, timestamp, outputs, messageId, payloadIndex, payloadData } = e
-            const obj = {
-                id: messageId,
-                coin: 'Miota',
-                timestamp
-            }
-            // type：0->receive，1->send，2->stake，3->unstake，4->sign
-            // stake
-            if (payloadIndex === 'PARTICIPATE') {
-                const amount = outputs[0].amount
-                Object.assign(obj, {
-                    type: payloadData?.length ? 2 : 3,
-                    num: amount,
-                    address
-                })
-                stakeHisList.push({
-                    tokens: payloadData,
-                    amount: new BigNumber(amount).div(IotaSDK.IOTA_MI).valueOf(),
-                    time: timestamp,
-                    address: outputs[0].bech32Address
-                })
-            } else if (payloadIndex === 'TanglePay.Sign') {
-                Object.assign(obj, {
-                    type: 4,
-                    num: 0,
-                    address
-                })
-            } else if (payloadIndex === 'Soonaverse' && activityList[i - 1]?.payloadIndex === 'TanglePay') {
-                const prePayloadData = activityList[i - 1]?.payloadData
-                Object.assign(obj, {
-                    type: 0,
-                    num: prePayloadData?.amount,
-                    address: prePayloadData?.to || ''
-                })
-            } else if (payloadIndex === 'TanglePay') {
-                const { from, to, amount } = payloadData
-                Object.assign(obj, {
-                    type: from === address ? 1 : 0,
-                    num: amount,
-                    address: from === address ? to : from
-                })
-            } else {
-                const outputsLen = outputs?.length
-                if (outputsLen === 1) {
-                    // balance = 0 after send
+        const stakeHisList = []
+        const isWeb3 = IotaSDK.checkWeb3Node(nodeId)
+        if (isWeb3) {
+            activityList.forEach((e) => {
+                const { timestamp, transactionHash, token, type, otherAddress, amount, decimal } = e
+                const num = new BigNumber(amount).div(Math.pow(10, decimal))
+                const assets = num.times(price[token] || 0)
+                const obj = {
+                    id: transactionHash,
+                    coin: token,
+                    timestamp,
+                    type,
+                    address: otherAddress,
+                    num: Base.formatNum(num),
+                    decimal: 0,
+                    assets: Base.formatNum(assets)
+                }
+                hisList.push(obj)
+            })
+        } else {
+            let preOutputIndex = null
+            let preTransactionId = null
+            const token = IotaSDK.curNode?.token || ''
+            const iotaPrice = price && nodeId !== 2 ? IotaSDK.priceDic[token] : 0
+            activityList.forEach((e, i) => {
+                let {
+                    outputIndex,
+                    transactionId,
+                    inputs,
+                    timestamp,
+                    outputs,
+                    messageId,
+                    payloadIndex,
+                    payloadData,
+                    decimal
+                } = e
+                const obj = {
+                    id: messageId,
+                    coin: 'Miota',
+                    timestamp,
+                    decimal: decimal || IotaSDK.curNode?.decimal || 0
+                }
+                // type：0->receive，1->send，2->stake，3->unstake，4->sign
+                // stake
+                if (payloadIndex === 'PARTICIPATE') {
+                    const amount = outputs[0].amount
+                    Object.assign(obj, {
+                        type: payloadData?.length ? 2 : 3,
+                        num: amount,
+                        address,
+                        amount
+                    })
+                    stakeHisList.push({
+                        tokens: payloadData,
+                        amount: new BigNumber(amount).div(Math.pow(10, decimal)).valueOf(),
+                        time: timestamp,
+                        address: outputs[0].bech32Address
+                    })
+                } else if (payloadIndex === 'TanglePay.Sign') {
+                    Object.assign(obj, {
+                        type: 4,
+                        num: 0,
+                        address,
+                        amount: 0
+                    })
+                } else if (payloadIndex === 'Soonaverse' && activityList[i - 1]?.payloadIndex === 'TanglePay') {
+                    const prePayloadData = activityList[i - 1]?.payloadData
                     Object.assign(obj, {
                         type: 0,
-                        num: outputs[0].amount,
-                        address: outputs[0].bech32Address,
-                        fromUnknown: true
+                        num: prePayloadData?.amount,
+                        address: prePayloadData?.to || '',
+                        amount: prePayloadData?.amount
                     })
-                } else if (outputsLen > 1) {
-                    // balance != 0 after send
-                    inputs = inputs || []
-                    // Send or receive is judged by matching the outpuIndex of last message and transaction index of current, combining with a few other factors
-                    const inputData = inputs.find((e) => e.transactionId === preTransactionId) || inputs[0] || {}
-                    const transactionOutputIndex = inputData?.transactionOutputIndex || 0
-                    const otherData = outputs[1 - outputIndex] || outputs[0]
-                    const selfData = outputs[outputIndex] || outputs[0]
-                    obj.address = otherData?.bech32Address || ''
-                    if (transactionOutputIndex !== preOutputIndex) {
-                        // receive record
+                } else if (payloadIndex === 'TanglePay') {
+                    const { from, to, amount } = payloadData
+                    Object.assign(obj, {
+                        type: from === address ? 1 : 0,
+                        num: amount,
+                        address: from === address ? to : from,
+                        amount
+                    })
+                } else {
+                    const outputsLen = outputs?.length
+                    if (outputsLen === 1) {
+                        // balance = 0 after send
                         Object.assign(obj, {
                             type: 0,
-                            num: selfData.amount
+                            num: outputs[0].amount,
+                            address: outputs[0].bech32Address,
+                            fromUnknown: true,
+                            amount: outputs[0].amount
                         })
-                    } else {
-                        // send record
-                        Object.assign(obj, {
-                            type: 1,
-                            num: otherData.amount
-                        })
+                    } else if (outputsLen > 1) {
+                        // balance != 0 after send
+                        inputs = inputs || []
+                        // Send or receive is judged by matching the outpuIndex of last message and transaction index of current, combining with a few other factors
+                        const inputData = inputs.find((e) => e.transactionId === preTransactionId) || inputs[0] || {}
+                        const transactionOutputIndex = inputData?.transactionOutputIndex || 0
+                        const otherData = outputs[1 - outputIndex] || outputs[0]
+                        const selfData = outputs[outputIndex] || outputs[0]
+                        obj.address = otherData?.bech32Address || ''
+                        if (transactionOutputIndex !== preOutputIndex) {
+                            // receive record
+                            Object.assign(obj, {
+                                type: 0,
+                                num: selfData.amount,
+                                amount: selfData.amount
+                            })
+                        } else {
+                            // send record
+                            Object.assign(obj, {
+                                type: 1,
+                                num: otherData.amount,
+                                amount: otherData.amount
+                            })
+                        }
+                        preOutputIndex = outputIndex
+                        preTransactionId = transactionId
                     }
-                    preOutputIndex = outputIndex
-                    preTransactionId = transactionId
+                }
+                const num = new BigNumber(obj.amount || '').div(Math.pow(10, obj.decimal))
+                const assets = num.times(iotaPrice)
+                hisList.push({
+                    ...obj,
+                    num: Base.formatNum(num),
+                    assets: Base.formatNum(assets)
+                })
+            })
+            const sendList = await IotaSDK.getSendList(address)
+            sendList.forEach((e) => {
+                const assetsStr = Base.formatNum(new BigNumber(e.num || '').times(iotaPrice))
+                const numStr = Base.formatNum(e.num)
+                // refer to local storage if the balance is 0
+                hisList.push({ ...e, num: numStr, assets: assetsStr })
+            })
+            hisList.sort((a, b) => b.timestamp - a.timestamp)
+            // need restake status
+            let needRestake = false
+            for (let k = 0; k < hisList.length; k++) {
+                const { type } = hisList[k]
+                if (type == 2) {
+                    break
+                } else if (type != 0) {
+                    needRestake = true
+                    break
                 }
             }
-            const num = new BigNumber(obj.num || '').div(IotaSDK.IOTA_MI)
-            const assets = num.times(iotaPrice)
-            hisList.push({
-                ...obj,
-                num: Base.formatNum(num),
-                assets: Base.formatNum(assets)
+            dispatch({
+                type: 'staking.needRestake',
+                data: needRestake
             })
-        })
-        const sendList = await IotaSDK.getSendList(address)
-        sendList.forEach((e) => {
-            const assetsStr = Base.formatNum(new BigNumber(e.num || '').times(iotaPrice))
-            const numStr = Base.formatNum(e.num)
-            // refer to local storage if the balance is 0
-            hisList.push({ ...e, num: numStr, assets: assetsStr })
-        })
-        hisList.sort((a, b) => b.timestamp - a.timestamp)
-        // need restake status
-        let needRestake = false
-        for (let k = 0; k < hisList.length; k++) {
-            const { type } = hisList[k]
-            if (type == 2) {
-                break
-            } else if (type != 0) {
-                needRestake = true
-                break
-            }
         }
-        dispatch({
-            type: 'staking.needRestake',
-            data: needRestake
-        })
-
         const lastData = hisList[0]
         if (
             Base.globalTemData.isGetMqttMessage &&
@@ -434,13 +473,7 @@ const useUpdateHisList = () => {
         ) {
             // prompt users when receiving transfers from mqtt messages
             Base.globalTemData.isGetMqttMessage = false
-            Trace.transaction(
-                'receive',
-                lastData.id,
-                lastData.address,
-                address,
-                new BigNumber(lastData.num || '').times(IotaSDK.IOTA_MI).valueOf()
-            )
+            Trace.transaction('receive', lastData.id, lastData.address, address, lastData.amount)
             Base.globalToast.success(I18n.t('assets.receivedSucc').replace('{num}', lastData.num))
         }
         dispatch({
@@ -547,7 +580,9 @@ export const useGetAssetsList = (curWallet) => {
             newCurWallet = await IotaSDK.inputPassword(curWallet)
         }
         const curAddress = newCurWallet.address
-        IotaSDK?.client?.eth && (IotaSDK.client.eth.defaultAccount = curAddress)
+        if (IotaSDK.checkWeb3Node(newCurWallet.nodeId)) {
+            IotaSDK?.client?.eth && (IotaSDK.client.eth.defaultAccount = curAddress)
+        }
         IotaSDK.getValidAddresses(newCurWallet).then(({ addressList, requestAddress }) => {
             // if(requestAddress !== newCurWallet.address){
             //     return;
@@ -568,14 +603,22 @@ export const useGetAssetsList = (curWallet) => {
                 })
 
             // Sync transaction history
-            if (!IotaSDK.checkWeb3Node(newCurWallet.nodeId)) {
+            if (IotaSDK.checkWeb3Node(newCurWallet.nodeId)) {
+                IotaSDK.getHisList([], newCurWallet)
+                    .then((activityList) => {
+                        updateHisList(activityList, newCurWallet)
+                    })
+                    .catch(() => {
+                        updateHisList([], newCurWallet)
+                    })
+            } else {
                 IotaSDK.getAllOutputIds(addressList).then((outputList) => {
-                    IotaSDK.getHisList(outputList)
+                    IotaSDK.getHisList(outputList, newCurWallet)
                         .then((activityList) => {
-                            updateHisList(activityList, curAddress)
+                            updateHisList(activityList, newCurWallet)
                         })
                         .catch(() => {
-                            updateHisList([], curAddress)
+                            updateHisList([], newCurWallet)
                         })
                 })
                 // Sync stake rewards

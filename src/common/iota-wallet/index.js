@@ -75,19 +75,23 @@ const IotaSDK = {
                 // url: 'https://evm.wasp.sc.iota.org',
                 // url: 'https://polygon-rpc.com',
                 url: 'wss://rpc-mainnet.maticvigil.com/ws/v1/83175c2d5054c552149865de81125bf1d62a003b',
+                // url: 'https://bsc-dataseed.binance.org/',
                 name: I18n.t('account.evmnet'),
                 type: 2,
                 mqtt: '',
                 apiPath: 'evmnet',
-                bech32HRP: 'evm',
+                bech32HRP: 'iota evm',
                 token: 'MATIC',
                 filterMenuList: ['apps', 'staking'],
                 filterAssetsList: ['stake', 'soonaverse'],
                 contractList: [
                     {
+                        // contract: '0x55d398326f99059ff775485246999027b3197955',
                         contract: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
                         token: 'USDT',
-                        abi: require('./TokenERC20.json')
+                        abi: require('./TokenERC20.json'),
+                        gasLimit: 76654,
+                        maxPriorityFeePerGas: 0
                     }
                 ],
                 decimal: 18,
@@ -95,17 +99,8 @@ const IotaSDK = {
             }
         ]
     },
-    get isWeb3Node() {
-        return this.curNode?.id === 3
-    },
-    checkWeb3Node(nodeId) {
-        return nodeId === 3
-    },
-    hasEvents(nodeId) {
-        return nodeId == 1 || nodeId == 2
-    },
-    hasMqtt(nodeId) {
-        return nodeId == 1 || nodeId == 2
+    hasStake(nodeId) {
+        return !(this.nodes.find((e) => e.id === nodeId)?.filterAssetsList || []).includes('stake')
     },
     // token price
     priceDic: {},
@@ -116,7 +111,7 @@ const IotaSDK = {
             const curNode = this.nodes.find((e) => e.id === id) || this.nodes[0]
             this.curNode = curNode
             if (this.web3Subscription) {
-                this.web3Subscription.unsubscribe(() => {})
+                clearTimeout(this.web3Subscription)
                 this.web3Subscription = null
             }
             if (this.mqttClient && this.subscriptionId) {
@@ -155,42 +150,35 @@ const IotaSDK = {
             this.subscriptionId = null
         }
         if (this.web3Subscription) {
-            this.web3Subscription.unsubscribe(() => {})
+            clearTimeout(this.web3Subscription)
             this.web3Subscription = null
         }
         if (address) {
             const self = this
             if (this.isWeb3Node) {
                 if (this.client?.eth) {
-                    this.web3Subscription = this.client.eth
-                        .subscribe(
-                            'logs',
-                            {
-                                address: '0x9A2c058A5020FAC6e316f11A0f1075DC930ac720',
-                                topics: [
-                                    // 0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885
-                                    '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-                                    null,
-                                    null,
-                                    null
-                                ]
-                            },
-                            function (error, result) {
-                                console.log(error, result, '++++++')
-                                if (!error) {
-                                    self.refreshAssets()
-                                }
-                            }
+                    const topics = this.getWeb3Topics(address)
+                    let preBlock = await this.client.eth.getBlockNumber()
+                    const getData = async () => {
+                        let latest = await this.client.eth.getBlockNumber()
+                        const res = await Promise.all(
+                            topics.map((e) => {
+                                return this.client.eth.getPastLogs({
+                                    topics: e,
+                                    fromBlock: preBlock,
+                                    toBlock: latest
+                                })
+                            })
                         )
-                        .on('connected', function (subscriptionId) {
-                            console.log(subscriptionId)
-                        })
-                        .on('data', function (log) {
-                            console.log(log, '+++++++')
-                        })
-                        .on('changed', function (log) {
-                            console.log(log, '+++++++-----')
-                        })
+                        preBlock = latest
+                        const list = _flatten(res)
+                        if (list.length > 0) {
+                            Base.globalTemData.isGetMqttMessage = true
+                            self.refreshAssets()
+                        }
+                        this.web3Subscription = setTimeout(getData, 5000)
+                    }
+                    getData()
                 }
             } else {
                 if (this.mqttClient) {
@@ -518,13 +506,23 @@ const IotaSDK = {
                 }
                 const web3Contract = new eth.Contract(contractInfo.abi, contractInfo.contract)
                 window.web3Contract = web3Contract
-                console.log(toAddress, sendAmount)
-                console.log({ from: address, gasLimit, gasPrice })
-                // await window.web3Contract.methods.approve(contractInfo.contract, 100000000).send({ from: '0x56d7cf1A853175fA7856B8D251116ce36bEd2bCD',gasPrice:30000000013,gas:21000,nonce:1 })
-                const res = await web3Contract.methods
-                    .transfer(toAddress, sendAmount)
-                    .send({ from: address, gas: gasLimit, gasPrice, nonce })
-                console.log(res)
+
+                const privateKey = this.getPrivateKey(seed, password)
+                const signData = {
+                    to: contractInfo.contract,
+                    value: '0x00',
+                    from: address,
+                    nonce,
+                    gasLimit: contractInfo?.gasLimit || 0,
+                    data: web3Contract.methods.transfer(toAddress, this.client.utils.toHex(sendAmount)).encodeABI()
+                }
+                if (contractInfo?.maxPriorityFeePerGas) {
+                    signData.maxPriorityFeePerGas = contractInfo?.maxPriorityFeePerGas
+                }
+                const signed = await eth.accounts.signTransaction(signData, privateKey)
+                const res = await eth.sendSignedTransaction(signed.rawTransaction)
+                Trace.transaction('pay', res.transactionHash, address, toAddress, sendAmount)
+                return res
             } else {
                 const privateKey = this.getPrivateKey(seed, password)
                 const chainId = await eth.getChainId()
@@ -657,76 +655,86 @@ const IotaSDK = {
         ])
         return res?.message?.payload ? res?.message : res
     },
-    async getHisList(outputList) {
+    async getHisList(outputList, { address, nodeId }) {
         if (!this.client) {
             return Base.globalToast.error(I18n.t('user.nodeError'))
         }
-        const outputDatas = await Promise.all(outputList.map((e) => this.outputData(e)))
-        let metadataList = await Promise.all(outputDatas.map((e) => this.messageMetadata(e.messageId)))
-        const newMetadataList = []
-        const newOutputDatas = []
-        metadataList.forEach((e, i) => {
-            if (e) {
-                newMetadataList.push(e)
-                newOutputDatas.push(outputDatas[i])
+        if (this.checkWeb3Node(nodeId)) {
+            if (this.client?.eth) {
+                let list = await this.getPastLogs(address)
+                return list
             }
-        })
-        const milestoneList = await Promise.all(
-            newMetadataList.map((e) => this.milestone(e.referencedByMilestoneIndex))
-        )
-        const transactionFrom = await Promise.all(
-            newOutputDatas.map((e) => this.transactionIncludedMessage(e.transactionId))
-        )
-        const allList = []
-        milestoneList.forEach((e, i) => {
-            const { isSpent, output, transactionId, outputIndex } = newOutputDatas[i]
-            const { payload } = transactionFrom[i]
-            const address = output.address.address
-            let payloadData = payload?.essence?.payload?.data
-            let payloadIndex = payload?.essence?.payload?.index
-            try {
-                payloadIndex = Converter.hexToUtf8(payloadIndex)
-            } catch (error) {
-                payloadIndex = ''
-            }
-            try {
-                if (payloadIndex === 'PARTICIPATE') {
-                    payloadData = [...Converter.hexToBytes(payloadData)]
-                    payloadData.shift()
-                    payloadData = _chunk(payloadData, 33)
-                    payloadData = payloadData.map((e) => {
-                        e.pop()
-                        return Converter.bytesToHex(Uint8Array.from(e))
-                    })
-                } else {
-                    payloadData = Converter.hexToUtf8(payloadData)
-                    payloadData = JSON.parse(payloadData)
+            return []
+        } else {
+            const outputDatas = await Promise.all(outputList.map((e) => this.outputData(e)))
+            let metadataList = await Promise.all(outputDatas.map((e) => this.messageMetadata(e.messageId)))
+            const newMetadataList = []
+            const newOutputDatas = []
+            metadataList.forEach((e, i) => {
+                if (e) {
+                    newMetadataList.push(e)
+                    newOutputDatas.push(outputDatas[i])
                 }
-            } catch (error) {
-                payloadData = payload?.essence?.payload?.data || {}
-            }
-            allList.push({
-                ...e,
-                isSpent,
-                transactionId,
-                address,
-                outputIndex,
-                output,
-                bech32Address: this.hexToBech32(address),
-                amount: output.amount,
-                inputs: payload?.essence?.inputs,
-                payloadIndex,
-                payloadData,
-                outputs: payload?.essence?.outputs.map((d) => {
-                    return {
-                        ...d,
-                        bech32Address: this.hexToBech32(d.address.address)
+            })
+            const milestoneList = await Promise.all(
+                newMetadataList.map((e) => this.milestone(e.referencedByMilestoneIndex))
+            )
+            const transactionFrom = await Promise.all(
+                newOutputDatas.map((e) => this.transactionIncludedMessage(e.transactionId))
+            )
+            const allList = []
+            milestoneList.forEach((e, i) => {
+                const { isSpent, output, transactionId, outputIndex } = newOutputDatas[i]
+                const { payload } = transactionFrom[i]
+                const address = output.address.address
+                let payloadData = payload?.essence?.payload?.data
+                let payloadIndex = payload?.essence?.payload?.index
+                try {
+                    payloadIndex = Converter.hexToUtf8(payloadIndex)
+                } catch (error) {
+                    payloadIndex = ''
+                }
+                try {
+                    if (payloadIndex === 'PARTICIPATE') {
+                        payloadData = [...Converter.hexToBytes(payloadData)]
+                        payloadData.shift()
+                        payloadData = _chunk(payloadData, 33)
+                        payloadData = payloadData.map((e) => {
+                            e.pop()
+                            return Converter.bytesToHex(Uint8Array.from(e))
+                        })
+                    } else {
+                        payloadData = Converter.hexToUtf8(payloadData)
+                        payloadData = JSON.parse(payloadData)
                     }
+                } catch (error) {
+                    payloadData = payload?.essence?.payload?.data || {}
+                }
+                allList.push({
+                    ...e,
+                    decimal: this.curNode?.decimal,
+                    isSpent,
+                    transactionId,
+                    token: this.curNode?.token,
+                    address,
+                    outputIndex,
+                    output,
+                    bech32Address: this.hexToBech32(address),
+                    amount: output.amount,
+                    inputs: payload?.essence?.inputs,
+                    payloadIndex,
+                    payloadData,
+                    outputs: payload?.essence?.outputs.map((d) => {
+                        return {
+                            ...d,
+                            bech32Address: this.hexToBech32(d.address.address)
+                        }
+                    })
                 })
             })
-        })
-        allList.sort((a, b) => a.timestamp - b.timestamp)
-        return allList
+            allList.sort((a, b) => a.timestamp - b.timestamp)
+            return allList
+        }
     },
     set passwordDialog(dialog) {
         this._passwordDialog = dialog
@@ -767,7 +775,7 @@ const IotaSDK = {
         if (!this.client) {
             return
         }
-        if (!this.hasEvents(this.curNode?.id)) {
+        if (!this.hasStake(this.curNode?.id)) {
             return
         }
         const data = await this.requestParticipation(`addresses/${address}`)
@@ -813,7 +821,7 @@ const IotaSDK = {
             }, 500)
             return
         }
-        if (!this.hasEvents(this.curNode?.id)) {
+        if (!this.hasStake(this.curNode?.id)) {
             return
         }
         const data = await this.requestParticipation(`events`)
@@ -964,7 +972,111 @@ const IotaSDK = {
 
     /**************** Nft end *******************/
 
-    /**************** EVM start *******************/
+    /**************** web3 start *******************/
+    get isWeb3Node() {
+        return this.curNode?.id === 3
+    },
+    checkWeb3Node(nodeId) {
+        return nodeId === 3
+    },
+    getWeb3Topics(address) {
+        address = address.toLocaleLowerCase()
+        const padding = new Array(24 + 1).join('0')
+        const topic = '0x' + padding + address.slice(2)
+        return [
+            ['0xe6497e3ee548a3372136af2fcb0696db31fc6cf20260707645068bd3fe97f3c4', null, topic, null],
+            ['0xe6497e3ee548a3372136af2fcb0696db31fc6cf20260707645068bd3fe97f3c4', null, null, topic],
+            ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', topic, null],
+            ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', null, topic]
+        ]
+    },
+    async getPastLogs(address) {
+        try {
+            address = (address || '').toLocaleLowerCase()
+            const topics = this.getWeb3Topics(address)
+            const latest = await this.client.eth.getBlockNumber()
+            let list = []
+            const getData = async (from, to) => {
+                if (from < latest - 70000) {
+                    return []
+                }
+                const res = await Promise.all(
+                    topics.map((e) => {
+                        return this.client.eth.getPastLogs({
+                            topics: e,
+                            fromBlock: from,
+                            toBlock: to
+                        })
+                    })
+                )
+                console.log(res, '=+++++++++++')
+                list = [...list, ..._flatten(res)]
+                await getData(from - 1000, to - 1000)
+            }
+            await getData(latest - 1000, latest)
+            const blocks = await Promise.all(list.map((e) => this.client.eth.getBlock(e.blockNumber)))
+            const contractList = this.curNode?.contractList || []
+            let curToken = this.curNode?.token
+            let tokenDecimal = this.curNode?.decimal
+
+            const token0Contract = contractList.map((e) => {
+                return new this.client.eth.Contract(e.abi, e.contract)
+            })
+            let decimals = await Promise.all(
+                token0Contract.map((e) => {
+                    return e.methods.decimals().call()
+                })
+            )
+            const decimalsDic = {}
+            decimals.forEach((e, i) => {
+                decimalsDic[contractList[i].contract.toLocaleLowerCase()] = e
+            })
+
+            list = list.map((e, i) => {
+                let topics = e.topics
+                const len = topics.length
+                topics = topics.map((e, i) => {
+                    if (i >= len - 2) {
+                        return e.replace(/0{24}/, '')
+                    }
+                    return e
+                })
+
+                const dataAddress = e.address.toLocaleLowerCase()
+                // type：0->receive，1->send
+                let type = 0
+                const contractInfo = contractList.find((e) => e.contract.toLocaleLowerCase() === dataAddress)
+                let token = curToken
+                let otherAddress = ''
+                if (contractInfo) {
+                    token = contractInfo?.token
+                    if (topics?.[1] === address) {
+                        type = 1
+                        otherAddress = topics?.[2] || ''
+                    } else {
+                        type = 0
+                        otherAddress = topics?.[1] || ''
+                    }
+                } else {
+                    if (topics?.[2] === address) {
+                        type = 1
+                        otherAddress = topics?.[3] || ''
+                    } else {
+                        otherAddress = topics?.[2] || ''
+                        type = 0
+                    }
+                }
+                const decimal = decimalsDic[dataAddress] || tokenDecimal
+                let amount = e.data.replace(/^0x/, '').slice(0, 64)
+                amount = this.client.utils.hexToNumberString(`0x${amount}`)
+                return { ...e, timestamp: blocks[i].timestamp, amount, token, type, otherAddress, decimal }
+            })
+            list.sort((a, b) => b.timestamp - a.timestamp)
+            return list
+        } catch (error) {
+            console.log(error)
+        }
+    },
     //get evm privatekey
     getPrivateKey(seed, password) {
         const baseSeed = this.getSeed(seed, password)
@@ -1004,7 +1116,7 @@ const IotaSDK = {
         })
         return balanceList
     }
-    /**************** EVM end *******************/
+    /**************** web3 end *******************/
 }
 
 export default IotaSDK
