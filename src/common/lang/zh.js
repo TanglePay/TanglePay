@@ -200,7 +200,7 @@ Going Beyond Blockchain`,
         sendFor: '用于购买',
         send: `您有一个支付申请#merchant##item_desc#，将支付到以下地址，
 #address#
-支付金额为 #amount# MIOTA。
+支付金额为 #amount# #unit#。
 请填写密码完成支付。`,
         sign: `来自 #merchant# 的签名请求
 您在签名：

@@ -329,11 +329,13 @@ const useUpdateHisList = () => {
         const stakeHisList = []
         const isWeb3 = IotaSDK.checkWeb3Node(nodeId)
         if (isWeb3) {
+            const nodeInfo = IotaSDK.nodes.find((e) => e.id === nodeId)
             activityList.forEach((e) => {
                 const { timestamp, transactionHash, token, type, otherAddress, amount, decimal } = e
                 const num = new BigNumber(amount).div(Math.pow(10, decimal))
                 const assets = num.times(price[token] || 0)
                 const obj = {
+                    viewUrl: `${nodeInfo.explorer}/tx/${transactionHash}`,
                     id: transactionHash,
                     coin: token,
                     timestamp,

@@ -89,7 +89,8 @@ It is a privilege for us to invite you to use it and ask for valuable feedback f
         copyKeyTips: 'This is your private key (click to copy)',
         showKeyTips:
             'Warning: Never disclose this key. Anyone with your private keys can steal any assets held in your account.',
-        done: 'Done'
+        done: 'Done',
+        viewInExplorer: 'View account in explorer'
     },
     assets: {
         myAssets: 'My Assets',
@@ -214,7 +215,7 @@ encrypleted backup of your wallet and latest transaction history`,
         sendFor: 'for ',
         send: `Payment request #merchant# #item_desc# to the following address,
 #address#
-The payment amount is #amount# MIOTA.
+The payment amount is #amount# #unit#.
 Please enter your password to complete the payment.`,
         sign: `Signature Request #merchant#
 You are signing:

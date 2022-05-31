@@ -50,7 +50,7 @@ const IotaSDK = {
                 name: I18n.t('account.mainnet'),
                 type: 1,
                 mqtt: 'wss://chrysalis-nodes.iota.org:443/mqtt',
-                apiPath: 'mainnet',
+                network: 'mainnet',
                 bech32HRP: 'iota',
                 token: 'IOTA',
                 filterMenuList: [],
@@ -63,7 +63,7 @@ const IotaSDK = {
                 name: I18n.t('account.devnet'),
                 type: 1,
                 mqtt: 'wss://api.lb-0.h.chrysalis-devnet.iota.cafe:443/mqtt',
-                apiPath: 'devnet',
+                network: 'devnet',
                 bech32HRP: 'atoi',
                 token: 'IOTA',
                 filterMenuList: [],
@@ -72,11 +72,11 @@ const IotaSDK = {
             },
             {
                 id: 3,
-                url: 'wss://rpc-mainnet.maticvigil.com/ws/v1/83175c2d5054c552149865de81125bf1d62a003b',
-                name: I18n.t('account.evmnet'),
+                url: 'https://polygon-rpc.com',
+                explorer: 'https://polygonscan.com',
+                network: 'matic',
+                name: 'MATIC',
                 type: 2,
-                mqtt: '',
-                apiPath: '',
                 bech32HRP: 'matic',
                 token: 'MATIC',
                 filterMenuList: ['apps', 'staking'],
@@ -97,10 +97,10 @@ const IotaSDK = {
             {
                 id: 4,
                 url: 'https://bsc-dataseed.binance.org/',
-                name: I18n.t('account.evmnet'),
+                explorer: 'https://bscscan.com',
+                name: 'BNB',
                 type: 2,
-                mqtt: '',
-                apiPath: '',
+                network: 'bsc',
                 bech32HRP: 'bsc',
                 token: 'BNB',
                 filterMenuList: ['apps', 'staking'],
@@ -348,7 +348,7 @@ const IotaSDK = {
     async getAllOutputIds(addressList) {
         const res = await Promise.all(
             addressList.map((e) => {
-                return Http.GET(`${this.explorerApiUrl}/search/${this.curNode.apiPath}/${e}`, {
+                return Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${e}`, {
                     isHandlerError: true
                 })
             })
@@ -585,11 +585,10 @@ const IotaSDK = {
                 transactionHash: logInfo?.transactionHash || res.transactionHash,
                 transactionIndex: logInfo?.transactionIndex || res.transactionIndex
             }
-            console.log(logData)
             this.setPastLogs(address, nodeId, [logData]).then(() => {
                 this.refreshAssets()
             })
-            return res
+            return { ...res, messageId: logData.transactionHash }
         } else {
             const amount = Base.formatNum(BigNumber(sendAmount).div(this.IOTA_MI))
             const sendOut = await sendMultiple(
@@ -667,7 +666,7 @@ const IotaSDK = {
     async outputData(outputId) {
         const res = await this.requestQueue([
             // this.client.output(outputId),
-            Http.GET(`${this.explorerApiUrl}/output/${this.curNode.apiPath}/${outputId}`, {
+            Http.GET(`${this.explorerApiUrl}/output/${this.curNode.network}/${outputId}`, {
                 isHandlerError: true
             })
         ])
@@ -677,7 +676,7 @@ const IotaSDK = {
     async messageMetadata(messageId) {
         const res = await this.requestQueue([
             // this.client.messageMetadata(messageId),
-            Http.GET(`${this.explorerApiUrl}/message/${this.curNode.apiPath}/${messageId}`, {
+            Http.GET(`${this.explorerApiUrl}/message/${this.curNode.network}/${messageId}`, {
                 isHandlerError: true
             })
         ])
@@ -687,7 +686,7 @@ const IotaSDK = {
     async milestone(milestoneIndex) {
         const res = await this.requestQueue([
             // this.client.milestone(milestoneIndex),
-            Http.GET(`${this.explorerApiUrl}/milestone/${this.curNode.apiPath}/${milestoneIndex}`, {
+            Http.GET(`${this.explorerApiUrl}/milestone/${this.curNode.network}/${milestoneIndex}`, {
                 isHandlerError: true
             })
         ])
@@ -697,7 +696,7 @@ const IotaSDK = {
     async transactionIncludedMessage(transactionId) {
         const res = await this.requestQueue([
             // this.client.transactionIncludedMessage(transactionId),
-            Http.GET(`${this.explorerApiUrl}/search/${this.curNode.apiPath}/${transactionId}`, {
+            Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${transactionId}`, {
                 isHandlerError: true
             })
         ])
@@ -821,10 +820,10 @@ const IotaSDK = {
     },
     async getAddressRewards(address) {
         if (!this.client) {
-            return
+            return {}
         }
         if (!this.hasStake(this.curNode?.id)) {
-            return
+            return {}
         }
         const data = await this.requestParticipation(`addresses/${address}`)
         const rewards = data?.rewards || {}
@@ -973,10 +972,19 @@ const IotaSDK = {
         if (!wallet || !wallet.address) {
             return false
         }
-        const { seed, password } = wallet
-        const baseSeed = this.getSeed(seed, password)
-        const addressKeyPair = this.getPair(baseSeed)
-        const signRes = Ed25519.sign(addressKeyPair.privateKey, Converter.utf8ToBytes(content))
+        let signRes = null
+        if (this.checkWeb3Node(wallet.nodeId)) {
+            if (!this.client?.eth) {
+                return false
+            }
+            const privateKey = this.getPrivateKey(seed, password)
+            signRes = await this.client.eth.accounts.sign(content, privateKey)
+        } else {
+            const { seed, password } = wallet
+            const baseSeed = this.getSeed(seed, password)
+            const addressKeyPair = this.getPair(baseSeed)
+            signRes = Ed25519.sign(addressKeyPair.privateKey, Converter.utf8ToBytes(content))
+        }
         return signRes
     },
     async sign(content, wallet, amount) {

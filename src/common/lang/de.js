@@ -210,7 +210,7 @@ Es wäre uns eine Ehre dich einzuladen TanglePay auszuprobieren um uns Feedback 
         sendFor: 'über ',
         send: `Zahlungsaufforderung #merchant# #item_desc# an die folgende Adresse,
 #address#
-Die Rechnung beträgt #amount# MIOTA.
+Die Rechnung beträgt #amount# #unit#.
 Bitte gib dein Passwort ein um die Bestellung abzuschließen.`,
         sign: `Aufforderung zur Signatur von #merchant#
 Sie unterschreiben:
