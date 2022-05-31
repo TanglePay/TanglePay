@@ -163,18 +163,32 @@ export const useEditWallet = () => {
     return editWallet
 }
 
-export const useChangeNode = (dispatch) => {
+export const useChangeNode = () => {
     const changeNode = async (id) => {
         id = id || 1
         await IotaSDK.init(id)
-        dispatch({
-            type: 'common.curNodeId',
-            data: id
-        })
-        dispatch({
-            type: 'common.hisList',
-            data: []
-        })
+        const dispatch = Base.globalDispatch
+        if (dispatch) {
+            let walletsList = await IotaSDK.getWalletList()
+            walletsList = walletsList.map((e) => {
+                if (IotaSDK.checkWeb3Node(e.nodeId) && IotaSDK.checkWeb3Node(id)) {
+                    e.nodeId = id
+                }
+                return e
+            })
+            dispatch({
+                type: 'common.walletsList',
+                data: walletsList
+            })
+            dispatch({
+                type: 'common.curNodeId',
+                data: id
+            })
+            dispatch({
+                type: 'common.hisList',
+                data: []
+            })
+        }
         Base.setLocalData('common.curNodeId', id)
     }
     return changeNode
@@ -188,12 +202,12 @@ export const useGetNodeWallet = () => {
     const curNodeId = _get(store, 'common.curNodeId')
     useEffect(() => {
         if (IotaSDK.info) {
-            const curList = IotaSDK.getWalletList(walletsList)
+            // const curList = IotaSDK.getWalletList(walletsList)
             // if (curList.length > 0 && curList.filter((e) => e.isSelected).length === 0) {
             //     curList[0].isSelected = true
             // }
-            setCanUseWalletsList(curList)
-            setCurWallet(curList.find((e) => e.isSelected) || { randomId: Math.random() })
+            setCanUseWalletsList(walletsList)
+            setCurWallet(walletsList.find((e) => e.isSelected) || { randomId: Math.random() })
         }
     }, [curNodeId, walletsList])
     return [curWallet, canUseWalletsList]
@@ -549,7 +563,7 @@ export const useGetAssetsList = (curWallet) => {
         setRequestAssets(false, dispatch)
         setRequestHis(false, dispatch)
         setRequestStakeHis(false, dispatch)
-        if (!curWallet.seed) {
+        if (!curWallet.seed || curWallet.nodeId !== IotaSDK?.curNode?.id) {
             setRequestAssets(true, dispatch)
             setRequestHis(true, dispatch)
             setRequestStakeHis(true, dispatch)
@@ -637,7 +651,7 @@ export const useGetAssetsList = (curWallet) => {
                     })
             }
         })
-    }, [curWallet.address, store.common.forceRequest])
+    }, [curWallet.address + curWallet.nodeId, store.common.forceRequest])
 }
 
 // Display devnet url when it is being selected

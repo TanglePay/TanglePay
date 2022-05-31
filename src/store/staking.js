@@ -82,6 +82,9 @@ export const useGetParticipationEvents = () => {
     const [eventInfo, setInfo] = useState({})
     useEffect(() => {
         const getData = async () => {
+            if (!curNodeId || !IotaSDK.hasStake(curNodeId)) {
+                return
+            }
             let datas = await IotaSDK.getParticipationEvents()
             datas = datas.filter((e) => !filter.includes(e.id))
             const nowTime = parseInt(new Date().getTime() / 1000)
@@ -170,6 +173,6 @@ export const useGetRewards = (curWallet) => {
         return () => {
             clearInterval(timeHandler)
         }
-    }, [curWallet.address, JSON.stringify(validAddresses)])
+    }, [curWallet.address + curWallet.nodeId, JSON.stringify(validAddresses)])
     return rewards
 }

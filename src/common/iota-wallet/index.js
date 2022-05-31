@@ -39,7 +39,7 @@ const IotaSDK = {
     convertUnits(value, fromUnit, toUnit) {
         return convertUnits(value, fromUnit, toUnit)
     },
-    // type:1.iota, 2.evm,
+    // type:1.iota, 2.web3,
     // filterMenuList:['assets','apps','staking','me']
     // filterAssetsList: ['stake', 'soonaverse']
     get nodes() {
@@ -72,22 +72,42 @@ const IotaSDK = {
             },
             {
                 id: 3,
-                // url: 'https://evm.wasp.sc.iota.org',
-                // url: 'https://polygon-rpc.com',
                 url: 'wss://rpc-mainnet.maticvigil.com/ws/v1/83175c2d5054c552149865de81125bf1d62a003b',
-                // url: 'https://bsc-dataseed.binance.org/',
                 name: I18n.t('account.evmnet'),
                 type: 2,
                 mqtt: '',
-                apiPath: 'evmnet',
-                bech32HRP: 'iota evm',
+                apiPath: '',
+                bech32HRP: 'matic',
                 token: 'MATIC',
                 filterMenuList: ['apps', 'staking'],
                 filterAssetsList: ['stake', 'soonaverse'],
                 contractList: [
                     {
-                        // contract: '0x55d398326f99059ff775485246999027b3197955',
                         contract: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
+                        token: 'USDT',
+                        abi: require('./TokenERC20.json'),
+                        gasLimit: 76654,
+                        maxPriorityFeePerGas: 30000000000
+                    }
+                ],
+                decimal: 18,
+                gasLimit: 21000,
+                logLimit: 1000
+            },
+            {
+                id: 4,
+                url: 'https://bsc-dataseed.binance.org/',
+                name: I18n.t('account.evmnet'),
+                type: 2,
+                mqtt: '',
+                apiPath: '',
+                bech32HRP: 'bsc',
+                token: 'BNB',
+                filterMenuList: ['apps', 'staking'],
+                filterAssetsList: ['stake', 'soonaverse'],
+                contractList: [
+                    {
+                        contract: '0x55d398326f99059ff775485246999027b3197955',
                         token: 'USDT',
                         abi: require('./TokenERC20.json'),
                         gasLimit: 76654,
@@ -95,7 +115,8 @@ const IotaSDK = {
                     }
                 ],
                 decimal: 18,
-                gasLimit: 21000
+                gasLimit: 21000,
+                logLimit: 5000
             }
         ]
     },
@@ -173,6 +194,7 @@ const IotaSDK = {
                         preBlock = latest
                         const list = _flatten(res)
                         if (list.length > 0) {
+                            await this.setPastLogs(address, this.curNode?.id, list)
                             Base.globalTemData.isGetMqttMessage = true
                             self.refreshAssets()
                         }
@@ -286,11 +308,14 @@ const IotaSDK = {
             }
         })
     },
-    getWalletList(list) {
-        // if (this.info) {
-        //     return list.filter((e) => e.bech32HRP === this.info.bech32HRP)
-        // }
-        // return []
+    async getWalletList() {
+        let list = await Base.getLocalData('common.walletsList')
+        if (Base.isBrowser) {
+            const bg = window?.chrome?.extension?.getBackgroundPage()
+            if (bg) {
+                list = bg.getBackgroundData('common.walletsList') || list
+            }
+        }
         return list
     },
     async getWalletInfo(address) {
@@ -495,10 +520,12 @@ const IotaSDK = {
         if (this.checkWeb3Node(nodeId)) {
             const eth = this.client.eth
             const nodeInfo = this.nodes.find((e) => e.id === nodeId) || []
-            const gasLimit = nodeInfo?.gasLimit || 0
+            const blockGasLimit = await eth.getBlock('latest')
+            const gasLimit = nodeInfo?.gasLimit || blockGasLimit || 0
             const gasPrice = await eth.getGasPrice()
             const nonce = await eth.getTransactionCount(address)
             const { contract, token } = ext || {}
+            let res = null
             if (contract) {
                 const contractInfo = (nodeInfo.contractList || []).find((e) => e.token === token)
                 if (!contractInfo) {
@@ -513,16 +540,15 @@ const IotaSDK = {
                     value: '0x00',
                     from: address,
                     nonce,
-                    gasLimit: contractInfo?.gasLimit || 0,
+                    gasLimit: contractInfo?.gasLimit || blockGasLimit || 0,
                     data: web3Contract.methods.transfer(toAddress, this.client.utils.toHex(sendAmount)).encodeABI()
                 }
                 if (contractInfo?.maxPriorityFeePerGas) {
                     signData.maxPriorityFeePerGas = contractInfo?.maxPriorityFeePerGas
                 }
                 const signed = await eth.accounts.signTransaction(signData, privateKey)
-                const res = await eth.sendSignedTransaction(signed.rawTransaction)
+                res = await eth.sendSignedTransaction(signed.rawTransaction)
                 Trace.transaction('pay', res.transactionHash, address, toAddress, sendAmount)
-                return res
             } else {
                 const privateKey = this.getPrivateKey(seed, password)
                 const chainId = await eth.getChainId()
@@ -538,10 +564,32 @@ const IotaSDK = {
                     },
                     privateKey
                 )
-                const res = await eth.sendSignedTransaction(signed.rawTransaction)
+                res = await eth.sendSignedTransaction(signed.rawTransaction)
                 Trace.transaction('pay', res.transactionHash, address, toAddress, sendAmount)
-                return res
             }
+            const logInfo = res?.logs?.[0]
+            const logData = {
+                address: logInfo?.address || '0x0000000000000000000000000000000000001010',
+                blockHash: res.blockHash,
+                blockNumber: res.blockNumber,
+                data: logInfo?.data || this.fill64Len(this.client.utils.toHex(sendAmount)),
+                id: logInfo?.id || res.transactionHash,
+                logIndex: logInfo?.logIndex || res.transactionIndex,
+                removed: logInfo?.removed || res.status,
+                topics: logInfo?.topics || [
+                    '0xe6497e3ee548a3372136af2fcb0696db31fc6cf20260707645068bd3fe97f3c4',
+                    '0x0000000000000000000000000000000000000000000000000000000000001010',
+                    this.fillAddress(res?.from),
+                    this.fillAddress(res?.to)
+                ],
+                transactionHash: logInfo?.transactionHash || res.transactionHash,
+                transactionIndex: logInfo?.transactionIndex || res.transactionIndex
+            }
+            console.log(logData)
+            this.setPastLogs(address, nodeId, [logData]).then(() => {
+                this.refreshAssets()
+            })
+            return res
         } else {
             const amount = Base.formatNum(BigNumber(sendAmount).div(this.IOTA_MI))
             const sendOut = await sendMultiple(
@@ -661,7 +709,7 @@ const IotaSDK = {
         }
         if (this.checkWeb3Node(nodeId)) {
             if (this.client?.eth) {
-                let list = await this.getPastLogs(address)
+                let list = await this.getPastLogs(address, nodeId)
                 return list
             }
             return []
@@ -974,105 +1022,118 @@ const IotaSDK = {
 
     /**************** web3 start *******************/
     get isWeb3Node() {
-        return this.curNode?.id === 3
+        return this.curNode?.type == 2
     },
     checkWeb3Node(nodeId) {
-        return nodeId === 3
+        return this.nodes.find((e) => e.id == nodeId)?.type == 2
     },
-    getWeb3Topics(address) {
+    fillAddress(address) {
         address = address.toLocaleLowerCase()
         const padding = new Array(24 + 1).join('0')
         const topic = '0x' + padding + address.slice(2)
+        return topic
+    },
+    fill64Len(value) {
+        value = String(value).replace(/0x/, '')
+        const len = 64 - value.length
+        value = `0x${new Array(len).join('0')}${value}`
+        return value
+    },
+    getWeb3Topics(address) {
+        const topic = this.fillAddress(address)
         return [
-            ['0xe6497e3ee548a3372136af2fcb0696db31fc6cf20260707645068bd3fe97f3c4', null, topic, null],
+            // ['0xe6497e3ee548a3372136af2fcb0696db31fc6cf20260707645068bd3fe97f3c4', null, topic, null], // node send
             ['0xe6497e3ee548a3372136af2fcb0696db31fc6cf20260707645068bd3fe97f3c4', null, null, topic],
-            ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', topic, null],
+            // ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', topic, null], // token send
             ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', null, topic]
         ]
     },
-    async getPastLogs(address) {
+    async changeLogData(address, nodeId, list) {
+        address = (address || '').toLocaleLowerCase()
+        const curNode = this.nodes.find((e) => e.id === nodeId)
+        const blocks = await Promise.all(list.map((e) => this.client.eth.getBlock(e.blockNumber)))
+        const contractList = curNode?.contractList || []
+        let curToken = curNode?.token
+        let tokenDecimal = curNode?.decimal
+        const token0Contract = contractList.map((e) => {
+            return new this.client.eth.Contract(e.abi, e.contract)
+        })
+        let decimals = await Promise.all(
+            token0Contract.map((e) => {
+                return e.methods.decimals().call()
+            })
+        )
+        const decimalsDic = {}
+        decimals.forEach((e, i) => {
+            decimalsDic[contractList[i].contract.toLocaleLowerCase()] = e
+        })
+        list = list.map((e, i) => {
+            let topics = e.topics
+            const len = topics.length
+            topics = topics.map((e, i) => {
+                if (i >= len - 2) {
+                    return e.replace(/0{24}/, '')
+                }
+                return e.toLocaleLowerCase()
+            })
+
+            const dataAddress = e.address.toLocaleLowerCase()
+            // type：0->receive，1->send
+            let type = 0
+            const contractInfo = contractList.find((e) => e.contract.toLocaleLowerCase() === dataAddress)
+            let token = curToken
+            let otherAddress = ''
+            if (contractInfo) {
+                token = contractInfo?.token
+                if (topics?.[1] === address) {
+                    type = 1
+                    otherAddress = topics?.[2] || ''
+                } else {
+                    type = 0
+                    otherAddress = topics?.[1] || ''
+                }
+            } else {
+                if (topics?.[2] === address) {
+                    type = 1
+                    otherAddress = topics?.[3] || ''
+                } else {
+                    otherAddress = topics?.[2] || ''
+                    type = 0
+                }
+            }
+            const decimal = decimalsDic[dataAddress] || tokenDecimal
+            let amount = e.data.replace(/^0x/, '').slice(0, 64)
+            amount = this.client.utils.hexToNumberString(`0x${amount}`)
+            return { ...e, timestamp: blocks[i].timestamp, amount, token, type, otherAddress, decimal }
+        })
+        list.sort((a, b) => b.timestamp - a.timestamp)
+        return list
+    },
+
+    async getPastLogs(address, nodeId) {
         try {
             address = (address || '').toLocaleLowerCase()
-            const topics = this.getWeb3Topics(address)
-            const latest = await this.client.eth.getBlockNumber()
-            let list = []
-            const getData = async (from, to) => {
-                if (from < latest - 70000) {
-                    return []
-                }
-                const res = await Promise.all(
-                    topics.map((e) => {
-                        return this.client.eth.getPastLogs({
-                            topics: e,
-                            fromBlock: from,
-                            toBlock: to
-                        })
-                    })
-                )
-                console.log(res, '=+++++++++++')
-                list = [...list, ..._flatten(res)]
-                await getData(from - 1000, to - 1000)
-            }
-            await getData(latest - 1000, latest)
-            const blocks = await Promise.all(list.map((e) => this.client.eth.getBlock(e.blockNumber)))
-            const contractList = this.curNode?.contractList || []
-            let curToken = this.curNode?.token
-            let tokenDecimal = this.curNode?.decimal
-
-            const token0Contract = contractList.map((e) => {
-                return new this.client.eth.Contract(e.abi, e.contract)
+            const logsData = (await Base.getLocalData('web3.logs.data')) || {}
+            console.log(logsData, '+++++++++++++')
+            return logsData?.[nodeId]?.[address] || []
+        } catch (error) {
+            console.log(error)
+        }
+    },
+    async setPastLogs(address, nodeId, list) {
+        try {
+            address = (address || '').toLocaleLowerCase()
+            let oldList = await this.getPastLogs(address, nodeId)
+            list = list.filter((e) => {
+                return !oldList.includes(e.transactionHash)
             })
-            let decimals = await Promise.all(
-                token0Contract.map((e) => {
-                    return e.methods.decimals().call()
-                })
-            )
-            const decimalsDic = {}
-            decimals.forEach((e, i) => {
-                decimalsDic[contractList[i].contract.toLocaleLowerCase()] = e
-            })
-
-            list = list.map((e, i) => {
-                let topics = e.topics
-                const len = topics.length
-                topics = topics.map((e, i) => {
-                    if (i >= len - 2) {
-                        return e.replace(/0{24}/, '')
-                    }
-                    return e
-                })
-
-                const dataAddress = e.address.toLocaleLowerCase()
-                // type：0->receive，1->send
-                let type = 0
-                const contractInfo = contractList.find((e) => e.contract.toLocaleLowerCase() === dataAddress)
-                let token = curToken
-                let otherAddress = ''
-                if (contractInfo) {
-                    token = contractInfo?.token
-                    if (topics?.[1] === address) {
-                        type = 1
-                        otherAddress = topics?.[2] || ''
-                    } else {
-                        type = 0
-                        otherAddress = topics?.[1] || ''
-                    }
-                } else {
-                    if (topics?.[2] === address) {
-                        type = 1
-                        otherAddress = topics?.[3] || ''
-                    } else {
-                        otherAddress = topics?.[2] || ''
-                        type = 0
-                    }
-                }
-                const decimal = decimalsDic[dataAddress] || tokenDecimal
-                let amount = e.data.replace(/^0x/, '').slice(0, 64)
-                amount = this.client.utils.hexToNumberString(`0x${amount}`)
-                return { ...e, timestamp: blocks[i].timestamp, amount, token, type, otherAddress, decimal }
-            })
-            list.sort((a, b) => b.timestamp - a.timestamp)
-            return list
+            const newList = await this.changeLogData(address, nodeId, list)
+            oldList = [...oldList, ...newList]
+            oldList.sort((a, b) => b.timestamp - a.timestamp)
+            const logsData = (await Base.getLocalData('web3.logs.data')) || {}
+            logsData[nodeId] = logsData[nodeId] || {}
+            logsData[nodeId][address] = oldList
+            await Base.setLocalData('web3.logs.data', logsData)
         } catch (error) {
             console.log(error)
         }
