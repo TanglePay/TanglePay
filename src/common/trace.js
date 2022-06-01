@@ -6,7 +6,7 @@ let clientType = Base.getClientType()
 const trace = async (url, params) => {
     const curNodeId = await Base.getLocalData('common.curNodeId')
     const disTrace = await Base.getLocalData('common.disTrace')
-    if (curNodeId === 2 || curNodeId === 3 || disTrace == 1) {
+    if (curNodeId === 2 || curNodeId === 3 || curNodeId === 4 || disTrace == 1) {
         return
     }
     return Http.POST(url, {

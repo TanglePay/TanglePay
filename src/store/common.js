@@ -195,22 +195,11 @@ export const useChangeNode = () => {
 }
 
 export const useGetNodeWallet = () => {
-    const [curWallet, setCurWallet] = useState({})
-    const [canUseWalletsList, setCanUseWalletsList] = useState([])
     const { store } = useContext(StoreContext)
     const walletsList = _get(store, 'common.walletsList')
     const curNodeId = _get(store, 'common.curNodeId')
-    useEffect(() => {
-        if (IotaSDK.info) {
-            // const curList = IotaSDK.getWalletList(walletsList)
-            // if (curList.length > 0 && curList.filter((e) => e.isSelected).length === 0) {
-            //     curList[0].isSelected = true
-            // }
-            setCanUseWalletsList(walletsList)
-            setCurWallet(walletsList.find((e) => e.isSelected) || { randomId: Math.random() })
-        }
-    }, [curNodeId, walletsList])
-    return [curWallet, canUseWalletsList]
+    let curWallet = walletsList.find((e) => e.isSelected && e.nodeId === curNodeId) || {}
+    return [curWallet, walletsList]
 }
 
 // get current stable currency

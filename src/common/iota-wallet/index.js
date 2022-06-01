@@ -546,25 +546,34 @@ const IotaSDK = {
                 if (contractInfo?.maxPriorityFeePerGas) {
                     signData.maxPriorityFeePerGas = contractInfo?.maxPriorityFeePerGas
                 }
-                const signed = await eth.accounts.signTransaction(signData, privateKey)
-                res = await eth.sendSignedTransaction(signed.rawTransaction)
+                try {
+                    const signed = await eth.accounts.signTransaction(signData, privateKey)
+                    res = await eth.sendSignedTransaction(signed.rawTransaction)
+                } catch (error) {
+                    throw error
+                }
                 Trace.transaction('pay', res.transactionHash, address, toAddress, sendAmount)
             } else {
                 const privateKey = this.getPrivateKey(seed, password)
                 const chainId = await eth.getChainId()
-                const signed = await eth.accounts.signTransaction(
-                    {
-                        to: toAddress,
-                        value: sendAmount,
-                        from: address,
-                        chainId,
-                        nonce,
-                        gasLimit,
-                        gasPrice
-                    },
-                    privateKey
-                )
-                res = await eth.sendSignedTransaction(signed.rawTransaction)
+                try {
+                    const signed = await eth.accounts.signTransaction(
+                        {
+                            to: toAddress,
+                            value: sendAmount,
+                            from: address,
+                            chainId,
+                            nonce,
+                            gasLimit,
+                            gasPrice
+                        },
+                        privateKey
+                    )
+                    res = await eth.sendSignedTransaction(signed.rawTransaction)
+                } catch (error) {
+                    console.log(error)
+                    throw error
+                }
                 Trace.transaction('pay', res.transactionHash, address, toAddress, sendAmount)
             }
             const logInfo = res?.logs?.[0]
@@ -591,32 +600,37 @@ const IotaSDK = {
             return { ...res, messageId: logData.transactionHash }
         } else {
             const amount = Base.formatNum(BigNumber(sendAmount).div(this.IOTA_MI))
-            const sendOut = await sendMultiple(
-                this.client,
-                baseSeed,
-                0,
-                [
+            let sendOut = null
+            try {
+                sendOut = await sendMultiple(
+                    this.client,
+                    baseSeed,
+                    0,
+                    [
+                        {
+                            addressBech32: toAddress,
+                            amount: sendAmount,
+                            isDustAllowance: false
+                        }
+                    ],
                     {
-                        addressBech32: toAddress,
-                        amount: sendAmount,
-                        isDustAllowance: false
+                        key: Converter.utf8ToBytes('TanglePay'),
+                        data: Converter.utf8ToBytes(
+                            JSON.stringify({
+                                from: address, //main address
+                                to: toAddress,
+                                amount: sendAmount
+                            })
+                        )
+                    },
+                    {
+                        startIndex: 0,
+                        zeroCount: 20
                     }
-                ],
-                {
-                    key: Converter.utf8ToBytes('TanglePay'),
-                    data: Converter.utf8ToBytes(
-                        JSON.stringify({
-                            from: address, //main address
-                            to: toAddress,
-                            amount: sendAmount
-                        })
-                    )
-                },
-                {
-                    startIndex: 0,
-                    zeroCount: 20
-                }
-            )
+                )
+            } catch (error) {
+                throw error
+            }
             const { messageId } = sendOut
             // Save transfer output when the balance remindar is 0
             // Context: in IOTA sdk, when remaining balance is 0, it transfer operation is not included in the messages sent to Tangle.
@@ -869,7 +883,7 @@ const IotaSDK = {
             return
         }
         if (!this.hasStake(this.curNode?.id)) {
-            return
+            return []
         }
         const data = await this.requestParticipation(`events`)
 
