@@ -1,7 +1,7 @@
 import { MqttClient } from '@iota/mqtt.js'
 import I18n from '../lang'
 import { Base } from '../base'
-import Http from '../http'
+import Http, { API_URL } from '../http'
 import Trace from '../trace'
 import _sumBy from 'lodash/sumBy'
 import _get from 'lodash/get'
@@ -19,6 +19,7 @@ import Web3 from 'web3'
 import * as Web3Bip39 from 'bip39'
 import { hdkey as ethereumjsHdkey } from 'ethereumjs-wallet'
 import * as ethereumjsUtils from 'ethereumjs-util'
+const tokenAbi = require('./TokenERC20.json')
 
 const soon = new Soon(true)
 const {
@@ -42,83 +43,47 @@ const IotaSDK = {
     // type:1.iota, 2.web3,
     // filterMenuList:['assets','apps','staking','me']
     // filterAssetsList: ['stake', 'soonaverse']
+    _nodes: [
+        {
+            id: 1,
+            url: 'https://chrysalis-nodes.iota.org',
+            name: I18n.t('account.mainnet'),
+            type: 1,
+            mqtt: 'wss://chrysalis-nodes.iota.org:443/mqtt',
+            network: 'mainnet',
+            bech32HRP: 'iota',
+            token: 'IOTA',
+            filterMenuList: [],
+            filterAssetsList: [],
+            decimal: 6
+        },
+        {
+            id: 2,
+            url: 'https://api.lb-0.h.chrysalis-devnet.iota.cafe',
+            name: I18n.t('account.devnet'),
+            type: 1,
+            mqtt: 'wss://api.lb-0.h.chrysalis-devnet.iota.cafe:443/mqtt',
+            network: 'devnet',
+            bech32HRP: 'atoi',
+            token: 'IOTA',
+            filterMenuList: [],
+            filterAssetsList: [],
+            decimal: 6
+        }
+    ],
     get nodes() {
-        return [
-            {
-                id: 1,
-                url: 'https://chrysalis-nodes.iota.org',
-                name: I18n.t('account.mainnet'),
-                type: 1,
-                mqtt: 'wss://chrysalis-nodes.iota.org:443/mqtt',
-                network: 'mainnet',
-                bech32HRP: 'iota',
-                token: 'IOTA',
-                filterMenuList: [],
-                filterAssetsList: [],
-                decimal: Math.log10(this.IOTA_MI)
-            },
-            {
-                id: 2,
-                url: 'https://api.lb-0.h.chrysalis-devnet.iota.cafe',
-                name: I18n.t('account.devnet'),
-                type: 1,
-                mqtt: 'wss://api.lb-0.h.chrysalis-devnet.iota.cafe:443/mqtt',
-                network: 'devnet',
-                bech32HRP: 'atoi',
-                token: 'IOTA',
-                filterMenuList: [],
-                filterAssetsList: [],
-                decimal: Math.log10(this.IOTA_MI)
-            },
-            {
-                id: 3,
-                url: 'https://polygon-rpc.com',
-                explorer: 'https://polygonscan.com',
-                network: 'matic',
-                name: 'MATIC',
-                type: 2,
-                bech32HRP: 'matic',
-                token: 'MATIC',
-                filterMenuList: ['apps', 'staking'],
-                filterAssetsList: ['stake', 'soonaverse'],
-                contractList: [
-                    {
-                        contract: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
-                        token: 'USDT',
-                        abi: require('./TokenERC20.json'),
-                        gasLimit: 76654,
-                        maxPriorityFeePerGas: 30000000000
-                    }
-                ],
-                decimal: 18,
-                gasLimit: 21000,
-                logLimit: 1000
-            },
-            {
-                id: 4,
-                url: 'https://bsc-dataseed.binance.org/',
-                explorer: 'https://bscscan.com',
-                name: 'BNB',
-                type: 2,
-                network: 'bsc',
-                bech32HRP: 'bsc',
-                token: 'BNB',
-                filterMenuList: ['apps', 'staking'],
-                filterAssetsList: ['stake', 'soonaverse'],
-                contractList: [
-                    {
-                        contract: '0x55d398326f99059ff775485246999027b3197955',
-                        token: 'USDT',
-                        abi: require('./TokenERC20.json'),
-                        gasLimit: 76654,
-                        maxPriorityFeePerGas: 0
-                    }
-                ],
-                decimal: 18,
-                gasLimit: 21000,
-                logLimit: 5000
+        return this._nodes
+    },
+    async getNodes() {
+        let res = await fetch(`${API_URL}/evm.json?v=${new Date().getTime()}`)
+        res = await res.json()
+        const _nodes = this._nodes
+        res.forEach((e) => {
+            if (_nodes.find((d) => d.id !== e.id)) {
+                _nodes.push(e)
             }
-        ]
+        })
+        this._nodes = _nodes
     },
     hasStake(nodeId) {
         return !(this.nodes.find((e) => e.id === nodeId)?.filterAssetsList || []).includes('stake')
@@ -531,7 +496,7 @@ const IotaSDK = {
                 if (!contractInfo) {
                     return Base.globalToast.error('contract error')
                 }
-                const web3Contract = new eth.Contract(contractInfo.abi, contractInfo.contract)
+                const web3Contract = new eth.Contract(tokenAbi, contractInfo.contract)
                 window.web3Contract = web3Contract
 
                 const privateKey = this.getPrivateKey(seed, password)
@@ -1078,7 +1043,7 @@ const IotaSDK = {
         let curToken = curNode?.token
         let tokenDecimal = curNode?.decimal
         const token0Contract = contractList.map((e) => {
-            return new this.client.eth.Contract(e.abi, e.contract)
+            return new this.client.eth.Contract(tokenAbi, e.contract)
         })
         let decimals = await Promise.all(
             token0Contract.map((e) => {
@@ -1174,7 +1139,7 @@ const IotaSDK = {
             return []
         }
         const token0Contract = nodeInfo.contractList.map((e) => {
-            return new this.client.eth.Contract(e.abi, e.contract)
+            return new this.client.eth.Contract(tokenAbi, e.contract)
         })
         const decimals = await Promise.all(
             token0Contract.map((e) => {
