@@ -85,7 +85,17 @@ Es wäre uns eine Ehre dich einzuladen TanglePay auszuprobieren um uns Feedback 
         changeTips:
             'Bitte wähle das Netzwerk aus welches du nutzen möchtest. Du kannst es jederzeit in den Netzwerkeinstellungen ändern',
         devnet: 'Chrysalis devnet',
-        mainnet: 'Chrysalis mainnet'
+        mainnet: 'Chrysalis mainnet',
+        evmnet: 'IOTA EVM',
+        selectNode: 'Netzwerk auswählen',
+        exportKey: 'Private Key exportieren',
+        showKey: 'Private Keys anzeigen',
+        showKeyInputPassword: 'Gib dein Passwort für {name} ein',
+        copyKeyTips: 'Dies ist dein Private Key (klicken zum Kopieren)',
+        showKeyTips:
+            'Achtung: Teile deinen Private Key niemals mit anderen Personen. Jeder mit deinem Private Key könnte die Assets von deinem Konto stehlen.',
+        done: 'Fertig',
+        viewInExplorer: 'Account im Explorer anzeigen'
     },
     assets: {
         myAssets: 'Meine Assets',

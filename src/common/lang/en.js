@@ -85,7 +85,7 @@ It is a privilege for us to invite you to use it and ask for valuable feedback f
         selectNode: 'Select network',
         exportKey: 'Export Private Key',
         showKey: 'Show Private Keys',
-        showKeyInputPassword: 'Type your My wallet 2 password',
+        showKeyInputPassword: 'Type your {name} password',
         copyKeyTips: 'This is your private key (click to copy)',
         showKeyTips:
             'Warning: Never disclose this key. Anyone with your private keys can steal any assets held in your account.',
