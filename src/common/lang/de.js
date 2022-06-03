@@ -69,7 +69,7 @@ Um den Anforderungen der Verordnung (EU) 2016/679 über den Schutz personenbezog
 `,
         start: 'Start',
 
-        mnemonicError: 'Die Wiederherstellungsphrase besteht aus 24 englischen Wörtern',
+        mnemonicError: 'Die Wiederherstellungsphrase besteht aus {len} englischen Wörtern',
 
         unopen: 'Noch nicht verfügbar',
 
@@ -79,13 +79,13 @@ Um den Anforderungen der Verordnung (EU) 2016/679 über den Schutz personenbezog
             'Die Wiederherstellungsphrase enthält ein Wort das nicht in der BIP39 Wortliste enthalten ist: {word}',
         mnemonicOtherError: 'Fehlerhafte Wiederherstellungsphrase. Bitte versuche es erneut.',
 
-        dearFam: 'Liebe IOTA Familie,',
-        betaReady: `TanglePay Beta Version ist Startklar!
-Es wäre uns eine Ehre dich einzuladen TanglePay auszuprobieren um uns Feedback für die Weiterentwicklung zu geben.`,
+        dearFam: 'Dear IOTA fam,',
+        betaReady: `Welcome to use TanglePay,
+the IOTA token and NFT wallet. Soon we will be able to support Shimmer network and Shimmer EVM all in one wallet interface. Please choose the network first.`,
         changeTips:
-            'Bitte wähle das Netzwerk aus welches du nutzen möchtest. Du kannst es jederzeit in den Netzwerkeinstellungen ändern',
-        devnet: 'Chrysalis devnet',
-        mainnet: 'Chrysalis mainnet',
+            'Please choose the network you want to use first and you can always add other network in the wallet.',
+        devnet: 'IOTA Devnet',
+        mainnet: 'IOTA Mainnet',
         evmnet: 'IOTA EVM',
         selectNode: 'Netzwerk auswählen',
         exportKey: 'Private Key exportieren',

@@ -65,9 +65,10 @@ export const reducer = (state, action) => {
             Base[saveFunc]('common.activityData', data)
             break
         case 'walletsList': {
-            const list = (data || []).map((e) => {
+            let list = (data || []).filter((e) => e?.bech32HRP !== 'atoi')
+            list = list.map((e) => {
                 if (!e.nodeId) {
-                    e.nodeId = IotaSDK.nodes.find((d) => d.bech32HRP === e.bech32HRP)?.id
+                    e.nodeId = IotaSDK.nodes.find((d) => d?.bech32HRP === e?.bech32HRP)?.id
                 }
                 return e
             })
@@ -265,7 +266,7 @@ export const useUpdateBalance = () => {
                 decimal,
                 balance: Base.formatNum(balance),
                 realBalance: Number(realBalance),
-                unit: token === 'IOTA' ? 'Mi' : '',
+                unit: curNodeId === 1 ? 'Mi' : '',
                 name: token,
                 contract,
                 assets: Base.formatNum(assets)

@@ -47,7 +47,11 @@ const IotaSDK = {
         {
             id: 1,
             url: 'https://chrysalis-nodes.iota.org',
-            name: I18n.t('account.mainnet'),
+            explorer: 'https://thetangle.org',
+            name: 'IOTA Mainnet',
+            enName: 'IOTA Mainnet',
+            deName: 'IOTA Mainnet',
+            zhName: 'IOTA 主網',
             type: 1,
             mqtt: 'wss://chrysalis-nodes.iota.org:443/mqtt',
             network: 'mainnet',
@@ -56,23 +60,31 @@ const IotaSDK = {
             filterMenuList: [],
             filterAssetsList: [],
             decimal: 6
-        },
-        {
-            id: 2,
-            url: 'https://api.lb-0.h.chrysalis-devnet.iota.cafe',
-            name: I18n.t('account.devnet'),
-            type: 1,
-            mqtt: 'wss://api.lb-0.h.chrysalis-devnet.iota.cafe:443/mqtt',
-            network: 'devnet',
-            bech32HRP: 'atoi',
-            token: 'IOTA',
-            filterMenuList: [],
-            filterAssetsList: [],
-            decimal: 6
         }
+        // {
+        //     id: 2,
+        //     url: 'https://api.lb-0.h.chrysalis-devnet.iota.cafe',
+        //     name: I18n.t('account.devnet'),
+        //     type: 1,
+        //     mqtt: 'wss://api.lb-0.h.chrysalis-devnet.iota.cafe:443/mqtt',
+        //     network: 'devnet',
+        //     bech32HRP: 'atoi',
+        //     token: 'IOTA',
+        //     filterMenuList: [],
+        //     filterAssetsList: [],
+        //     decimal: 6
+        // }
     ],
     get nodes() {
         return this._nodes
+    },
+    changeNodesLang(lang) {
+        this._nodes.forEach((e) => {
+            e.name = e[`${lang}Name`]
+        })
+    },
+    get mnemonicLen() {
+        return this.isWeb3Node ? 12 : 24
     },
     async getNodes() {
         let res = await fetch(`${API_URL}/evm.json?v=${new Date().getTime()}`)
@@ -189,7 +201,7 @@ const IotaSDK = {
     },
     getMnemonic() {
         if (this.isWeb3Node) {
-            return Web3Bip39.generateMnemonic(256)
+            return Web3Bip39.generateMnemonic()
         }
         return Bip39.randomMnemonic()
     },
@@ -200,8 +212,8 @@ const IotaSDK = {
                 reject()
             }
             mnemonic = mnemonic.replace(/ +/g, ' ').toLocaleLowerCase().trim()
-            if (!mnemonic || mnemonic.split(' ').length !== 24) {
-                Base.globalToast.error(I18n.t('account.mnemonicError'))
+            if (!mnemonic || mnemonic.split(' ').length !== this.mnemonicLen) {
+                Base.globalToast.error(I18n.t('account.mnemonicError').replace('{len}', this.mnemonicLen))
                 reject()
             } else {
                 let isChecked = false
@@ -266,7 +278,7 @@ const IotaSDK = {
                             id: uuid,
                             nodeId: this.curNode?.id,
                             seed: this.getLocalSeed(baseSeed, password),
-                            bech32HRP: this.info.bech32HRP
+                            bech32HRP: this.info?.bech32HRP
                         })
                     }
                 }
@@ -290,10 +302,10 @@ const IotaSDK = {
         if (typeof address === 'string') {
             address = Converter.hexToBytes(address)
         }
-        return Bech32Helper.toBech32(ED25519_ADDRESS_TYPE, address, this.info.bech32HRP)
+        return Bech32Helper.toBech32(ED25519_ADDRESS_TYPE, address, this.info?.bech32HRP)
     },
     bech32ToHex(addressHex) {
-        const address = Bech32Helper.fromBech32(addressHex, this.info.bech32HRP)
+        const address = Bech32Helper.fromBech32(addressHex, this.info?.bech32HRP)
         return Converter.bytesToHex(address.addressBytes)
     },
     getBatchBech32Address(baseSeed, accountState, STEP) {
@@ -311,6 +323,9 @@ const IotaSDK = {
     },
     // get all outputids
     async getAllOutputIds(addressList) {
+        if (!this.info || this.isWeb3Node) {
+            return []
+        }
         const res = await Promise.all(
             addressList.map((e) => {
                 return Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${e}`, {
@@ -340,6 +355,9 @@ const IotaSDK = {
             }
             const baseSeed = this.getSeed(seed, password)
             const getAddressList = async (accountState) => {
+                if (!this.info || this.isWeb3Node) {
+                    return
+                }
                 const LIMIT = 1
                 const temAddress = this.getBatchBech32Address(baseSeed, accountState, 20)
                 const addressOutputs = await Promise.all(
@@ -374,6 +392,9 @@ const IotaSDK = {
         }
         const baseSeed = this.getSeed(seed, password)
         const getAddressList = async (accountState) => {
+            if (!this.info || this.isWeb3Node) {
+                return []
+            }
             const temAddress = this.getBatchBech32Address(baseSeed, accountState, 5)
             const addressInfos = await Promise.all(temAddress.map((e) => this.client.address(e)))
             const info = addressInfos.find((e) => e.balance > 0)
@@ -483,9 +504,11 @@ const IotaSDK = {
         const { seed, address, password, nodeId } = fromInfo
         const baseSeed = this.getSeed(seed, password)
         if (this.checkWeb3Node(nodeId)) {
+            const sendAmountHex = this.client.utils.toHex(new BigNumber(sendAmount))
             const eth = this.client.eth
             const nodeInfo = this.nodes.find((e) => e.id === nodeId) || []
-            const blockGasLimit = await eth.getBlock('latest')
+            let blockGasLimit = await eth.getBlock('latest')
+            blockGasLimit = blockGasLimit?.gasLimit || 0
             const gasLimit = nodeInfo?.gasLimit || blockGasLimit || 0
             const gasPrice = await eth.getGasPrice()
             const nonce = await eth.getTransactionCount(address)
@@ -506,7 +529,7 @@ const IotaSDK = {
                     from: address,
                     nonce,
                     gasLimit: contractInfo?.gasLimit || blockGasLimit || 0,
-                    data: web3Contract.methods.transfer(toAddress, this.client.utils.toHex(sendAmount)).encodeABI()
+                    data: web3Contract.methods.transfer(toAddress, sendAmountHex).encodeABI()
                 }
                 if (contractInfo?.maxPriorityFeePerGas) {
                     signData.maxPriorityFeePerGas = contractInfo?.maxPriorityFeePerGas
@@ -517,7 +540,7 @@ const IotaSDK = {
                 } catch (error) {
                     throw error
                 }
-                Trace.transaction('pay', res.transactionHash, address, toAddress, sendAmount)
+                Trace.transaction('pay', res.transactionHash, address, toAddress, sendAmountHex)
             } else {
                 const privateKey = this.getPrivateKey(seed, password)
                 const chainId = await eth.getChainId()
@@ -525,7 +548,7 @@ const IotaSDK = {
                     const signed = await eth.accounts.signTransaction(
                         {
                             to: toAddress,
-                            value: sendAmount,
+                            value: sendAmountHex,
                             from: address,
                             chainId,
                             nonce,
@@ -539,14 +562,14 @@ const IotaSDK = {
                     console.log(error)
                     throw error
                 }
-                Trace.transaction('pay', res.transactionHash, address, toAddress, sendAmount)
+                Trace.transaction('pay', res.transactionHash, address, toAddress, sendAmountHex)
             }
             const logInfo = res?.logs?.[0]
             const logData = {
                 address: logInfo?.address || '0x0000000000000000000000000000000000001010',
                 blockHash: res.blockHash,
                 blockNumber: res.blockNumber,
-                data: logInfo?.data || this.fill64Len(this.client.utils.toHex(sendAmount)),
+                data: logInfo?.data || this.fill64Len(sendAmountHex),
                 id: logInfo?.id || res.transactionHash,
                 logIndex: logInfo?.logIndex || res.transactionIndex,
                 removed: logInfo?.removed || res.status,
@@ -1101,7 +1124,6 @@ const IotaSDK = {
         try {
             address = (address || '').toLocaleLowerCase()
             const logsData = (await Base.getLocalData('web3.logs.data')) || {}
-            console.log(logsData, '+++++++++++++')
             return logsData?.[nodeId]?.[address] || []
         } catch (error) {
             console.log(error)

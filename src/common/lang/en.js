@@ -66,7 +66,7 @@ Sell your data for profit
 This data has been aggregated to meet the requirements of EU Regulation 2016/679 General Data Protection Regulation and is therefore anonymous. For more information about our privacy protection practices, please refer to our privacy policy`,
         start: 'Start',
 
-        mnemonicError: 'There are 24 words in the Mnemonic',
+        mnemonicError: 'There are {len} words in the Mnemonic',
 
         unopen: 'Not yet available',
 
@@ -76,11 +76,12 @@ This data has been aggregated to meet the requirements of EU Regulation 2016/679
         mnemonicOtherError: 'Invalid mnemonic. Please enter the correct mnemonic phrase.',
 
         dearFam: 'Dear IOTA fam,',
-        betaReady: `TanglePay is ready!
-It is a privilege for us to invite you to use it and ask for valuable feedback from you.`,
-        changeTips: 'Please choose the network you want to use first and you can always switch network in Setting.',
-        devnet: 'Chrysalis Devnet',
-        mainnet: 'Chrysalis Mainnet',
+        betaReady: `Welcome to use TanglePay,
+the IOTA token and NFT wallet. Soon we will be able to support Shimmer network and Shimmer EVM all in one wallet interface. Please choose the network first.`,
+        changeTips:
+            'Please choose the network you want to use first and you can always add other network in the wallet.',
+        devnet: 'IOTA Devnet',
+        mainnet: 'IOTA Mainnet',
         evmnet: 'IOTA EVM',
         selectNode: 'Select network',
         exportKey: 'Export Private Key',
