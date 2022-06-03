@@ -73,10 +73,40 @@ const IotaSDK = {
         //     filterMenuList: [],
         //     filterAssetsList: [],
         //     decimal: 6
+        // },
+        // {
+        //     "id": 5,
+        //     "url": "https://evm.wasp.sc.iota.org/",
+        //     "explorer": "https://explorer.wasp.sc.iota.org",
+        //     "name": "IOTA EVM",
+        //     "enName": "IOTA EVM",
+        //     "deName": "IOTA EVM",
+        //     "zhName": "IOTA EVM",
+        //     "type": 2,
+        //     "network": "iota-evm",
+        //     "bech32HRP": "iota",
+        //     "token": "IOTA",
+        //     "filterMenuList": ["apps", "staking"],
+        //     "filterAssetsList": ["stake", "soonaverse"],
+        //     "contractList": [
+        //         {
+        //             "contract": "0x903fE58170A44CF0D0eb5900d26cDedEA802635C",
+        //             "token": "TPT",
+        //             "gasLimit": 0,
+        //             "maxPriorityFeePerGas": 0,
+        //             "isShowZero":true
+        //         }
+        //     ],
+        //     "decimal": 18,
+        //     "gasLimit": 0
         // }
     ],
     get nodes() {
         return this._nodes
+    },
+    _contracAssetsShowDic: {},
+    get contracAssetsShowDic() {
+        return this._contracAssetsShowDic
     },
     changeNodesLang(lang) {
         this._nodes.forEach((e) => {
@@ -94,6 +124,11 @@ const IotaSDK = {
             if (_nodes.find((d) => d.id !== e.id)) {
                 _nodes.push(e)
             }
+            e.contractList.forEach((d) => {
+                if (d.isShowZero) {
+                    this._contracAssetsShowDic[d.contract] = true
+                }
+            })
         })
         this._nodes = _nodes
     },
