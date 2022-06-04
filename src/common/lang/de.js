@@ -96,7 +96,9 @@ Bitte wähle dafür zunächst ein Netzwerk.`,
         showKeyTips:
             'Achtung: Teile deinen Private Key niemals mit anderen Personen. Jeder mit deinem Private Key könnte die Assets von deinem Konto stehlen.',
         done: 'Fertig',
-        viewInExplorer: 'Account im Explorer anzeigen'
+        viewInExplorer: 'Account im Explorer anzeigen',
+        or: 'oder',
+        importDuplicate: 'The account you’re are trying to import is a duplicate'
     },
     assets: {
         myAssets: 'Meine Assets',
@@ -199,7 +201,7 @@ Bitte wähle dafür zunächst ein Netzwerk.`,
         estimatedReceived: 'geschätzte Airdrop-Belohnung',
         airdropsList: 'Airdrops Liste',
         add: 'Hinzufügen',
-        unstake: 'Staking unterbrechen',
+        unstake: 'unterbrechen',
         staked: 'Gestaked',
         enterAmount: 'Anzahl eingeben',
         max: 'Max',

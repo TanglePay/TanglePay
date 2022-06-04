@@ -84,7 +84,9 @@ Going Beyond Blockchain`,
         copyKeyTips: '這是您的私鑰（點擊復製）',
         showKeyTips: '提示：請永遠不要泄漏您的私鑰，任何人擁有您的私鑰就可以控製您的賬戶。',
         done: '已完成',
-        viewInExplorer: '查看explorer'
+        viewInExplorer: '查看explorer',
+        or: '或',
+        importDuplicate: 'The account you’re are trying to import is a duplicate'
     },
     assets: {
         myAssets: '我的資產',

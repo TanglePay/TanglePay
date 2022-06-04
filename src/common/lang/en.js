@@ -91,7 +91,9 @@ the IOTA token and NFT wallet. Soon we will be able to support Shimmer network a
         showKeyTips:
             'Warning: Never disclose this key. Anyone with your private keys can steal any assets held in your account.',
         done: 'Done',
-        viewInExplorer: 'View account in explorer'
+        viewInExplorer: 'View account in explorer',
+        or: 'or',
+        importDuplicate: 'The account you’re are trying to import is a duplicate'
     },
     assets: {
         myAssets: 'My Assets',

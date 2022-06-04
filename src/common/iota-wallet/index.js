@@ -115,8 +115,8 @@ const IotaSDK = {
             })
         }
     },
-    get mnemonicLen() {
-        return this.isWeb3Node ? 12 : 24
+    get mnemonicLenList() {
+        return this.isWeb3Node ? [12, 24] : [24]
     },
     async getNodes() {
         let res = await fetch(`${API_URL}/evm.json?v=${new Date().getTime()}`)
@@ -156,7 +156,6 @@ const IotaSDK = {
             if (this.isWeb3Node) {
                 this.client = new Web3(curNode.url)
                 this.info = this.client
-                window.xxxx = this.client
             } else {
                 this.client = new SingleNodeClient(curNode.url)
                 this.info = await this.client.info()
@@ -243,14 +242,21 @@ const IotaSDK = {
         return Bip39.randomMnemonic()
     },
     async importMnemonic({ mnemonic, name, password }) {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             if (!this.info) {
                 Base.globalToast.error(I18n.t('user.nodeError'))
                 reject()
+                return
             }
             mnemonic = mnemonic.replace(/ +/g, ' ').toLocaleLowerCase().trim()
-            if (!mnemonic || mnemonic.split(' ').length !== this.mnemonicLen) {
-                Base.globalToast.error(I18n.t('account.mnemonicError').replace('{len}', this.mnemonicLen))
+            const mnemonicLen = (mnemonic || '').split(' ').length
+            if (!mnemonic || !this.mnemonicLenList.includes(mnemonicLen)) {
+                Base.globalToast.error(
+                    I18n.t('account.mnemonicError').replace(
+                        '{len}',
+                        this.mnemonicLenList.join(` ${I18n.t('account.or')} `)
+                    )
+                )
                 reject()
             } else {
                 let isChecked = false
@@ -285,6 +291,12 @@ const IotaSDK = {
                         // let publicKey = ethereumjsUtils.bufferToHex(key._hdkey._publicKey)
                         let address = ethereumjsUtils.pubToAddress(key._hdkey._publicKey, true)
                         address = ethereumjsUtils.toChecksumAddress(ethereumjsUtils.bufferToHex(address))
+                        const isDuplicate = await this.checkImport(address)
+                        if (isDuplicate) {
+                            Base.globalToast.error(I18n.t('account.importDuplicate'))
+                            reject()
+                            return
+                        }
                         // const keystore = this.client.eth.accounts.encrypt(privateKey, password)
                         Trace.createWallet(uuid, name, address)
                         resolve({
@@ -305,6 +317,12 @@ const IotaSDK = {
                         const indexEd25519Address = new Ed25519Address(addressKeyPair.publicKey)
                         const indexPublicKeyAddress = indexEd25519Address.toAddress()
                         const bech32Address = this.hexToBech32(indexPublicKeyAddress)
+                        const isDuplicate = await this.checkImport(bech32Address)
+                        if (isDuplicate) {
+                            Base.globalToast.error(I18n.t('account.importDuplicate'))
+                            reject()
+                            return
+                        }
                         Trace.createWallet(uuid, name, bech32Address)
                         // encrypt the seed and save to local storage
                         resolve({
@@ -321,6 +339,10 @@ const IotaSDK = {
                 }
             }
         })
+    },
+    async checkImport(address) {
+        const list = await this.getWalletList()
+        return !!list.find((e) => e.address === address)
     },
     async getWalletList() {
         let list = await Base.getLocalData('common.walletsList')
@@ -566,26 +588,25 @@ const IotaSDK = {
             const nodeInfo = this.nodes.find((e) => e.id === nodeId) || []
             let blockGasLimit = await eth.getBlock('latest')
             blockGasLimit = blockGasLimit?.gasLimit || 0
-            const gasLimit = nodeInfo?.gasLimit || blockGasLimit || 0
+
             const gasPrice = await eth.getGasPrice()
             const nonce = await eth.getTransactionCount(address)
             const { contract, token } = ext || {}
             let res = null
+            const privateKey = this.getPrivateKey(seed, password)
             if (contract) {
                 const contractInfo = (nodeInfo.contractList || []).find((e) => e.token === token)
                 if (!contractInfo) {
                     return Base.globalToast.error('contract error')
                 }
                 const web3Contract = new eth.Contract(tokenAbi, contractInfo.contract)
-                window.web3Contract = web3Contract
-
-                const privateKey = this.getPrivateKey(seed, password)
+                const contractGasLimit = contractInfo?.gasLimit || blockGasLimit || 0
                 const signData = {
                     to: contractInfo.contract,
                     value: '0x00',
                     from: address,
                     nonce,
-                    gasLimit: contractInfo?.gasLimit || blockGasLimit || 0,
+                    gasLimit: Math.min(blockGasLimit, contractGasLimit),
                     data: web3Contract.methods.transfer(toAddress, sendAmountHex).encodeABI()
                 }
                 if (contractInfo?.maxPriorityFeePerGas) {
@@ -599,8 +620,8 @@ const IotaSDK = {
                 }
                 Trace.transaction('pay', res.transactionHash, address, toAddress, sendAmountHex)
             } else {
-                const privateKey = this.getPrivateKey(seed, password)
                 const chainId = await eth.getChainId()
+                const nodeGasLimit = nodeInfo?.gasLimit || blockGasLimit || 0
                 try {
                     const signed = await eth.accounts.signTransaction(
                         {
@@ -609,7 +630,7 @@ const IotaSDK = {
                             from: address,
                             chainId,
                             nonce,
-                            gasLimit,
+                            gasLimit: Math.min(blockGasLimit, nodeGasLimit),
                             gasPrice
                         },
                         privateKey
@@ -1094,6 +1115,44 @@ const IotaSDK = {
     checkWeb3Node(nodeId) {
         return this.nodes.find((e) => e.id == nodeId)?.type == 2
     },
+    async importPrivateKey({ privateKey, name, password }) {
+        return new Promise(async (resolve, reject) => {
+            if (!this.client || !this.isWeb3Node) {
+                Base.globalToast.error(I18n.t('user.nodeError'))
+                reject()
+                return
+            }
+            if (!/^0x/.test(privateKey)) {
+                privateKey = '0x' + privateKey
+            }
+            try {
+                const account = this.client.eth.accounts.privateKeyToAccount(privateKey)
+                const address = account.address
+                const isDuplicate = await this.checkImport(address)
+                if (isDuplicate) {
+                    Base.globalToast.error(I18n.t('account.importDuplicate'))
+                    reject()
+                    return
+                }
+                const seed = this.getSeedFromPrivateKey(privateKey, password)
+                const uuid = Base.guid()
+                Trace.createWallet(uuid, name, address)
+                resolve({
+                    address,
+                    name,
+                    isSelected: true,
+                    password,
+                    id: uuid,
+                    nodeId: this.curNode?.id,
+                    seed: this.getLocalSeed(seed, password),
+                    bech32HRP: this.curNode?.bech32HRP
+                })
+            } catch (error) {
+                Base.globalToast.error(String(error))
+                reject()
+            }
+        })
+    },
     fillAddress(address) {
         address = address.toLocaleLowerCase()
         const padding = new Array(24 + 1).join('0')
@@ -1206,11 +1265,24 @@ const IotaSDK = {
     },
     //get evm privatekey
     getPrivateKey(seed, password) {
-        const baseSeed = this.getSeed(seed, password)
-        const hdWallet = ethereumjsHdkey.fromMasterSeed(baseSeed?._secretKey)
-        const key = hdWallet.derivePath("m/44'/60'/0'/0/0")
-        let privateKey = ethereumjsUtils.bufferToHex(key._hdkey._privateKey)
-        return privateKey
+        let baseSeed = this.getSeed(seed, password)
+        baseSeed = baseSeed?._secretKey
+        const passwordHex = ethereumjsUtils.fromUtf8(password).replace('0x', '')
+        let hex = ethereumjsUtils.bufferToHex(baseSeed)
+        const re = new RegExp(passwordHex + '$')
+        if (re.test(hex)) {
+            return hex.replace(re, '')
+        } else {
+            const hdWallet = ethereumjsHdkey.fromMasterSeed(baseSeed)
+            const key = hdWallet.derivePath("m/44'/60'/0'/0/0")
+            let privateKey = ethereumjsUtils.bufferToHex(key._hdkey._privateKey)
+            return privateKey
+        }
+    },
+    getSeedFromPrivateKey(privateKey, password) {
+        const passwordHex = ethereumjsUtils.fromUtf8(password).replace('0x', '')
+        const buffer = ethereumjsUtils.toBuffer(`${privateKey}${passwordHex}`)
+        return buffer
     },
     async getContractAssets(nodeId, address) {
         const nodeInfo = this.nodes.find((e) => e.id === nodeId)
