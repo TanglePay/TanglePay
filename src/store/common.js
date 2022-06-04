@@ -589,7 +589,7 @@ export const useGetAssetsList = (curWallet) => {
         if (IotaSDK.checkWeb3Node(newCurWallet.nodeId)) {
             IotaSDK?.client?.eth && (IotaSDK.client.eth.defaultAccount = curAddress)
         }
-        IotaSDK.getValidAddresses(newCurWallet).then(({ addressList, requestAddress }) => {
+        IotaSDK.getValidAddresses(newCurWallet).then(({ addressList, outputIds }) => {
             // if(requestAddress !== newCurWallet.address){
             //     return;
             // }
@@ -618,15 +618,15 @@ export const useGetAssetsList = (curWallet) => {
                         updateHisList([], newCurWallet)
                     })
             } else {
-                IotaSDK.getAllOutputIds(addressList).then((outputList) => {
-                    IotaSDK.getHisList(outputList, newCurWallet)
-                        .then((activityList) => {
-                            updateHisList(activityList, newCurWallet)
-                        })
-                        .catch(() => {
-                            updateHisList([], newCurWallet)
-                        })
-                })
+                // IotaSDK.getAllOutputIds(addressList).then((outputList) => {
+                IotaSDK.getHisList(outputIds, newCurWallet)
+                    .then((activityList) => {
+                        updateHisList(activityList, newCurWallet)
+                    })
+                    .catch(() => {
+                        updateHisList([], newCurWallet)
+                    })
+                // })
                 // Sync stake rewards
                 IotaSDK.getAddressListRewards(addressList)
                     .then((dic) => {

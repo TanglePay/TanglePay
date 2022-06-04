@@ -369,16 +369,20 @@ const IotaSDK = {
             })
         )
         let list = []
-        res.forEach((e) => {
+        let outputs = []
+        res.forEach((e, i) => {
             const addressOutputIds = e?.addressOutputIds || []
             const historicAddressOutputIds = e?.historicAddressOutputIds || []
-            list = [...list, ...addressOutputIds, ...historicAddressOutputIds]
+            const ids = [...addressOutputIds, ...historicAddressOutputIds]
+            list = [...list, ...ids]
+            outputs[i] = ids
         })
-        return list
+        return { list, outputs }
     },
     async getValidAddresses({ seed, password, address, nodeId }) {
         if (!seed) return []
         let addressList = []
+        let outputIds = []
         if (this.checkWeb3Node(nodeId)) {
             addressList = [address]
         } else {
@@ -395,16 +399,32 @@ const IotaSDK = {
                 }
                 const LIMIT = 1
                 const temAddress = this.getBatchBech32Address(baseSeed, accountState, 20)
-                const addressOutputs = await Promise.all(
-                    temAddress.map((e) => this.client.addressOutputs(e, undefined, true))
-                )
+                // const addressOutputs = await Promise.all(
+                //     temAddress.map((e) => this.client.addressOutputs(e, undefined, true))
+                // )
+                // let flag = false
+                // temAddress.forEach((e, i) => {
+                //     const { outputIds } = addressOutputs[i]
+                //     if (!!outputIds.length) {
+                //         if (!addressList.includes(e)) {
+                //             addressList.push(e)
+                //         }
+                //         flag = true
+                //     }
+                // })
                 let flag = false
+                let addressOutputs = await this.getAllOutputIds(temAddress)
+                addressOutputs = addressOutputs?.outputs || []
                 temAddress.forEach((e, i) => {
-                    const { outputIds } = addressOutputs[i]
-                    if (!!outputIds.length) {
+                    if (addressOutputs[i].length > 0) {
                         if (!addressList.includes(e)) {
                             addressList.push(e)
                         }
+                        addressOutputs[i].forEach((c) => {
+                            if (!outputIds.includes(c)) {
+                                outputIds.push(c)
+                            }
+                        })
                         flag = true
                     }
                 })
@@ -417,7 +437,7 @@ const IotaSDK = {
             }
             await getAddressList(accountState)
         }
-        return { addressList, requestAddress: address }
+        return { addressList, requestAddress: address, outputIds }
     },
     async getBalanceAddress({ seed, password }) {
         const accountState = {
