@@ -109,9 +109,11 @@ const IotaSDK = {
         return this._contracAssetsShowDic
     },
     changeNodesLang(lang) {
-        this._nodes.forEach((e) => {
-            e.name = e[`${lang}Name`]
-        })
+        if (lang && lang > 0) {
+            this._nodes.forEach((e) => {
+                e.name = e[`${lang}Name`]
+            })
+        }
     },
     get mnemonicLen() {
         return this.isWeb3Node ? 12 : 24
