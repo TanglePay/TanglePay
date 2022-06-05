@@ -86,7 +86,9 @@ Going Beyond Blockchain`,
         done: '已完成',
         viewInExplorer: '查看explorer',
         or: '或',
-        importDuplicate: 'The account you’re are trying to import is a duplicate'
+        importDuplicate: '该钱包已完成导入',
+        privateKeyImport: '私钥导入',
+        inputPrivateKey: '请填入私钥'
     },
     assets: {
         myAssets: '我的資產',

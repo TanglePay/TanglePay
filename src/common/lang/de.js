@@ -5,9 +5,9 @@ const DE = {
 Weit mehr als eine Blockchain`,
         create: 'Erstelle eine neue Wallet',
         hasWallet: 'Ich habe bereits eine Wallet',
-        intoTitle1: 'Wiederherstellungsphrase (24 Wörter) importieren',
+        intoTitle1: 'Wiederherstellungsphrase importieren',
         intoTitle2: 'Stronghold Backup importieren',
-        mnemonicTips: 'Lass zwischen den 24 Wörtern jeweils ein Leerzeichen frei',
+        mnemonicTips: 'Lass zwischen den Wörtern jeweils ein Leerzeichen frei',
         intoSelectFile: 'Wähle eine .Stronghold Datei',
         intoName: 'Gib der Wallet einen Namen ',
         intoNameTips: 'Bitte gib einen Namen ein ',
@@ -98,7 +98,9 @@ Bitte wähle dafür zunächst ein Netzwerk.`,
         done: 'Fertig',
         viewInExplorer: 'Account im Explorer anzeigen',
         or: 'oder',
-        importDuplicate: 'The account you’re are trying to import is a duplicate'
+        importDuplicate: 'Diese Wallet existiert bereits',
+        privateKeyImport: 'Private Key importieren',
+        inputPrivateKey: 'Bitte gib deinen Private Key ein'
     },
     assets: {
         myAssets: 'Meine Assets',

@@ -93,7 +93,9 @@ the IOTA token and NFT wallet. Soon we will be able to support Shimmer network a
         done: 'Done',
         viewInExplorer: 'View account in explorer',
         or: 'or',
-        importDuplicate: 'The account you’re are trying to import is a duplicate'
+        importDuplicate: 'The wallet was already imported',
+        privateKeyImport: 'Import Private Key',
+        inputPrivateKey: 'Please enter your private key'
     },
     assets: {
         myAssets: 'My Assets',

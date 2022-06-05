@@ -119,20 +119,24 @@ const IotaSDK = {
         return this.isWeb3Node ? [12, 24] : [24]
     },
     async getNodes() {
-        let res = await fetch(`${API_URL}/evm.json?v=${new Date().getTime()}`)
-        res = await res.json()
-        const _nodes = this._nodes
-        res.forEach((e) => {
-            if (_nodes.find((d) => d.id !== e.id)) {
-                _nodes.push(e)
-            }
-            e.contractList.forEach((d) => {
-                if (d.isShowZero) {
-                    this._contracAssetsShowDic[d.contract] = true
+        try {
+            let res = await fetch(`${API_URL}/evm.json?v=${new Date().getTime()}`)
+            res = await res.json()
+            const _nodes = this._nodes
+            res.forEach((e) => {
+                if (_nodes.find((d) => d.id !== e.id)) {
+                    _nodes.push(e)
                 }
+                e.contractList.forEach((d) => {
+                    if (d.isShowZero) {
+                        this._contracAssetsShowDic[d.contract] = true
+                    }
+                })
             })
-        })
-        this._nodes = _nodes
+            this._nodes = _nodes
+        } catch (error) {
+            console.log(error)
+        }
     },
     hasStake(nodeId) {
         return !(this.nodes.find((e) => e.id === nodeId)?.filterAssetsList || []).includes('stake')
@@ -156,6 +160,7 @@ const IotaSDK = {
             if (this.isWeb3Node) {
                 this.client = new Web3(curNode.url)
                 this.info = this.client
+                window.xxxx = this.client
             } else {
                 this.client = new SingleNodeClient(curNode.url)
                 this.info = await this.client.info()
@@ -345,12 +350,16 @@ const IotaSDK = {
         return !!list.find((e) => e.address === address)
     },
     async getWalletList() {
-        let list = await Base.getLocalData('common.walletsList')
+        let list = []
+        const key = 'common.walletsList'
         if (Base.isBrowser) {
+            list = (await Base.getLocalData(key)) || []
             const bg = window?.chrome?.extension?.getBackgroundPage()
             if (bg) {
-                list = bg.getBackgroundData('common.walletsList') || list
+                list = bg.getBackgroundData(key) || list
             }
+        } else {
+            list = (await Base.getSensitiveInfo(key)) || []
         }
         return list
     },
@@ -576,6 +585,28 @@ const IotaSDK = {
         const seed = this.getSeed(oldSeed, old)
         return this.getLocalSeed(seed, password)
     },
+    async getGasLimit(configLimit, address, sendAmount) {
+        const eth = this.client.eth
+        let blockLimit = await eth.getBlock('latest')
+        blockLimit = blockLimit?.gasLimit || 0
+        configLimit = configLimit || blockLimit || 0
+        const gasPrice = await eth.getGasPrice()
+        const configFee = new BigNumber(gasPrice).times(configLimit)
+        const blockFee = new BigNumber(gasPrice).times(blockLimit)
+        let balance = await this.client.eth.getBalance(address)
+        balance = new BigNumber(balance)
+        sendAmount = new BigNumber(sendAmount)
+        const configResidue = Number(balance.minus(sendAmount).minus(configFee))
+        const blockResidue = Number(balance.minus(sendAmount).minus(blockFee))
+        if (configResidue <= 0) {
+            return { gasLimit: -1, gasPrice }
+        } else if (blockResidue > 0) {
+            return { gasLimit: blockLimit, gasPrice }
+        } else {
+            const gasLimit = parseInt(Number(balance.minus(sendAmount).div(gasPrice)))
+            return { gasLimit, gasPrice }
+        }
+    },
     async send(fromInfo, toAddress, sendAmount, ext) {
         if (!this.client) {
             return Base.globalToast.error(I18n.t('user.nodeError'))
@@ -586,10 +617,7 @@ const IotaSDK = {
             const sendAmountHex = this.client.utils.toHex(new BigNumber(sendAmount))
             const eth = this.client.eth
             const nodeInfo = this.nodes.find((e) => e.id === nodeId) || []
-            let blockGasLimit = await eth.getBlock('latest')
-            blockGasLimit = blockGasLimit?.gasLimit || 0
 
-            const gasPrice = await eth.getGasPrice()
             const nonce = await eth.getTransactionCount(address)
             const { contract, token } = ext || {}
             let res = null
@@ -600,13 +628,18 @@ const IotaSDK = {
                     return Base.globalToast.error('contract error')
                 }
                 const web3Contract = new eth.Contract(tokenAbi, contractInfo.contract)
-                const contractGasLimit = contractInfo?.gasLimit || blockGasLimit || 0
+                const contractGasLimit = contractInfo?.gasLimit
+                const { gasLimit } = await this.getGasLimit(contractGasLimit, address, 0)
+                if (gasLimit === -1) {
+                    return Base.globalToast.error(I18n.t('assets.balanceError'))
+                }
+                // const estimatePrice = this.client.utils
                 const signData = {
                     to: contractInfo.contract,
                     value: '0x00',
                     from: address,
                     nonce,
-                    gasLimit: Math.min(blockGasLimit, contractGasLimit),
+                    gasLimit,
                     data: web3Contract.methods.transfer(toAddress, sendAmountHex).encodeABI()
                 }
                 if (contractInfo?.maxPriorityFeePerGas) {
@@ -621,7 +654,11 @@ const IotaSDK = {
                 Trace.transaction('pay', res.transactionHash, address, toAddress, sendAmountHex)
             } else {
                 const chainId = await eth.getChainId()
-                const nodeGasLimit = nodeInfo?.gasLimit || blockGasLimit || 0
+                const nodeGasLimit = nodeInfo?.gasLimit
+                const { gasLimit, gasPrice } = await this.getGasLimit(nodeGasLimit, address, sendAmount)
+                if (gasLimit === -1) {
+                    return Base.globalToast.error(I18n.t('assets.balanceError'))
+                }
                 try {
                     const signed = await eth.accounts.signTransaction(
                         {
@@ -630,7 +667,7 @@ const IotaSDK = {
                             from: address,
                             chainId,
                             nonce,
-                            gasLimit: Math.min(blockGasLimit, nodeGasLimit),
+                            gasLimit,
                             gasPrice
                         },
                         privateKey
@@ -1122,6 +1159,7 @@ const IotaSDK = {
                 reject()
                 return
             }
+            privateKey = privateKey.replace(/\ +/g, '').replace(/[\r\n]/g, '')
             if (!/^0x/.test(privateKey)) {
                 privateKey = '0x' + privateKey
             }
