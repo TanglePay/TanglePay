@@ -12,6 +12,7 @@ import _chunk from 'lodash/chunk'
 import BigNumber from 'bignumber.js'
 import { convertUnits } from '@iota/unit-converter'
 import _uniqWith from 'lodash/uniqWith'
+import _uniqBy from 'lodash/uniqBy'
 import _isEqual from 'lodash/isEqual'
 import { Soon } from 'soonaverse'
 import _flatten from 'lodash/flatten'
@@ -1090,14 +1091,15 @@ const IotaSDK = {
             return false
         }
         let signRes = null
+        const { seed, password } = wallet
         if (this.checkWeb3Node(wallet.nodeId)) {
             if (!this.client?.eth) {
                 return false
             }
             const privateKey = this.getPrivateKey(seed, password)
             signRes = await this.client.eth.accounts.sign(content, privateKey)
+            signRes = signRes.messageHash
         } else {
-            const { seed, password } = wallet
             const baseSeed = this.getSeed(seed, password)
             const addressKeyPair = this.getPair(baseSeed)
             signRes = Ed25519.sign(addressKeyPair.privateKey, Converter.utf8ToBytes(content))
@@ -1292,6 +1294,7 @@ const IotaSDK = {
             })
             const newList = await this.changeLogData(address, nodeId, list)
             oldList = [...oldList, ...newList]
+            oldList = _uniqBy(oldList, 'transactionHash')
             oldList.sort((a, b) => b.timestamp - a.timestamp)
             const logsData = (await Base.getLocalData('web3.logs.data')) || {}
             logsData[nodeId] = logsData[nodeId] || {}
