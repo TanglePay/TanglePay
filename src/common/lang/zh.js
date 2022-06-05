@@ -86,9 +86,9 @@ Going Beyond Blockchain`,
         done: '已完成',
         viewInExplorer: '查看explorer',
         or: '或',
-        importDuplicate: '该钱包已完成导入',
-        privateKeyImport: '私钥导入',
-        inputPrivateKey: '请填入私钥'
+        importDuplicate: '該錢包已完成導入',
+        privateKeyImport: '私鑰導入',
+        inputPrivateKey: '請填入私鑰'
     },
     assets: {
         myAssets: '我的資產',
