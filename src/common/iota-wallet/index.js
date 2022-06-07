@@ -161,7 +161,11 @@ const IotaSDK = {
             if (this.isWeb3Node) {
                 this.client = new Web3(curNode.url)
                 this.info = this.client
-                window.xxxx = this.client
+                if (this.client?.eth) {
+                    this.client.eth.getChainId().catch(() => {
+                        Base.globalToast.error(I18n.t('user.nodeError'))
+                    })
+                }
             } else {
                 this.client = new SingleNodeClient(curNode.url)
                 this.info = await this.client.info()
@@ -604,9 +608,22 @@ const IotaSDK = {
         } else if (blockResidue > 0) {
             return { gasLimit: blockLimit, gasPrice }
         } else {
-            const gasLimit = parseInt(Number(balance.minus(sendAmount).div(gasPrice)))
+            let gasLimit = parseInt(Number(balance.minus(sendAmount).div(gasPrice)))
+            gasLimit = Math.max(gasLimit, configLimit)
             return { gasLimit, gasPrice }
         }
+    },
+    getNumberStr(num) {
+        num = String(num)
+        if (/e-/.test(num)) {
+            num = Number(num)
+            var m = num.toExponential().match(/\d(?:\.(\d*))?e([+-]\d+)/)
+            return num.toFixed(Math.max(0, (m[1] || '').length - m[2]))
+        } else if (/e\+/.test(num)) {
+            num = Number(num)
+            return num.toLocaleString('fullwide', { useGrouping: false })
+        }
+        return num
     },
     async send(fromInfo, toAddress, sendAmount, ext) {
         if (!this.client) {
@@ -615,7 +632,8 @@ const IotaSDK = {
         const { seed, address, password, nodeId } = fromInfo
         const baseSeed = this.getSeed(seed, password)
         if (this.checkWeb3Node(nodeId)) {
-            const sendAmountHex = this.client.utils.toHex(new BigNumber(sendAmount))
+            let sendAmountHex = this.getNumberStr(sendAmount)
+            sendAmountHex = this.client.utils.toHex(sendAmountHex)
             const eth = this.client.eth
             const nodeInfo = this.nodes.find((e) => e.id === nodeId) || []
 
@@ -673,6 +691,7 @@ const IotaSDK = {
                         },
                         privateKey
                     )
+                    console.log(signed, 'XXXXXXXX')
                     res = await eth.sendSignedTransaction(signed.rawTransaction)
                 } catch (error) {
                     console.log(error)
@@ -1308,7 +1327,10 @@ const IotaSDK = {
     getPrivateKey(seed, password) {
         let baseSeed = this.getSeed(seed, password)
         baseSeed = baseSeed?._secretKey
-        const passwordHex = ethereumjsUtils.fromUtf8(password).replace('0x', '')
+        let passwordHex = ethereumjsUtils.fromUtf8(password).replace(/^0x/, '')
+        if (passwordHex.length % 2) {
+            passwordHex += '0'
+        }
         let hex = ethereumjsUtils.bufferToHex(baseSeed)
         const re = new RegExp(passwordHex + '$')
         if (re.test(hex)) {
@@ -1321,7 +1343,10 @@ const IotaSDK = {
         }
     },
     getSeedFromPrivateKey(privateKey, password) {
-        const passwordHex = ethereumjsUtils.fromUtf8(password).replace('0x', '')
+        let passwordHex = ethereumjsUtils.fromUtf8(password).replace(/^0x/, '')
+        if (passwordHex.length % 2) {
+            passwordHex += '0'
+        }
         const buffer = ethereumjsUtils.toBuffer(`${privateKey}${passwordHex}`)
         return buffer
     },

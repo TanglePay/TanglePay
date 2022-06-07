@@ -175,6 +175,9 @@ export const useChangeNode = () => {
                 if (IotaSDK.checkWeb3Node(e.nodeId) && IotaSDK.checkWeb3Node(id)) {
                     e.nodeId = id
                 }
+                if (e.isSelected && e.nodeId !== id) {
+                    e.isSelected = false
+                }
                 return e
             })
             dispatch({
