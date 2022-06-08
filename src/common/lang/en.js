@@ -7,7 +7,7 @@ Going Beyond Blockchain`,
         hasWallet: 'Already have a wallet',
         intoTitle1: 'Mnemonic Import',
         intoTitle2: 'Backup File Import',
-        mnemonicTips: 'Enter mnemonic phrases seprated by spaces',
+        mnemonicTips: 'Enter mnemonic phrases SEPARATED by spaces',
         intoSelectFile: 'Select the stronghold file',
         intoName: 'Set wallet name ',
         intoNameTips: 'Please enter a name ',
@@ -66,7 +66,7 @@ Sell your data for profit
 This data has been aggregated to meet the requirements of EU Regulation 2016/679 General Data Protection Regulation and is therefore anonymous. For more information about our privacy protection practices, please refer to our privacy policy`,
         start: 'Start',
 
-        mnemonicError: 'There are 24 words in the Mnemonic',
+        mnemonicError: 'There are {len} words in the Mnemonic',
 
         unopen: 'Not yet available',
 
@@ -76,11 +76,26 @@ This data has been aggregated to meet the requirements of EU Regulation 2016/679
         mnemonicOtherError: 'Invalid mnemonic. Please enter the correct mnemonic phrase.',
 
         dearFam: 'Dear IOTA fam,',
-        betaReady: `TanglePay is ready!
-It is a privilege for us to invite you to use it and ask for valuable feedback from you.`,
-        changeTips: 'Please choose the network you want to use first and you can always switch network in Setting.',
-        devnet: 'Chrysalis devnet',
-        mainnet: 'Chrysalis mainnet'
+        betaReady: `Welcome to use TanglePay,
+the IOTA token and NFT wallet. Soon we will be able to support Shimmer network and Shimmer EVM all in one wallet interface. Please choose the network first.`,
+        changeTips:
+            'Please choose the network you want to use first and you can always add other network in the wallet.',
+        devnet: 'IOTA Devnet',
+        mainnet: 'IOTA Mainnet',
+        evmnet: 'IOTA EVM',
+        selectNode: 'Select network',
+        exportKey: 'Export Private Key',
+        showKey: 'Show Private Keys',
+        showKeyInputPassword: 'Type your {name} password',
+        copyKeyTips: 'This is your private key (click to copy)',
+        showKeyTips:
+            'Warning: Never disclose this key. Anyone with your private keys can steal any assets held in your account.',
+        done: 'Done',
+        viewInExplorer: 'View account in explorer',
+        or: 'or',
+        importDuplicate: 'The wallet was already imported',
+        privateKeyImport: 'Import Private Key',
+        inputPrivateKey: 'Please enter your private key'
     },
     assets: {
         myAssets: 'My Assets',
@@ -117,7 +132,8 @@ It is a privilege for us to invite you to use it and ask for valuable feedback f
 
         noWallet: 'You have not yet added a wallet',
 
-        sendSucc: 'Transaction succeeded. Please remember to restake.',
+        sendSucc: 'Transaction succeeded.',
+        sendSuccRestake: 'Transaction succeeded. Please remember to restake.',
         sendError: "Transaction failed. Please check the receiver's address",
         passwordError: 'Please enter the password correctly.',
         balanceError: 'Insufficient balance.',
@@ -205,14 +221,28 @@ encrypleted backup of your wallet and latest transaction history`,
         sendFor: 'for ',
         send: `Payment request #merchant# #item_desc# to the following address,
 #address#
-The payment amount is #amount# MIOTA.
+The payment amount is #amount# #unit#.
 Please enter your password to complete the payment.`,
         sign: `Signature Request #merchant#
 You are signing:
 #content#`,
         execute: 'Confirm',
         cancel: 'Cancel',
-        signLabel: 'TanglePay.Sign'
+        signLabel: 'TanglePay.Sign',
+        connect: `#origin#
+Connect to
+#address#
+Allow the site to: See address, account balance
+`,
+        ConnectBtn: 'Connect'
+    },
+    nft: {
+        collectibles: 'Collectibles',
+        zeroTips: 'You have no {name} ',
+        clearCache: 'Clear your cache',
+        goBuy: 'Get one',
+        permissions: 'Please allow TanglePay to save NFT picture on your phone.',
+        saved: 'Saved.'
     }
 }
 
