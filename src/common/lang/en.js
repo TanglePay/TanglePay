@@ -132,7 +132,8 @@ the IOTA token and NFT wallet. Soon we will be able to support Shimmer network a
 
         noWallet: 'You have not yet added a wallet',
 
-        sendSucc: 'Transaction succeeded. Please remember to restake.',
+        sendSucc: 'Transaction succeeded.',
+        sendSuccRestake: 'Transaction succeeded. Please remember to restake.',
         sendError: "Transaction failed. Please check the receiver's address",
         passwordError: 'Please enter the password correctly.',
         balanceError: 'Insufficient balance.',
