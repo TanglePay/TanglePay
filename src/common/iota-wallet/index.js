@@ -474,6 +474,14 @@ const IotaSDK = {
                 }
             }
             await getAddressList(accountState)
+            if (addressList.length > 0) {
+                this._collectionList = {}
+                await Promise.all(
+                    addressList.map((e) => {
+                        return this.collectionOuttputByAddress(e, { seed, password, address, nodeId })
+                    })
+                )
+            }
         }
         return { addressList, requestAddress: address, outputIds }
     },
@@ -625,6 +633,39 @@ const IotaSDK = {
         }
         return num
     },
+    _collectionList: [],
+    async collectionOuttputByAddress(address, curWallet) {
+        if (this.client) {
+            let res = await this.client.addressOutputs(address)
+            const limit = 100
+            let outputIds = res.outputIds.filter((e) => !this._collectionList[e])
+            if (outputIds.length >= limit) {
+                let outputsRes = await Promise.all(
+                    outputIds.map((e) => {
+                        return this.client.output(e)
+                    })
+                )
+                let outputs = []
+                let ids = []
+                outputsRes.forEach((e, i) => {
+                    if (!e.isSpent && e.output.amount > 0) {
+                        outputs.push(e)
+                        ids.push(outputIds[i])
+                    }
+                })
+                if (outputs.length >= limit) {
+                    outputs = outputs.slice(0, limit)
+                    ids.slice(0, limit).forEach((e) => (this._collectionList[e] = true))
+                    let amount = BigNumber(0)
+                    outputs.forEach((e) => {
+                        amount = amount.plus(e.output.amount)
+                    })
+                    await this.send(curWallet, curWallet.address, Number(amount), { isCollection: true })
+                    await this.collectionOuttputByAddress(address, curWallet)
+                }
+            }
+        }
+    },
     async send(fromInfo, toAddress, sendAmount, ext) {
         if (!this.client) {
             return Base.globalToast.error(I18n.t('user.nodeError'))
@@ -741,7 +782,8 @@ const IotaSDK = {
                             JSON.stringify({
                                 from: address, //main address
                                 to: toAddress,
-                                amount: sendAmount
+                                amount: sendAmount,
+                                collection: ext?.isCollection ? 1 : 0
                             })
                         )
                     },

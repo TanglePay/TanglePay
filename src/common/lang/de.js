@@ -100,7 +100,15 @@ Bitte wähle dafür zunächst ein Netzwerk.`,
         or: 'oder',
         importDuplicate: 'Diese Wallet existiert bereits',
         privateKeyImport: 'Private Key importieren',
-        inputPrivateKey: 'Bitte gib deinen Private Key ein'
+        inputPrivateKey: 'Bitte gib deinen Private Key ein',
+        removeTitle: 'Remove Wallet',
+        removeTips: `This wallet will be removed from your device.
+Please make sure you have the original
+Secret Recovery Phrase or private key for this wallet before continuing.`,
+        removeName: 'Name',
+        removeAddress: 'Address',
+        nevermind: 'Nevermind',
+        remove: 'Remove'
     },
     assets: {
         myAssets: 'Meine Assets',
@@ -248,6 +256,11 @@ Erlaube der Seite: Adressen und Kontostände einsehen
         goBuy: 'Jetzt kaufen!',
         permissions: 'Bitte erlaube TanglePay Dateien und Medien von deinen NFT auf deinem Gerät zu speichern.',
         saved: 'Gespeichert.'
+    },
+    discover: {
+        title: 'Discover',
+        buyIota: 'Buy iota',
+        addressCopy: 'Address copied'
     }
 }
 

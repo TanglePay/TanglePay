@@ -88,7 +88,15 @@ Going Beyond Blockchain`,
         or: '或',
         importDuplicate: '該錢包已完成導入',
         privateKeyImport: '私鑰導入',
-        inputPrivateKey: '請填入私鑰'
+        inputPrivateKey: '請填入私鑰',
+        removeTitle: 'Remove Wallet',
+        removeTips: `This wallet will be removed from your device.
+Please make sure you have the original
+Secret Recovery Phrase or private key for this wallet before continuing.`,
+        removeName: 'Name',
+        removeAddress: 'Address',
+        nevermind: 'Nevermind',
+        remove: 'Remove'
     },
     assets: {
         myAssets: '我的資產',
@@ -236,6 +244,11 @@ Going Beyond Blockchain`,
         goBuy: '去購買',
         permissions: '請允許TanglePay保存NFT圖片到您的相冊',
         saved: '保存成功'
+    },
+    discover: {
+        title: 'Discover',
+        buyIota: 'Buy iota',
+        addressCopy: 'Address copied'
     }
 }
 

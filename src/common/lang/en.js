@@ -95,7 +95,15 @@ the IOTA token and NFT wallet. Soon we will be able to support Shimmer network a
         or: 'or',
         importDuplicate: 'The wallet was already imported',
         privateKeyImport: 'Import Private Key',
-        inputPrivateKey: 'Please enter your private key'
+        inputPrivateKey: 'Please enter your private key',
+        removeTitle: 'Remove Wallet',
+        removeTips: `This wallet will be removed from your device.
+Please make sure you have the original
+Secret Recovery Phrase or private key for this wallet before continuing.`,
+        removeName: 'Name',
+        removeAddress: 'Address',
+        nevermind: 'Nevermind',
+        remove: 'Remove'
     },
     assets: {
         myAssets: 'My Assets',
@@ -243,6 +251,11 @@ Allow the site to: See address, account balance
         goBuy: 'Get one',
         permissions: 'Please allow TanglePay to save NFT picture on your phone.',
         saved: 'Saved.'
+    },
+    discover: {
+        title: 'Discover',
+        buyIota: 'Buy iota',
+        addressCopy: 'Address copied'
     }
 }
 
