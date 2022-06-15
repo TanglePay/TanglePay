@@ -244,9 +244,9 @@ Going Beyond Blockchain`,
         saved: '保存成功'
     },
     discover: {
-        title: '发现',
-        buyIota: '购买IOTA',
-        addressCopy: '地址已复制'
+        title: '發現',
+        buyIota: '購買IOTA',
+        addressCopy: '地址已復製'
     }
 }
 
