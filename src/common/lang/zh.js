@@ -89,14 +89,12 @@ Going Beyond Blockchain`,
         importDuplicate: '該錢包已完成導入',
         privateKeyImport: '私鑰導入',
         inputPrivateKey: '請填入私鑰',
-        removeTitle: 'Remove Wallet',
-        removeTips: `This wallet will be removed from your device.
-Please make sure you have the original
-Secret Recovery Phrase or private key for this wallet before continuing.`,
-        removeName: 'Name',
-        removeAddress: 'Address',
-        nevermind: 'Nevermind',
-        remove: 'Remove'
+        removeTitle: '移除錢包',
+        removeTips: `該錢包將會從您的設備中移除。請確保您已經將助記詞或私鑰妥善保管。`,
+        removeName: '賬戶名',
+        removeAddress: '地址',
+        nevermind: '取消',
+        remove: '移除'
     },
     assets: {
         myAssets: '我的資產',
@@ -246,9 +244,9 @@ Secret Recovery Phrase or private key for this wallet before continuing.`,
         saved: '保存成功'
     },
     discover: {
-        title: 'Discover',
-        buyIota: 'Buy iota',
-        addressCopy: 'Address copied'
+        title: '发现',
+        buyIota: '购买IOTA',
+        addressCopy: '地址已复制'
     }
 }
 

@@ -102,7 +102,7 @@ Please make sure you have the original
 Secret Recovery Phrase or private key for this wallet before continuing.`,
         removeName: 'Name',
         removeAddress: 'Address',
-        nevermind: 'Nevermind',
+        nevermind: 'Cancel',
         remove: 'Remove'
     },
     assets: {
@@ -254,7 +254,7 @@ Allow the site to: See address, account balance
     },
     discover: {
         title: 'Discover',
-        buyIota: 'Buy iota',
+        buyIota: 'Buy IOTA',
         addressCopy: 'Address copied'
     }
 }

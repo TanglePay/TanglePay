@@ -474,14 +474,14 @@ const IotaSDK = {
                 }
             }
             await getAddressList(accountState)
-            if (addressList.length > 0) {
-                this._collectionList = {}
-                await Promise.all(
-                    addressList.map((e) => {
-                        return this.collectionOuttputByAddress(e, { seed, password, address, nodeId })
-                    })
-                )
-            }
+            // if (addressList.length > 0) {
+            //     this._collectionList = {}
+            //     await Promise.all(
+            //         addressList.map((e) => {
+            //             return this.collectionOuttputByAddress(e, { seed, password, address, nodeId })
+            //         })
+            //     )
+            // }
         }
         return { addressList, requestAddress: address, outputIds }
     },

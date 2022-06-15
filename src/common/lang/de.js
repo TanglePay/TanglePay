@@ -101,14 +101,14 @@ Bitte wähle dafür zunächst ein Netzwerk.`,
         importDuplicate: 'Diese Wallet existiert bereits',
         privateKeyImport: 'Private Key importieren',
         inputPrivateKey: 'Bitte gib deinen Private Key ein',
-        removeTitle: 'Remove Wallet',
-        removeTips: `This wallet will be removed from your device.
-Please make sure you have the original
-Secret Recovery Phrase or private key for this wallet before continuing.`,
+        removeTitle: 'Wallet entfernen',
+        removeTips: `Diese Wallet wird von deinem Gerät entfernt.
+Bitte stelle sicher, dass du im Besitz der dazugehörigen
+Wiederherstellungsphrase oder des Private Keys bist, bevor du fortfährst.`,
         removeName: 'Name',
         removeAddress: 'Address',
-        nevermind: 'Nevermind',
-        remove: 'Remove'
+        nevermind: 'Abort',
+        remove: 'Entfernen'
     },
     assets: {
         myAssets: 'Meine Assets',
@@ -258,9 +258,9 @@ Erlaube der Seite: Adressen und Kontostände einsehen
         saved: 'Gespeichert.'
     },
     discover: {
-        title: 'Discover',
-        buyIota: 'Buy iota',
-        addressCopy: 'Address copied'
+        title: 'Entdecken',
+        buyIota: 'IOTA kaufen',
+        addressCopy: 'Adresse kopiert'
     }
 }
 
