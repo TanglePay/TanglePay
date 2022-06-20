@@ -94,6 +94,19 @@ export const reducer = (state, action) => {
     return { ...state, [type]: data }
 }
 
+export const useRemoveWallet = () => {
+    const { store, dispatch } = useContext(StoreContext)
+    const removeWallet = (id) => {
+        let walletsList = _get(store, 'common.walletsList')
+        walletsList = walletsList.filter((e) => e.id !== id)
+        dispatch({
+            type: 'common.walletsList',
+            data: [...walletsList]
+        })
+    }
+    return removeWallet
+}
+
 export const useAddWallet = () => {
     const { store, dispatch } = useContext(StoreContext)
     const addWallet = (data) => {
@@ -445,11 +458,13 @@ const useUpdateHisList = () => {
                 }
                 const num = new BigNumber(obj.amount || '').div(Math.pow(10, obj.decimal))
                 const assets = num.times(iotaPrice)
-                hisList.push({
-                    ...obj,
-                    num: Base.formatNum(num),
-                    assets: Base.formatNum(assets)
-                })
+                if (!(payloadIndex === 'TanglePay' && payloadData?.collection == 1)) {
+                    hisList.push({
+                        ...obj,
+                        num: Base.formatNum(num),
+                        assets: Base.formatNum(assets)
+                    })
+                }
             })
             const sendList = await IotaSDK.getSendList(address)
             sendList.forEach((e) => {
@@ -480,6 +495,7 @@ const useUpdateHisList = () => {
             Base.globalTemData.isGetMqttMessage &&
             lastData?.type === 0 &&
             lastData?.timestamp &&
+            lastData?.address !== address &&
             new Date().getTime() / 1000 - lastData?.timestamp <= 600
         ) {
             // prompt users when receiving transfers from mqtt messages
