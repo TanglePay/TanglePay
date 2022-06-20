@@ -15,6 +15,8 @@ Going Beyond Blockchain`,
         intoPasswordTips: '8到20位數字和字母的組合',
         intoRePasswordTips: '請再次輸入密碼',
         intoAgree: '我已閱讀並理解 ##Term of Service## 和 ##Privacy Policy##',
+        term: 'Term of Service',
+        policy: 'Privacy Policy',
         intoBtn: '導入錢包',
         intoFilePassword: '密碼',
         intoFilePasswordTips: '請輸入Stronhold文件密碼',
@@ -88,7 +90,13 @@ Going Beyond Blockchain`,
         or: '或',
         importDuplicate: '該錢包已完成導入',
         privateKeyImport: '私鑰導入',
-        inputPrivateKey: '請填入私鑰'
+        inputPrivateKey: '請填入私鑰',
+        removeTitle: '移除錢包',
+        removeTips: `該錢包將會從您的設備中移除。請確保您已經將助記詞或私鑰妥善保管。`,
+        removeName: '賬戶名',
+        removeAddress: '地址',
+        nevermind: '取消',
+        remove: '移除'
     },
     assets: {
         myAssets: '我的資產',
@@ -236,6 +244,11 @@ Going Beyond Blockchain`,
         goBuy: '去購買',
         permissions: '請允許TanglePay保存NFT圖片到您的相冊',
         saved: '保存成功'
+    },
+    discover: {
+        title: '發現',
+        buyIota: '購買IOTA',
+        addressCopy: '地址已復製'
     }
 }
 
