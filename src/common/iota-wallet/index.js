@@ -474,14 +474,9 @@ const IotaSDK = {
                 }
             }
             await getAddressList(accountState)
-            // if (addressList.length > 0) {
-            //     this._collectionList = {}
-            //     await Promise.all(
-            //         addressList.map((e) => {
-            //             return this.collectionOuttputByAddress(e, { seed, password, address, nodeId })
-            //         })
-            //     )
-            // }
+        }
+        if (!addressList.includes(address)) {
+            addressList.unshift(address)
         }
         return { addressList, requestAddress: address, outputIds }
     },
@@ -633,39 +628,99 @@ const IotaSDK = {
         }
         return num
     },
-    _collectionList: [],
-    async collectionOuttputByAddress(address, curWallet) {
-        if (this.client) {
-            let res = await this.client.addressOutputs(address)
-            const limit = 100
-            let outputIds = res.outputIds.filter((e) => !this._collectionList[e])
-            if (outputIds.length >= limit) {
-                let outputsRes = await Promise.all(
-                    outputIds.map((e) => {
-                        return this.client.output(e)
-                    })
-                )
-                let outputs = []
-                let ids = []
-                outputsRes.forEach((e, i) => {
-                    if (!e.isSpent && e.output.amount > 0) {
-                        outputs.push(e)
-                        ids.push(outputIds[i])
+    // /************************collect start***********************/
+    async getWalletInfo(validAddresses) {
+        const addresses = await Promise.all(validAddresses.map((e) => this.client.addressOutputs(e)))
+        const addressInfos = await Promise.all(validAddresses.map((e) => this.client.address(e)))
+        const total = { outputIds: [] }
+        total.balance = new BigNumber(0)
+        const decimal = Math.pow(10, IotaSDK.curNode.decimal)
+        const arr = validAddresses.map((e, i) => {
+            const balance = addressInfos[i]?.balance
+            const outputIds = addresses[i]?.outputIds || []
+            total.outputIds = [...total.outputIds, ...outputIds]
+            total.balance = total.balance.plus(balance)
+            return {
+                address: e,
+                outputIds,
+                balance: addressInfos[i]?.balance,
+                balanceMIOTA: Number(new BigNumber(balance).div(decimal))
+            }
+        })
+        total.balanceMIOTA = Number(total.balance.div(decimal))
+        total.balance = Number(total.balance)
+        return [arr, total]
+    },
+    _collectedList: [],
+    _collectingList: [],
+    _stopCollect: false,
+    _isSend: false,
+    async collectByOutputIds(validAddresses, curWallet, callBack) {
+        const getIds = async () => {
+            const [, total] = await this.getWalletInfo(validAddresses)
+            let outputIds = total?.outputIds || []
+            const maxLimit = 100
+            return outputIds.filter((e) => !this._collectedList.includes(e)).slice(0, maxLimit)
+        }
+        const collect = async (ids) => {
+            this._stopCollect = false
+            this._collectingList = []
+            if (ids.length === 0) {
+                callBack(this._collectedList)
+                return
+            }
+            const outputsRes = await Promise.all(ids.map((e) => this.client.output(e)))
+            let amount = BigNumber(0)
+            outputsRes.forEach((e, i) => {
+                const id = ids[i]
+                if (!e.isSpent && e.output.amount > 0) {
+                    amount = amount.plus(e.output.amount)
+                    this._collectingList.push(id)
+                } else {
+                    if (this._collectedList.includes(id)) {
+                        this._collectedList.push(id)
+                    }
+                }
+            })
+            if (this._stopCollect) {
+                callBack(this._collectedList)
+                return
+            }
+            this._isSend = true
+            try {
+                await this.send(curWallet, curWallet.address, Number(amount), { isCollection: true })
+                this._collectingList.forEach((e) => {
+                    if (!this._collectedList.includes(e)) {
+                        this._collectedList.push(e)
                     }
                 })
-                if (outputs.length >= limit) {
-                    outputs = outputs.slice(0, limit)
-                    ids.slice(0, limit).forEach((e) => (this._collectionList[e] = true))
-                    let amount = BigNumber(0)
-                    outputs.forEach((e) => {
-                        amount = amount.plus(e.output.amount)
-                    })
-                    await this.send(curWallet, curWallet.address, Number(amount), { isCollection: true })
-                    await this.collectionOuttputByAddress(address, curWallet)
-                }
+                this._collectingList = []
+                this._isSend = false
+                const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+                await sleep(2000)
+                callBack(this._collectedList)
+                const ids = await getIds()
+                collect(ids)
+            } catch (error) {
+                this._collectingList = []
+                this._isSend = false
+                const ids = await getIds()
+                collect(ids)
             }
         }
+        if (this._isSend) {
+            setTimeout(() => {
+                this.collectByOutputIds(validAddresses, curWallet, callBack)
+            }, 1000)
+        } else {
+            const ids = await getIds()
+            collect(ids)
+        }
     },
+    stopCollect() {
+        this._stopCollect = true
+    },
+    /************************collect end**********************/
     async send(fromInfo, toAddress, sendAmount, ext) {
         if (!this.client) {
             return Base.globalToast.error(I18n.t('user.nodeError'))
