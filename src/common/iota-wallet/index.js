@@ -1251,13 +1251,29 @@ const IotaSDK = {
 
     /**************** Nft start *******************/
     async getNfts(addressList) {
-        const list = _chunk(addressList, 10)
+        const ethAddressList = []
+        const iotaAddressList = []
+        addressList.forEach((e) => {
+            if (/^0x/i.test(e)) {
+                ethAddressList.push(e)
+            } else {
+                iotaAddressList.push(e)
+            }
+        })
+        const list = _chunk(iotaAddressList, 10)
         let res = await Promise.all(
             list.map((e) => {
                 return soon.getNftsByIotaAddress(e)
             })
         )
         res = _flatten(res)
+        let ethRes = await Promise.all(
+            ethAddressList.map((e) => {
+                return soon.getNftsByEthAddress(e)
+            })
+        )
+        ethRes = _flatten(ethRes)
+        res = [...res, ...ethRes]
         return res
     },
 
