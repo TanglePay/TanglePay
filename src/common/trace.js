@@ -1,13 +1,14 @@
 import { Base } from './base'
 import Http from './http'
-import IotaSDK from './iota-wallet'
 import CryptoJS from 'crypto-js'
 let deviceNo = Base.getDeviceNo()
 let clientType = Base.getClientType()
 const trace = async (url, params) => {
-    const curNodeId = await Base.getLocalData('common.curNodeId')
+    if (params?.blockChainCode == 1) {
+        params.tokenCode = 'MIOTA'
+    }
     const disTrace = await Base.getLocalData('common.disTrace')
-    if (curNodeId === 2 || IotaSDK.checkWeb3Node(curNodeId) || disTrace == 1) {
+    if (disTrace == 1) {
         return
     }
     return Http.POST(url, {
@@ -22,68 +23,39 @@ const TraceMethod = {
     login: async () => {
         const res = await trace('method=user.login')
         let token = res?.token || ''
+        Http.token = token
         Base.setLocalData('token', token)
     },
     // Trace.CreateWallet
-    // {
-    //  # ClientType (IOS, Android, Plugin)
-    //     "clientType": "IOS",
-    // 	# DeviceId
-    //     "deviceNo": "123456"
-    // 	# WalletId
-    //     "walletIdentify": "1",
-    // 	# WalletName
-    //     "walletName": "Wallet-1",
-    // 	# WalletAddress (hased by MD5)
-    //     "address": "xxxxxx"
-    // }
-    createWallet: async (walletIdentify, walletName, address) => {
+    createWallet: async (walletIdentify, walletName, address, blockChainCode, tokenCode) => {
         trace('method=wallet.create', {
             walletIdentify,
             walletName,
-            address: CryptoJS.MD5(address).toString()
+            address: CryptoJS.MD5(address).toString(),
+            blockChainCode,
+            tokenCode
         })
     },
-    // Trace.ImportAccount
-    // {
-    // 	# WalletId
-    //     "walletIdentify": "1",
-    // 	# WalletAddress (hashed by MD5)
-    //     "address": "xxxxxx"
-    //  # Balance
-    // 	   "amount": "900000"
-    // }
-    updateAddressAmount: async (walletIdentify, address, amount) => {
+    // Trace.updateAddressAmount
+    updateAddressAmount: async (walletIdentify, address, amount, blockChainCode, tokenCode) => {
         trace('method=wallet.updateAddressAmount', {
             walletIdentify,
             address: CryptoJS.MD5(address).toString(),
-            amount
+            amount,
+            blockChainCode,
+            tokenCode
         })
     },
-    // Trace.Transfer
-    // {
-    //  # ClientType (IOS, Android, Plugin)
-    //     "clientType": "IOS",
-    // 	# DeviceNo
-    //     "deviceNo": "123456",
-    // 	# TransactionType（pay，receive）
-    //     "type": "pay",
-    // 	# TransacitonNum（messageId）
-    //     "transactionNum": "123456",
-    // 	# FromAddress (hashed by MD5)
-    //     "fromAddress": "xxx",
-    // 	# ReceiverAddress (hashed by MD5)
-    //     "toAddress": "xxx",
-    // 	# Amount
-    //     "amount": "100000"
-    // }
-    transaction: async (type, transactionNum, fromAddress, toAddress, amount) => {
+    // Trace.transaction
+    transaction: async (type, transactionNum, fromAddress, toAddress, amount, blockChainCode, tokenCode) => {
         trace('method=transaction.create', {
             type,
             transactionNum,
             fromAddress: CryptoJS.MD5(fromAddress).toString(),
             toAddress: CryptoJS.MD5(toAddress).toString(),
-            amount
+            amount,
+            blockChainCode,
+            tokenCode
         })
     }
 }

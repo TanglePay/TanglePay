@@ -308,7 +308,7 @@ const IotaSDK = {
                             return
                         }
                         // const keystore = this.client.eth.accounts.encrypt(privateKey, password)
-                        Trace.createWallet(uuid, name, address)
+                        Trace.createWallet(uuid, name, address, this.curNode?.id, this.curNode?.token)
                         resolve({
                             address,
                             name,
@@ -333,7 +333,7 @@ const IotaSDK = {
                             reject()
                             return
                         }
-                        Trace.createWallet(uuid, name, bech32Address)
+                        Trace.createWallet(uuid, name, bech32Address, this.curNode?.id, this.curNode?.token)
                         // encrypt the seed and save to local storage
                         resolve({
                             address: bech32Address,
@@ -524,8 +524,8 @@ const IotaSDK = {
         }
         balance = realBalance.div(Math.pow(10, decimal))
         realBalance = Number(realBalance)
-        Trace.updateAddressAmount(id, address, realBalance)
-        const contractAssets = await this.getContractAssets(nodeId, address)
+        Trace.updateAddressAmount(id, address, realBalance, nodeId, token)
+        const contractAssets = await this.getContractAssets(nodeId, address, id)
 
         const balanceList = [
             {
@@ -534,7 +534,6 @@ const IotaSDK = {
                 decimal,
                 token
             },
-
             ...contractAssets
         ]
         return balanceList
@@ -727,11 +726,11 @@ const IotaSDK = {
         }
         const { seed, address, password, nodeId } = fromInfo
         const baseSeed = this.getSeed(seed, password)
+        const nodeInfo = this.nodes.find((e) => e.id === nodeId) || {}
         if (this.checkWeb3Node(nodeId)) {
             let sendAmountHex = this.getNumberStr(sendAmount)
             sendAmountHex = this.client.utils.toHex(sendAmountHex)
             const eth = this.client.eth
-            const nodeInfo = this.nodes.find((e) => e.id === nodeId) || []
 
             const nonce = await eth.getTransactionCount(address)
             const { contract, token } = ext || {}
@@ -766,7 +765,15 @@ const IotaSDK = {
                 } catch (error) {
                     throw error
                 }
-                Trace.transaction('pay', res.transactionHash, address, toAddress, sendAmountHex)
+                Trace.transaction(
+                    'pay',
+                    res.transactionHash,
+                    address,
+                    toAddress,
+                    this.getNumberStr(sendAmount),
+                    nodeId,
+                    token
+                )
             } else {
                 const chainId = await eth.getChainId()
                 const nodeGasLimit = nodeInfo?.gasLimit
@@ -792,7 +799,15 @@ const IotaSDK = {
                     console.log(error)
                     throw error
                 }
-                Trace.transaction('pay', res.transactionHash, address, toAddress, sendAmountHex)
+                Trace.transaction(
+                    'pay',
+                    res.transactionHash,
+                    address,
+                    toAddress,
+                    this.getNumberStr(sendAmount),
+                    nodeId,
+                    nodeInfo.token
+                )
             }
             const logInfo = res?.logs?.[0]
             const logData = {
@@ -865,7 +880,7 @@ const IotaSDK = {
                 })
             }
 
-            Trace.transaction('pay', messageId, address, toAddress, sendAmount)
+            Trace.transaction('pay', messageId, address, toAddress, sendAmount, nodeId, nodeInfo.token)
             return sendOut
         }
     },
@@ -1463,7 +1478,7 @@ const IotaSDK = {
         const buffer = ethereumjsUtils.toBuffer(`${privateKey}${passwordHex}`)
         return buffer
     },
-    async getContractAssets(nodeId, address) {
+    async getContractAssets(nodeId, address, walletId) {
         const nodeInfo = this.nodes.find((e) => e.id === nodeId)
         if (!nodeInfo?.contractList?.length) {
             return []
@@ -1484,6 +1499,7 @@ const IotaSDK = {
         )
         balanceList = balanceList.map((e, i) => {
             const token = nodeInfo.contractList[i].token
+            Trace.updateAddressAmount(walletId, address, e, nodeId, token)
             return {
                 token,
                 balance: Number(BigNumber(e).div(Math.pow(10, decimals[i]))),

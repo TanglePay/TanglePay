@@ -1,13 +1,14 @@
 import { Base } from './base'
 export const API_URL = 'http://api.iotaichi.com'
-let token = ''
 const Http = {
+    token: '',
     request(method, url, params = {}) {
         return new Promise(async (resolve, reject) => {
-            if (!token) {
-                token = (await Base.getLocalData('token')) || ''
+            if (!this.token) {
+                this.token = (await Base.getLocalData('token')) || ''
             }
-            params = { token, ...params }
+            console.log(url, JSON.stringify(params))
+            params = { token: this.token, ...params }
             // indicates whether prompting 'loading' messages
             const loading = params.loading
             // if isHandlerError=false, fallback to default hander which prompts error message

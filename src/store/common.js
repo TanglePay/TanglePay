@@ -346,13 +346,15 @@ const useUpdateHisList = () => {
                 const obj = {
                     viewUrl: `${nodeInfo.explorer}/tx/${transactionHash}`,
                     id: transactionHash,
+                    token,
                     coin: token,
                     timestamp,
                     type,
                     address: otherAddress,
                     num: Base.formatNum(num),
                     decimal: 0,
-                    assets: Base.formatNum(assets)
+                    assets: Base.formatNum(assets),
+                    amount
                 }
                 hisList.push(obj)
             })
@@ -378,6 +380,7 @@ const useUpdateHisList = () => {
                     viewUrl: `${nodeInfo.explorer}/message/${messageId}`,
                     id: messageId,
                     coin: 'Miota',
+                    token: 'IOTA',
                     timestamp,
                     decimal: decimal || IotaSDK.curNode?.decimal || 0
                 }
@@ -503,7 +506,15 @@ const useUpdateHisList = () => {
         ) {
             // prompt users when receiving transfers from mqtt messages
             Base.globalTemData.isGetMqttMessage = false
-            Trace.transaction('receive', lastData.id, lastData.address, address, lastData.amount)
+            Trace.transaction(
+                'receive',
+                lastData.id,
+                lastData.address,
+                address,
+                lastData.amount,
+                nodeId,
+                lastData.token
+            )
             Base.globalToast.success(I18n.t('assets.receivedSucc').replace('{num}', lastData.num))
         }
         dispatch({
