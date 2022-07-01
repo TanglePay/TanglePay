@@ -7,7 +7,6 @@ const Http = {
             if (!this.token) {
                 this.token = (await Base.getLocalData('token')) || ''
             }
-            console.log(url, JSON.stringify(params))
             params = { token: this.token, ...params }
             // indicates whether prompting 'loading' messages
             const loading = params.loading

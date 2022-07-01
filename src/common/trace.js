@@ -57,6 +57,15 @@ const TraceMethod = {
             blockChainCode,
             tokenCode
         })
+    },
+    // Trace.dappConnect
+    dappConnect: async (domain, address, blockChainCode, tokenCode) => {
+        trace('method=dapp.create', {
+            domain,
+            address: CryptoJS.MD5(address).toString(),
+            blockChainCode,
+            tokenCode
+        })
     }
 }
 
