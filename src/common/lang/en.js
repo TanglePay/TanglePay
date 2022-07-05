@@ -107,18 +107,19 @@ Secret Recovery Phrase or private key for this wallet before continuing.`,
         nevermind: 'Cancel',
         remove: 'Remove',
 
-        walletDetail: 'Address details',
+        walletDetail: 'Address Details',
         seedAddresses: 'Address under this seed',
-        exportExcel: 'Export to excel',
+        exportExcel: 'Export',
         address: 'Address',
         outputNum: 'Output number',
-        iotaNum: 'Amount in Miota',
+        iotaNum: 'Miota',
         totalNum: 'Total Amount',
         outputCollect: 'Output Concentration',
         collectTips: `Note: Output consolidation will aggregate your assets from multiple addresses and UTXOs (Unspent Transaction Outputs) into a unified UTXO on your MAIN address, which will improve the performance of subsequent activities including but not limited to get balance, stake and value transfer.`,
         pendingNum: 'Output to proceed',
         processedNum: 'Proceeded output',
-        collectTermination: 'Finish'
+        collectTermination: 'Finish',
+        collectSuccTips: 'Output Concentration is done. Please remember to restake.'
     },
     assets: {
         myAssets: 'My Assets',
