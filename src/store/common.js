@@ -31,7 +31,10 @@ export const initState = {
 
     disTrace: 0, // disable trace.js
 
-    validAddresses: []
+    validAddresses: [],
+
+    detailList: [], // wallet info
+    detailTotalInfo: {}
 }
 
 export const reducer = (state, action) => {
@@ -343,13 +346,15 @@ const useUpdateHisList = () => {
                 const obj = {
                     viewUrl: `${nodeInfo.explorer}/tx/${transactionHash}`,
                     id: transactionHash,
+                    token,
                     coin: token,
                     timestamp,
                     type,
                     address: otherAddress,
                     num: Base.formatNum(num),
                     decimal: 0,
-                    assets: Base.formatNum(assets)
+                    assets: Base.formatNum(assets),
+                    amount
                 }
                 hisList.push(obj)
             })
@@ -375,6 +380,7 @@ const useUpdateHisList = () => {
                     viewUrl: `${nodeInfo.explorer}/message/${messageId}`,
                     id: messageId,
                     coin: 'Miota',
+                    token: 'IOTA',
                     timestamp,
                     decimal: decimal || IotaSDK.curNode?.decimal || 0
                 }
@@ -500,7 +506,15 @@ const useUpdateHisList = () => {
         ) {
             // prompt users when receiving transfers from mqtt messages
             Base.globalTemData.isGetMqttMessage = false
-            Trace.transaction('receive', lastData.id, lastData.address, address, lastData.amount)
+            Trace.transaction(
+                'receive',
+                lastData.id,
+                lastData.address,
+                address,
+                lastData.amount,
+                nodeId,
+                lastData.token
+            )
             Base.globalToast.success(I18n.t('assets.receivedSucc').replace('{num}', lastData.num))
         }
         dispatch({
@@ -682,4 +696,52 @@ export const useCreateCheck = (callBack) => {
             nodeUrl && Base.globalToast.show(`${I18n.t('user.network')} : ${nodeUrl}`)
         }
     }, [curNodeId])
+}
+
+// get wallet info
+export const useGetWalletInfo = () => {
+    const { store, dispatch } = useContext(StoreContext)
+    const validAddresses = _get(store, 'common.validAddresses') || []
+    const detailList = _get(store, 'common.detailList') || []
+    const detailTotalInfo = _get(store, 'common.detailTotalInfo') || {}
+    const [loading, setLoading] = useState(false)
+    // const [list, setList] = useState([])
+    // const [totalInfo, setTotalInfo] = useState({})
+    const getInfo = async () => {
+        const client = IotaSDK.client
+        if (client) {
+            const [arr, total] = await IotaSDK.getWalletInfo(validAddresses)
+            // setTotalInfo(total)
+            // setList(arr)
+            dispatch({
+                type: 'common.detailList',
+                data: arr
+            })
+            dispatch({
+                type: 'common.detailTotalInfo',
+                data: total
+            })
+            setLoading(false)
+        }
+    }
+    useEffect(() => {
+        setLoading(true)
+        getInfo()
+    }, [JSON.stringify(validAddresses)])
+    return [detailList, detailTotalInfo, loading, getInfo]
+}
+
+// collect
+export const useCollect = () => {
+    const { store } = useContext(StoreContext)
+    const start = (curWallet, setList) => {
+        const validAddresses = _get(store, 'common.validAddresses') || []
+        IotaSDK.collectByOutputIds(validAddresses, curWallet, (arr) => {
+            setList(arr)
+        })
+    }
+    const stop = () => {
+        IotaSDK.stopCollect()
+    }
+    return [start, stop]
 }
