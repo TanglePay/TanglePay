@@ -96,7 +96,21 @@ Going Beyond Blockchain`,
         removeName: '賬戶名',
         removeAddress: '地址',
         nevermind: '取消',
-        remove: '移除'
+        remove: '移除',
+
+        walletDetail: '錢包詳情',
+        seedAddresses: '該seed下的地址',
+        exportExcel: '導出',
+        address: '地址',
+        outputNum: 'Output數',
+        iotaNum: '金額 MIOTA',
+        totalNum: '總額',
+        outputCollect: 'output歸集',
+        collectTips: `說明：Output合併會將您的資產從多個地址和 UTXO（未使用的交易輸出）聚合到您的主地址上的統一 UTXO 中，這將提高後續活動的性能，包括但不限於獲得餘額和轉幣。`,
+        pendingNum: '待處理output條數',
+        processedNum: '已處理的條數',
+        collectTermination: '終止',
+        collectSuccTips: 'Output歸集已完成，請重新stake'
     },
     assets: {
         myAssets: '我的資產',
