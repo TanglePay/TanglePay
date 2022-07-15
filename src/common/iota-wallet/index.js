@@ -1123,7 +1123,8 @@ const IotaSDK = {
         const data = await this.requestParticipation(`events`)
 
         const eventIds = data?.eventIds || []
-        const events = await this.requestEventsByIds(eventIds)
+        let events = await this.requestEventsByIds(eventIds)
+        events = events.filter((e) => e.type === 1)
         events.forEach((e, i) => {
             e.id = eventIds[i]
         })
