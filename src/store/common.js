@@ -53,6 +53,7 @@ export const reducer = (state, action) => {
                 I18n.locale = data
                 Base.setLocalData('common.lang', data)
             }
+            Base.curLang = data
             break
         case 'showAssets':
             if (data === undefined || data === null) {

@@ -424,6 +424,7 @@ const IotaSDK = {
         if (this.checkWeb3Node(nodeId)) {
             addressList = [address]
         } else {
+            let actionTime = new Date().getTime()
             let num = 0
             const accountState = {
                 accountIndex: 0,
@@ -474,6 +475,9 @@ const IotaSDK = {
                 }
             }
             await getAddressList(accountState)
+            actionTime = new Date().getTime() - actionTime
+            const nodeInfo = this.nodes.find((e) => e.id === nodeId) || {}
+            Trace.actionLog(60, address, actionTime, Base.curLang, nodeId, nodeInfo.token)
         }
         if (!addressList.includes(address)) {
             addressList.unshift(address)
@@ -511,6 +515,7 @@ const IotaSDK = {
         const decimal = node?.decimal
         let realBalance = BigNumber(0)
         let balance = BigNumber(0)
+        let actionTime = new Date().getTime()
         if (this.checkWeb3Node(nodeId)) {
             const res = await Promise.all(addressList.map((e) => this.client.eth.getBalance(e)))
             res.forEach((e) => {
@@ -522,6 +527,10 @@ const IotaSDK = {
                 realBalance = realBalance.plus(e.balance)
             })
         }
+
+        actionTime = new Date().getTime() - actionTime
+        Trace.actionLog(10, address, actionTime, Base.curLang, nodeId, token)
+
         balance = realBalance.div(Math.pow(10, decimal))
         realBalance = Number(realBalance)
         Trace.updateAddressAmount(id, address, realBalance, nodeId, token)
@@ -727,6 +736,8 @@ const IotaSDK = {
         const { seed, address, password, nodeId } = fromInfo
         const baseSeed = this.getSeed(seed, password)
         const nodeInfo = this.nodes.find((e) => e.id === nodeId) || {}
+        let actionTime = new Date().getTime()
+        let traceToken = ''
         if (this.checkWeb3Node(nodeId)) {
             let sendAmountHex = this.getNumberStr(sendAmount)
             sendAmountHex = this.client.utils.toHex(sendAmountHex)
@@ -765,6 +776,7 @@ const IotaSDK = {
                 } catch (error) {
                     throw error
                 }
+                traceToken = token
                 Trace.transaction(
                     'pay',
                     res.transactionHash,
@@ -799,6 +811,7 @@ const IotaSDK = {
                     console.log(error)
                     throw error
                 }
+                traceToken = nodeInfo.token
                 Trace.transaction(
                     'pay',
                     res.transactionHash,
@@ -830,6 +843,8 @@ const IotaSDK = {
             this.setPastLogs(address, nodeId, [logData]).then(() => {
                 this.refreshAssets()
             })
+            actionTime = new Date().getTime() - actionTime
+            Trace.actionLog(40, address, actionTime, Base.curLang, nodeId, traceToken)
             return { ...res, messageId: logData.transactionHash }
         } else {
             const amount = Base.formatNum(BigNumber(sendAmount).div(this.IOTA_MI))
@@ -881,6 +896,8 @@ const IotaSDK = {
             }
 
             Trace.transaction('pay', messageId, address, toAddress, sendAmount, nodeId, nodeInfo.token)
+            actionTime = new Date().getTime() - actionTime
+            Trace.actionLog(40, address, actionTime, Base.curLang, nodeId, nodeInfo.token)
             return sendOut
         }
     },
@@ -954,9 +971,13 @@ const IotaSDK = {
         if (!this.client) {
             return Base.globalToast.error(I18n.t('user.nodeError'))
         }
+        const nodeInfo = this.nodes.find((e) => e.id === nodeId) || {}
+        let actionTime = new Date().getTime()
         if (this.checkWeb3Node(nodeId)) {
             if (this.client?.eth) {
                 let list = await this.getPastLogs(address, nodeId)
+                actionTime = new Date().getTime() - actionTime
+                Trace.actionLog(20, address, actionTime, Base.curLang, nodeId, nodeInfo.token)
                 return list
             }
             return []
@@ -1029,6 +1050,8 @@ const IotaSDK = {
                 })
             })
             allList.sort((a, b) => a.timestamp - b.timestamp)
+            actionTime = new Date().getTime() - actionTime
+            Trace.actionLog(20, address, actionTime, Base.curLang, nodeId, nodeInfo.token)
             return allList
         }
     },
@@ -1276,6 +1299,7 @@ const IotaSDK = {
                 iotaAddressList.push(e)
             }
         })
+        let actionTime = new Date().getTime()
         const list = _chunk(iotaAddressList, 10)
         let res = await Promise.all(
             list.map((e) => {
@@ -1290,6 +1314,12 @@ const IotaSDK = {
         )
         ethRes = _flatten(ethRes)
         res = [...res, ...ethRes]
+
+        actionTime = new Date().getTime() - actionTime
+        const nodeId = this.curNode?.id
+        if (nodeId) {
+            Trace.actionLog(50, addressList[0], actionTime, Base.curLang, nodeId, this.curNode?.token)
+        }
         return res
     },
 
@@ -1484,6 +1514,7 @@ const IotaSDK = {
         if (!nodeInfo?.contractList?.length) {
             return []
         }
+        let actionTime = new Date().getTime()
         const token0Contract = nodeInfo.contractList.map((e) => {
             return new this.client.eth.Contract(tokenAbi, e.contract)
         })
@@ -1509,6 +1540,9 @@ const IotaSDK = {
                 decimal: decimals[i]
             }
         })
+        actionTime = new Date().getTime() - actionTime
+        const traceToken = nodeInfo.contractList.map((e) => e.token).join('-')
+        Trace.actionLog(10, address, actionTime, Base.curLang, nodeId, traceToken)
         return balanceList
     }
     /**************** web3 end *******************/
