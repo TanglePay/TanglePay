@@ -360,23 +360,11 @@ const useUpdateHisList = () => {
                 hisList.push(obj)
             })
         } else {
-            let preOutputIndex = null
-            let preTransactionId = null
             const token = IotaSDK.curNode?.token || ''
             const iotaPrice = price && nodeId !== 2 ? IotaSDK.priceDic[token] : 0
             const nodeInfo = IotaSDK.nodes.find((e) => e.id === nodeId)
             activityList.forEach((e, i) => {
-                let {
-                    outputIndex,
-                    transactionId,
-                    inputs,
-                    timestamp,
-                    outputs,
-                    messageId,
-                    payloadIndex,
-                    payloadData,
-                    decimal
-                } = e
+                let { timestamp, outputs, messageId, payloadIndex, payloadData, decimal, unlockBlock } = e
                 const obj = {
                     viewUrl: `${nodeInfo.explorer}/message/${messageId}`,
                     id: messageId,
@@ -408,78 +396,65 @@ const useUpdateHisList = () => {
                         address,
                         amount: 0
                     })
-                } else if (payloadIndex === 'Soonaverse' && activityList[i - 1]?.payloadIndex === 'TanglePay') {
-                    const prePayloadData = activityList[i - 1]?.payloadData
-                    Object.assign(obj, {
-                        type: 0,
-                        num: prePayloadData?.amount,
-                        address: prePayloadData?.to || '',
-                        amount: prePayloadData?.amount
-                    })
-                } else if (payloadIndex === 'TanglePay') {
-                    const { from, to, amount } = payloadData
-                    Object.assign(obj, {
-                        type: from === address ? 1 : 0,
-                        num: amount,
-                        address: from === address ? to : from,
-                        amount
-                    })
-                } else {
-                    const outputsLen = outputs?.length
-                    if (outputsLen === 1) {
-                        // balance = 0 after send
-                        Object.assign(obj, {
-                            type: 0,
-                            num: outputs[0].amount,
-                            address: outputs[0].bech32Address,
-                            fromUnknown: true,
-                            amount: outputs[0].amount
-                        })
-                    } else if (outputsLen > 1) {
-                        // balance != 0 after send
-                        inputs = inputs || []
-                        // Send or receive is judged by matching the outpuIndex of last message and transaction index of current, combining with a few other factors
-                        const inputData = inputs.find((e) => e.transactionId === preTransactionId) || inputs[0] || {}
-                        const transactionOutputIndex = inputData?.transactionOutputIndex || 0
-                        const otherData = outputs[1 - outputIndex] || outputs[0]
-                        const selfData = outputs[outputIndex] || outputs[0]
-                        obj.address = otherData?.bech32Address || ''
-                        if (transactionOutputIndex !== preOutputIndex) {
-                            // receive record
+                } else if (unlockBlock) {
+                    const unlockAddress = IotaSDK.publicKeyToBech32(unlockBlock?.signature?.publicKey)
+                    if (unlockAddress === address) {
+                        let filterOutputs = outputs.filter((e) => e.bech32Address !== unlockAddress)
+                        if (filterOutputs.length === 0) {
+                            console.log(i, unlockAddress, address, filterOutputs, '--XXX-')
                             Object.assign(obj, {
                                 type: 0,
-                                num: selfData.amount,
-                                amount: selfData.amount
+                                num: 0,
+                                address: address,
+                                amount: 0
                             })
                         } else {
-                            // send record
+                            console.log(i, unlockAddress, address, filterOutputs, '++++')
                             Object.assign(obj, {
                                 type: 1,
-                                num: otherData.amount,
-                                amount: otherData.amount
+                                num: filterOutputs[0]?.amount || 0,
+                                address: filterOutputs[0]?.bech32Address,
+                                amount: filterOutputs[0]?.amount || 0
                             })
                         }
-                        preOutputIndex = outputIndex
-                        preTransactionId = transactionId
+                    } else {
+                        let filterOutputs = outputs.filter((e) => e.bech32Address === address)
+                        if (filterOutputs.length === 0) {
+                            console.log(i, unlockAddress, address, filterOutputs, '--XXxxxxX-')
+                            Object.assign(obj, {
+                                type: 0,
+                                num: 0,
+                                address: unlockAddress,
+                                amount: 0
+                            })
+                        } else {
+                            console.log(i, unlockAddress, address, filterOutputs, '---')
+                            Object.assign(obj, {
+                                type: 0,
+                                num: filterOutputs[0]?.amount || 0,
+                                address: unlockAddress,
+                                amount: filterOutputs[0]?.amount || 0
+                            })
+                        }
                     }
                 }
                 const num = new BigNumber(obj.amount || '').div(Math.pow(10, obj.decimal))
                 const assets = num.times(iotaPrice)
-                if (!(payloadIndex === 'TanglePay' && payloadData?.collection == 1)) {
-                    hisList.push({
-                        ...obj,
-                        num: Base.formatNum(num),
-                        assets: Base.formatNum(assets)
-                    })
-                }
+                // if (!(payloadIndex === 'TanglePay' && payloadData?.collection == 1)) {
+                hisList.push({
+                    ...obj,
+                    num: Base.formatNum(num),
+                    assets: Base.formatNum(assets)
+                })
+                // }
             })
-            const sendList = await IotaSDK.getSendList(address)
-            sendList.forEach((e) => {
-                const assetsStr = Base.formatNum(new BigNumber(e.num || '').times(iotaPrice))
-                const numStr = Base.formatNum(e.num)
-                // refer to local storage if the balance is 0
-                hisList.push({ ...e, num: numStr, assets: assetsStr })
-            })
+            // const sendList = await IotaSDK.getSendList(address)
+            // sendList.forEach((e) => {
+            //     const assetsStr = Base.formatNum(new BigNumber(e.num || '').times(iotaPrice))
+            //     const numStr = Base.formatNum(e.num)
+            //     // refer to local storage if the balance is 0
+            //     hisList.push({ ...e, num: numStr, assets: assetsStr })
+            // })
             hisList.sort((a, b) => b.timestamp - a.timestamp)
             // need restake status
             let needRestake = false

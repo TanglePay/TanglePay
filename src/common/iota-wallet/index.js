@@ -371,6 +371,19 @@ const IotaSDK = {
     async getWalletInfo(address) {
         return this.client.address(address)
     },
+    publicKeyToBech32(publicKey) {
+        if (!publicKey) {
+            return
+        }
+        if (typeof publicKey === 'string') {
+            publicKey = Converter.hexToBytes(publicKey)
+        }
+        const indexEd25519Address = new Ed25519Address(publicKey)
+        let indexPublicKeyAddress = indexEd25519Address.toAddress()
+        indexPublicKeyAddress = Converter.bytesToHex(indexPublicKeyAddress)
+        const bech32Address = this.hexToBech32(indexPublicKeyAddress)
+        return bech32Address
+    },
     hexToBech32(address) {
         if (typeof address === 'string') {
             address = Converter.hexToBytes(address)
@@ -1002,9 +1015,11 @@ const IotaSDK = {
             milestoneList.forEach((e, i) => {
                 const { isSpent, output, transactionId, outputIndex, messageId } = newOutputDatas[i]
                 const { payload } = transactionFrom[i]
-                const address = output.address.address
+                const outputAddress = output.address.address
                 let payloadData = payload?.essence?.payload?.data
                 let payloadIndex = payload?.essence?.payload?.index
+                const unlockBlocks = payload?.unlockBlocks || []
+                const unlockBlock = unlockBlocks.find((e) => e.signature)
                 try {
                     payloadIndex = Converter.hexToUtf8(payloadIndex)
                 } catch (error) {
@@ -1033,10 +1048,10 @@ const IotaSDK = {
                     isSpent,
                     transactionId,
                     token: this.curNode?.token,
-                    address,
+                    address: outputAddress,
                     outputIndex,
                     output,
-                    bech32Address: this.hexToBech32(address),
+                    bech32Address: this.hexToBech32(outputAddress),
                     amount: output.amount,
                     inputs: payload?.essence?.inputs,
                     payloadIndex,
@@ -1046,7 +1061,8 @@ const IotaSDK = {
                             ...d,
                             bech32Address: this.hexToBech32(d.address.address)
                         }
-                    })
+                    }),
+                    unlockBlock
                 })
             })
             allList.sort((a, b) => a.timestamp - b.timestamp)
