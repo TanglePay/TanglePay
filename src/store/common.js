@@ -401,7 +401,6 @@ const useUpdateHisList = () => {
                     if (unlockAddress === address) {
                         let filterOutputs = outputs.filter((e) => e.bech32Address !== unlockAddress)
                         if (filterOutputs.length === 0) {
-                            console.log(i, unlockAddress, address, filterOutputs, '--XXX-')
                             Object.assign(obj, {
                                 type: 0,
                                 num: 0,
@@ -409,7 +408,6 @@ const useUpdateHisList = () => {
                                 amount: 0
                             })
                         } else {
-                            console.log(i, unlockAddress, address, filterOutputs, '++++')
                             Object.assign(obj, {
                                 type: 1,
                                 num: filterOutputs[0]?.amount || 0,
@@ -420,7 +418,6 @@ const useUpdateHisList = () => {
                     } else {
                         let filterOutputs = outputs.filter((e) => e.bech32Address === address)
                         if (filterOutputs.length === 0) {
-                            console.log(i, unlockAddress, address, filterOutputs, '--XXxxxxX-')
                             Object.assign(obj, {
                                 type: 0,
                                 num: 0,
@@ -428,7 +425,6 @@ const useUpdateHisList = () => {
                                 amount: 0
                             })
                         } else {
-                            console.log(i, unlockAddress, address, filterOutputs, '---')
                             Object.assign(obj, {
                                 type: 0,
                                 num: filterOutputs[0]?.amount || 0,
