@@ -131,7 +131,7 @@ export const useAddWallet = () => {
 
 export const useSelectWallet = () => {
     const { store, dispatch } = useContext(StoreContext)
-    const changeNode = useChangeNode(dispatch)
+    const changeNode = useChangeNode()
     const updateHisList = useUpdateHisList()
     const selectWallet = async (id) => {
         let walletsList = _get(store, 'common.walletsList')

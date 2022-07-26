@@ -34,7 +34,8 @@ const {
     generateBip44Address,
     SingleNodeClient,
     sendMultiple,
-    Ed25519
+    Ed25519,
+    addressBalance
 } = Iota
 const IotaSDK = {
     IOTA_MI: 1000000, // 1mi = 1000000i
@@ -47,7 +48,7 @@ const IotaSDK = {
     _nodes: [
         {
             id: 1,
-            url: 'https://chrysalis-nodes.iota.org',
+            url: 'https://api.alphanet.iotaledger.net',
             explorer: 'https://thetangle.org',
             name: 'IOTA Mainnet',
             enName: 'IOTA Mainnet',
@@ -59,6 +60,23 @@ const IotaSDK = {
             bech32HRP: 'iota',
             token: 'IOTA',
             filterMenuList: [],
+            filterAssetsList: [],
+            decimal: 6
+        },
+        {
+            id: 101,
+            url: 'https://api.alphanet.iotaledger.net',
+            explorer: 'https://thetangle.org',
+            name: 'Shimmer Mainnet',
+            enName: 'Shimmer Mainnet',
+            deName: 'Shimmer Mainnet',
+            zhName: 'Shimmer 主網',
+            type: 3,
+            mqtt: 'wss://chrysalis-nodes.iota.org:443/mqtt',
+            network: 'shimmer',
+            bech32HRP: 'rms',
+            token: 'SMR',
+            filterMenuList: ['apps', 'staking'],
             filterAssetsList: [],
             decimal: 6
         }
@@ -388,10 +406,10 @@ const IotaSDK = {
         if (typeof address === 'string') {
             address = Converter.hexToBytes(address)
         }
-        return Bech32Helper.toBech32(ED25519_ADDRESS_TYPE, address, this.info?.bech32HRP)
+        return Bech32Helper.toBech32(ED25519_ADDRESS_TYPE, address, this.info?.bech32HRP || this.curNode?.bech32HRP)
     },
     bech32ToHex(addressHex) {
-        const address = Bech32Helper.fromBech32(addressHex, this.info?.bech32HRP)
+        const address = Bech32Helper.fromBech32(addressHex, this.info?.bech32HRP || this.curNode?.bech32HRP)
         return Converter.bytesToHex(address.addressBytes)
     },
     getBatchBech32Address(baseSeed, accountState, STEP) {
@@ -535,10 +553,14 @@ const IotaSDK = {
                 realBalance = realBalance.plus(e)
             })
         } else {
-            const res = await Promise.all(addressList.map((e) => this.client.address(e)))
-            res.forEach((e) => {
-                realBalance = realBalance.plus(e.balance)
-            })
+            try {
+                const res = await Promise.all(addressList.map((e) => addressBalance(this.client, e)))
+                res.forEach((e) => {
+                    realBalance = realBalance.plus(e.balance)
+                })
+            } catch (error) {
+                console.log(error)
+            }
         }
 
         actionTime = new Date().getTime() - actionTime
@@ -567,6 +589,8 @@ const IotaSDK = {
             isInternal: false
         }
         const path = generateBip44Address(accountState, isFirst)
+        console.log(path)
+        console.log(new Bip32Path(path), '---')
         const addressSeed = seed.generateSeedFromPath(new Bip32Path(path))
         const addressKeyPair = addressSeed.keyPair()
         return addressKeyPair
@@ -1560,8 +1584,54 @@ const IotaSDK = {
         const traceToken = nodeInfo.contractList.map((e) => e.token).join('-')
         Trace.actionLog(10, address, actionTime, Base.curLang, nodeId, traceToken)
         return balanceList
-    }
+    },
     /**************** web3 end *******************/
+    /**************** SMR start *******************/
+    importSMRBySeed(seed, password) {
+        return new Promise(async (resolve, reject) => {
+            let baseSeed = null
+            try {
+                baseSeed = this.getSeed(seed, password)
+                if (!baseSeed._secretKey.length) {
+                    baseSeed = null
+                }
+            } catch (error) {
+                baseSeed = null
+            }
+            if (!baseSeed) {
+                Base.globalToast.error(I18n.t('assets.passwordError'))
+                reject()
+                return
+            }
+            const addressKeyPair = this.getPair(baseSeed)
+            const indexEd25519Address = new Ed25519Address(addressKeyPair.publicKey)
+            const indexPublicKeyAddress = indexEd25519Address.toAddress()
+            const bech32Address = this.hexToBech32(indexPublicKeyAddress)
+            const isDuplicate = await this.checkImport(bech32Address)
+            if (isDuplicate) {
+                Base.globalToast.error(I18n.t('account.importDuplicate'))
+                reject()
+                return
+            }
+            const uuid = Base.guid()
+            const walletsList = await this.getWalletList()
+            let len = walletsList.length || 0
+            const name = `wallet ${len + 1}`
+            Trace.createWallet(uuid, name, bech32Address, this.curNode?.id, this.curNode?.token)
+            // encrypt the seed and save to local storage
+            resolve({
+                address: bech32Address,
+                name,
+                isSelected: true,
+                password,
+                id: uuid,
+                nodeId: this.curNode?.id,
+                seed: this.getLocalSeed(baseSeed, password),
+                bech32HRP: this.info?.bech32HRP
+            })
+        })
+    }
+    /**************** SMR end *******************/
 }
 
 export default IotaSDK
