@@ -8,6 +8,7 @@ import _get from 'lodash/get'
 import _debounce from 'lodash/debounce'
 import CryptoJS from 'crypto-js'
 import Iota from './iota'
+import IotaNext from './iota-next'
 import _chunk from 'lodash/chunk'
 import BigNumber from 'bignumber.js'
 import { convertUnits } from '@iota/unit-converter'
@@ -23,24 +24,21 @@ import * as ethereumjsUtils from 'ethereumjs-util'
 const tokenAbi = require('./TokenERC20.json')
 
 const soon = new Soon(true)
-const {
-    Bech32Helper,
-    Bip32Path,
-    Bip39,
-    Converter,
-    Ed25519Address,
-    Ed25519Seed,
-    ED25519_ADDRESS_TYPE,
-    generateBip44Address,
-    SingleNodeClient,
-    sendMultiple,
-    Ed25519,
-    addressBalance
-} = Iota
+const { addressBalance } = Iota
+
+let IotaObj = Iota
+
 const IotaSDK = {
     IOTA_MI: 1000000, // 1mi = 1000000i
     convertUnits(value, fromUnit, toUnit) {
         return convertUnits(value, fromUnit, toUnit)
+    },
+    changeIota(nodeId) {
+        if (nodeId == 1) {
+            IotaObj = Iota
+        } else {
+            IotaObj = IotaNext
+        }
     },
     // type:1.iota, 2.web3,
     // filterMenuList:['assets','apps','staking','me']
@@ -48,7 +46,7 @@ const IotaSDK = {
     _nodes: [
         {
             id: 1,
-            url: 'https://api.alphanet.iotaledger.net',
+            url: 'https://chrysalis-nodes.iota.org',
             explorer: 'https://thetangle.org',
             name: 'IOTA Mainnet',
             enName: 'IOTA Mainnet',
@@ -164,6 +162,7 @@ const IotaSDK = {
     priceDic: {},
     explorerApiUrl: 'https://explorer-api.iota.org',
     async init(id) {
+        this.changeIota(id)
         Base.globalToast.showLoading()
         try {
             const curNode = this.nodes.find((e) => e.id === id) || this.nodes[0]
@@ -185,7 +184,7 @@ const IotaSDK = {
                     })
                 }
             } else {
-                this.client = new SingleNodeClient(curNode.url)
+                this.client = new IotaObj.SingleNodeClient(curNode.url)
                 this.info = await this.client.info()
                 this.mqttClient = new MqttClient(curNode.mqtt)
             }
@@ -267,7 +266,7 @@ const IotaSDK = {
         if (this.isWeb3Node) {
             return Web3Bip39.generateMnemonic()
         }
-        return Bip39.randomMnemonic()
+        return IotaObj.Bip39.randomMnemonic()
     },
     async importMnemonic({ mnemonic, name, password }) {
         return new Promise(async (resolve, reject) => {
@@ -293,7 +292,7 @@ const IotaSDK = {
                     if (this.isWeb3Node) {
                         Web3Bip39.mnemonicToEntropy(mnemonic)
                     } else {
-                        Bip39.mnemonicToEntropy(mnemonic)
+                        IotaObj.Bip39.mnemonicToEntropy(mnemonic)
                     }
                     isChecked = true
                 } catch (error) {
@@ -340,9 +339,9 @@ const IotaSDK = {
                         })
                     } else {
                         // calculate seed
-                        const baseSeed = Ed25519Seed.fromMnemonic(mnemonic)
+                        const baseSeed = IotaObj.Ed25519Seed.fromMnemonic(mnemonic)
                         const addressKeyPair = this.getPair(baseSeed)
-                        const indexEd25519Address = new Ed25519Address(addressKeyPair.publicKey)
+                        const indexEd25519Address = new IotaObj.Ed25519Address(addressKeyPair.publicKey)
                         const indexPublicKeyAddress = indexEd25519Address.toAddress()
                         const bech32Address = this.hexToBech32(indexPublicKeyAddress)
                         const isDuplicate = await this.checkImport(bech32Address)
@@ -394,23 +393,27 @@ const IotaSDK = {
             return
         }
         if (typeof publicKey === 'string') {
-            publicKey = Converter.hexToBytes(publicKey)
+            publicKey = IotaObj.Converter.hexToBytes(publicKey)
         }
-        const indexEd25519Address = new Ed25519Address(publicKey)
+        const indexEd25519Address = new IotaObj.Ed25519Address(publicKey)
         let indexPublicKeyAddress = indexEd25519Address.toAddress()
-        indexPublicKeyAddress = Converter.bytesToHex(indexPublicKeyAddress)
+        indexPublicKeyAddress = IotaObj.Converter.bytesToHex(indexPublicKeyAddress)
         const bech32Address = this.hexToBech32(indexPublicKeyAddress)
         return bech32Address
     },
     hexToBech32(address) {
         if (typeof address === 'string') {
-            address = Converter.hexToBytes(address)
+            address = IotaObj.Converter.hexToBytes(address)
         }
-        return Bech32Helper.toBech32(ED25519_ADDRESS_TYPE, address, this.info?.bech32HRP || this.curNode?.bech32HRP)
+        return IotaObj.Bech32Helper.toBech32(
+            IotaObj.ED25519_ADDRESS_TYPE,
+            address,
+            this.info?.bech32HRP || this.curNode?.bech32HRP
+        )
     },
     bech32ToHex(addressHex) {
-        const address = Bech32Helper.fromBech32(addressHex, this.info?.bech32HRP || this.curNode?.bech32HRP)
-        return Converter.bytesToHex(address.addressBytes)
+        const address = IotaObj.Bech32Helper.fromBech32(addressHex, this.info?.bech32HRP || this.curNode?.bech32HRP)
+        return IotaObj.Converter.bytesToHex(address.addressBytes)
     },
     getBatchBech32Address(baseSeed, accountState, STEP) {
         const temAddress = []
@@ -418,7 +421,7 @@ const IotaSDK = {
         for (let i = 0; i < STEP; i++) {
             const addressKeyPair = this.getPair(baseSeed, isFirst, accountState)
             isFirst = false
-            const indexEd25519Address = new Ed25519Address(addressKeyPair.publicKey)
+            const indexEd25519Address = new IotaObj.Ed25519Address(addressKeyPair.publicKey)
             const indexPublicKeyAddress = indexEd25519Address.toAddress()
             const address = this.hexToBech32(indexPublicKeyAddress)
             temAddress.push(address)
@@ -554,7 +557,12 @@ const IotaSDK = {
             })
         } else {
             try {
-                const res = await Promise.all(addressList.map((e) => addressBalance(this.client, e)))
+                let res = []
+                if (IotaObj.addressBalance) {
+                    res = await Promise.all(addressList.map((e) => IotaObj.addressBalance(this.client, e)))
+                } else {
+                    res = await Promise.all(addressList.map((e) => this.client.address(e)))
+                }
                 res.forEach((e) => {
                     realBalance = realBalance.plus(e.balance)
                 })
@@ -588,10 +596,10 @@ const IotaSDK = {
             addressIndex: 0,
             isInternal: false
         }
-        const path = generateBip44Address(accountState, isFirst)
+        const path = IotaObj.generateBip44Address(accountState, isFirst)
         console.log(path)
-        console.log(new Bip32Path(path), '---')
-        const addressSeed = seed.generateSeedFromPath(new Bip32Path(path))
+        console.log(new IotaObj.Bip32Path(path), '---')
+        const addressSeed = seed.generateSeedFromPath(new IotaObj.Bip32Path(path))
         const addressKeyPair = addressSeed.keyPair()
         return addressKeyPair
     },
@@ -624,13 +632,13 @@ const IotaSDK = {
     },
     getSeed(localSeed, password) {
         let seed = this.decryptSeed(localSeed, password)
-        seed = Converter.hexToBytes(seed)
+        seed = IotaObj.Converter.hexToBytes(seed)
         seed = Uint8Array.from(seed)
-        return new Ed25519Seed(seed)
+        return new IotaObj.Ed25519Seed(seed)
     },
     getLocalSeed(seed, password) {
         const localSeed = Array.from(seed._secretKey || seed)
-        const localHex = Converter.bytesToHex(localSeed)
+        const localHex = IotaObj.Converter.bytesToHex(localSeed)
         const localHexNew = this.encryptSeed(localHex, password)
         return localHexNew
     },
@@ -887,7 +895,7 @@ const IotaSDK = {
             const amount = Base.formatNum(BigNumber(sendAmount).div(this.IOTA_MI))
             let sendOut = null
             try {
-                sendOut = await sendMultiple(
+                sendOut = await IotaObj.sendMultiple(
                     this.client,
                     baseSeed,
                     0,
@@ -899,8 +907,8 @@ const IotaSDK = {
                         }
                     ],
                     {
-                        key: Converter.utf8ToBytes('TanglePay'),
-                        data: Converter.utf8ToBytes(
+                        key: IotaObj.Converter.utf8ToBytes('TanglePay'),
+                        data: IotaObj.Converter.utf8ToBytes(
                             JSON.stringify({
                                 from: address, //main address
                                 to: toAddress,
@@ -1045,21 +1053,21 @@ const IotaSDK = {
                 const unlockBlocks = payload?.unlockBlocks || []
                 const unlockBlock = unlockBlocks.find((e) => e.signature)
                 try {
-                    payloadIndex = Converter.hexToUtf8(payloadIndex)
+                    payloadIndex = IotaObj.Converter.hexToUtf8(payloadIndex)
                 } catch (error) {
                     payloadIndex = ''
                 }
                 try {
                     if (payloadIndex === 'PARTICIPATE') {
-                        payloadData = [...Converter.hexToBytes(payloadData)]
+                        payloadData = [...IotaObj.Converter.hexToBytes(payloadData)]
                         payloadData.shift()
                         payloadData = _chunk(payloadData, 33)
                         payloadData = payloadData.map((e) => {
                             e.pop()
-                            return Converter.bytesToHex(Uint8Array.from(e))
+                            return IotaObj.Converter.bytesToHex(Uint8Array.from(e))
                         })
                     } else {
-                        payloadData = Converter.hexToUtf8(payloadData)
+                        payloadData = IotaObj.Converter.hexToUtf8(payloadData)
                         payloadData = JSON.parse(payloadData)
                     }
                 } catch (error) {
@@ -1257,12 +1265,12 @@ const IotaSDK = {
         let datas = []
         if ([1, 2, 4].includes(type)) {
             tokens.forEach((e) => {
-                datas = [...datas, ...Converter.hexToBytes(e.eventId), 0]
+                datas = [...datas, ...IotaObj.Converter.hexToBytes(e.eventId), 0]
             })
             datas.unshift(tokens.length)
         }
         datas = Uint8Array.from(datas)
-        const res = await sendMultiple(
+        const res = await IotaObj.sendMultiple(
             this.client,
             baseSeed,
             0,
@@ -1274,7 +1282,7 @@ const IotaSDK = {
                 }
             ],
             {
-                key: Converter.utf8ToBytes('PARTICIPATE'),
+                key: IotaObj.Converter.utf8ToBytes('PARTICIPATE'),
                 data: datas
             },
             {
@@ -1302,14 +1310,14 @@ const IotaSDK = {
         } else {
             const baseSeed = this.getSeed(seed, password)
             const addressKeyPair = this.getPair(baseSeed)
-            signRes = Ed25519.sign(addressKeyPair.privateKey, Converter.utf8ToBytes(content))
+            signRes = IotaObj.Ed25519.sign(addressKeyPair.privateKey, IotaObj.Converter.utf8ToBytes(content))
         }
         return signRes
     },
     async sign(content, wallet, amount) {
         const { seed, password, address } = wallet
         const baseSeed = this.getSeed(seed, password)
-        const res = await sendMultiple(
+        const res = await IotaObj.sendMultiple(
             this.client,
             baseSeed,
             0,
@@ -1321,8 +1329,8 @@ const IotaSDK = {
                 }
             ],
             {
-                key: Converter.utf8ToBytes('TanglePay.Sign'),
-                data: Converter.utf8ToBytes(content)
+                key: IotaObj.Converter.utf8ToBytes('TanglePay.Sign'),
+                data: IotaObj.Converter.utf8ToBytes(content)
             },
             {
                 startIndex: 0,
@@ -1609,7 +1617,7 @@ const IotaSDK = {
                 return
             }
             const addressKeyPair = this.getPair(baseSeed)
-            const indexEd25519Address = new Ed25519Address(addressKeyPair.publicKey)
+            const indexEd25519Address = new IotaObj.Ed25519Address(addressKeyPair.publicKey)
             const indexPublicKeyAddress = indexEd25519Address.toAddress()
             const bech32Address = this.hexToBech32(indexPublicKeyAddress)
             const isDuplicate = await this.checkImport(bech32Address)
