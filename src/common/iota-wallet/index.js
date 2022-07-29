@@ -24,7 +24,6 @@ import * as ethereumjsUtils from 'ethereumjs-util'
 const tokenAbi = require('./TokenERC20.json')
 
 const soon = new Soon(true)
-const { addressBalance } = Iota
 
 let IotaObj = Iota
 
@@ -38,6 +37,7 @@ const IotaSDK = {
             IotaObj = Iota
         } else {
             IotaObj = IotaNext
+            IotaObj.setIotaBip44BasePath("m/44'/4219'")
         }
     },
     // type:1.iota, 2.web3,
@@ -64,13 +64,13 @@ const IotaSDK = {
         {
             id: 101,
             url: 'https://api.alphanet.iotaledger.net',
-            explorer: 'https://thetangle.org',
+            explorer: 'https://explorer.alphanet.iotaledger.net',
             name: 'Shimmer Mainnet',
             enName: 'Shimmer Mainnet',
             deName: 'Shimmer Mainnet',
             zhName: 'Shimmer 主網',
             type: 3,
-            mqtt: 'wss://chrysalis-nodes.iota.org:443/mqtt',
+            mqtt: 'wss://mqtt.alphanet.iotaledger.net:1883',
             network: 'shimmer',
             bech32HRP: 'rms',
             token: 'SMR',
@@ -184,7 +184,13 @@ const IotaSDK = {
                     })
                 }
             } else {
-                this.client = new IotaObj.SingleNodeClient(curNode.url)
+                if (id == 1) {
+                    this.client = new IotaObj.SingleNodeClient(curNode.url)
+                } else {
+                    this.client = new IotaObj.SingleNodeClient(curNode.url, {
+                        powProvider: new IotaObj.LocalPowProvider()
+                    })
+                }
                 this.info = await this.client.info()
                 this.mqttClient = new MqttClient(curNode.mqtt)
             }
@@ -596,9 +602,7 @@ const IotaSDK = {
             addressIndex: 0,
             isInternal: false
         }
-        const path = IotaObj.generateBip44Address(accountState, isFirst)
-        console.log(path)
-        console.log(new IotaObj.Bip32Path(path), '---')
+        let path = IotaObj.generateBip44Address(accountState, isFirst)
         const addressSeed = seed.generateSeedFromPath(new IotaObj.Bip32Path(path))
         const addressKeyPair = addressSeed.keyPair()
         return addressKeyPair
@@ -629,6 +633,25 @@ const IotaSDK = {
             padding: CryptoJS.pad.Pkcs7
         })
         return encrypted.ciphertext.toString().toUpperCase()
+    },
+    async checkPassword(seed, password) {
+        return new Promise((resolve, reject) => {
+            let baseSeed = null
+            try {
+                baseSeed = this.getSeed(seed, password)
+                if (!baseSeed._secretKey.length) {
+                    baseSeed = null
+                }
+            } catch (error) {
+                baseSeed = null
+            }
+            if (!baseSeed) {
+                Base.globalToast.error(I18n.t('assets.passwordError'))
+                reject()
+                return
+            }
+            resolve(baseSeed)
+        })
     },
     getSeed(localSeed, password) {
         let seed = this.decryptSeed(localSeed, password)
@@ -907,7 +930,8 @@ const IotaSDK = {
                         }
                     ],
                     {
-                        key: IotaObj.Converter.utf8ToBytes('TanglePay'),
+                        key: IotaObj.Converter.utf8ToBytes('TanglePay'), //v1
+                        tag: IotaObj.Converter.utf8ToBytes('TanglePay'), //v2
                         data: IotaObj.Converter.utf8ToBytes(
                             JSON.stringify({
                                 from: address, //main address
@@ -1130,7 +1154,8 @@ const IotaSDK = {
             }, 500)
             return
         }
-        url = `${this.client._endpoint}/api/plugins/participation/${url}`
+        const apiUrl = this._nodes.find((e) => e.id === 1)?.url
+        url = `${apiUrl}/api/plugins/participation/${url}`
         const res = await Http.GET(url, { isHandlerError: true })
         return res?.data
     },
@@ -1138,11 +1163,12 @@ const IotaSDK = {
         const res = (await Base.getLocalData(`stake.${address}`)) || []
         return res
     },
+
     async getAddressRewards(address) {
         if (!this.client) {
             return {}
         }
-        if (!this.hasStake(this.curNode?.id)) {
+        if (!/^iota/.test(address)) {
             return {}
         }
         const data = await this.requestParticipation(`addresses/${address}`)
@@ -1600,49 +1626,59 @@ const IotaSDK = {
     },
     /**************** web3 end *******************/
     /**************** SMR start *******************/
-    importSMRBySeed(seed, password) {
-        return new Promise(async (resolve, reject) => {
-            let baseSeed = null
-            try {
-                baseSeed = this.getSeed(seed, password)
-                if (!baseSeed._secretKey.length) {
-                    baseSeed = null
-                }
-            } catch (error) {
-                baseSeed = null
-            }
-            if (!baseSeed) {
-                Base.globalToast.error(I18n.t('assets.passwordError'))
-                reject()
-                return
-            }
-            const addressKeyPair = this.getPair(baseSeed)
-            const indexEd25519Address = new IotaObj.Ed25519Address(addressKeyPair.publicKey)
-            const indexPublicKeyAddress = indexEd25519Address.toAddress()
-            const bech32Address = this.hexToBech32(indexPublicKeyAddress)
-            const isDuplicate = await this.checkImport(bech32Address)
-            if (isDuplicate) {
-                Base.globalToast.error(I18n.t('account.importDuplicate'))
-                reject()
-                return
-            }
-            const uuid = Base.guid()
-            const walletsList = await this.getWalletList()
-            let len = walletsList.length || 0
-            const name = `wallet ${len + 1}`
-            Trace.createWallet(uuid, name, bech32Address, this.curNode?.id, this.curNode?.token)
-            // encrypt the seed and save to local storage
-            resolve({
-                address: bech32Address,
-                name,
-                isSelected: true,
-                password,
-                id: uuid,
-                nodeId: this.curNode?.id,
-                seed: this.getLocalSeed(baseSeed, password),
-                bech32HRP: this.info?.bech32HRP
-            })
+    async importSMRBySeed(seed, password) {
+        const baseSeed = await this.checkPassword(seed, password)
+        const addressKeyPair = this.getPair(baseSeed)
+        const indexEd25519Address = new IotaObj.Ed25519Address(addressKeyPair.publicKey)
+        const indexPublicKeyAddress = indexEd25519Address.toAddress()
+        const bech32Address = this.hexToBech32(indexPublicKeyAddress)
+        const isDuplicate = await this.checkImport(bech32Address)
+        if (isDuplicate) {
+            Base.globalToast.error(I18n.t('account.importDuplicate'))
+            reject()
+            return
+        }
+        const uuid = Base.guid()
+        const walletsList = await this.getWalletList()
+        let len = walletsList.length || 0
+        const name = `wallet ${len + 1}`
+        Trace.createWallet(uuid, name, bech32Address, this.curNode?.id, this.curNode?.token)
+        // encrypt the seed and save to local storage
+        return {
+            address: bech32Address,
+            name,
+            isSelected: true,
+            password,
+            id: uuid,
+            nodeId: this.curNode?.id,
+            seed: this.getLocalSeed(baseSeed, password),
+            bech32HRP: this.info?.bech32HRP
+        }
+    },
+    // gen 4218 ——> gen 4219 ——> 4218 to 4219
+    async claimSMR(fromInfo) {
+        const { seed, password } = fromInfo
+        const baseSeed = await this.checkPassword(seed, password)
+        IotaObj.setIotaBip44BasePath("m/44'/4218'")
+        const smr4218 = await this.importSMRBySeed(seed, password)
+        IotaObj.setIotaBip44BasePath("m/44'/4219'")
+        const smr4219 = await this.importSMRBySeed(seed, password)
+        const smr4218Balance = await IotaObj.getBalance(this.client, baseSeed, 0, {
+            startIndex: 0,
+            zeroCount: 20
         })
+        console.log(smr4218Balance)
+        IotaObj.setIotaBip44BasePath("m/44'/4218'")
+        try {
+            await this.send(smr4218, smr4219.address, Number(smr4218Balance))
+        } catch (error) {
+            console.log(error)
+        }
+        IotaObj.setIotaBip44BasePath("m/44'/4219'")
+        return {
+            amount: Number(smr4218Balance),
+            addressInfo: smr4219
+        }
     }
     /**************** SMR end *******************/
 }

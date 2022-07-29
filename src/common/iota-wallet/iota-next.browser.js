@@ -8,7 +8,10 @@ import {
     generateBip44Address,
     SingleNodeClient,
     sendMultiple,
-    addressBalance
+    addressBalance,
+    setIotaBip44BasePath,
+    LocalPowProvider,
+    getBalance
 } from '@iota/iota.js-next/dist/cjs/index-browser'
 
 export default {
@@ -23,5 +26,8 @@ export default {
     SingleNodeClient,
     sendMultiple,
     Ed25519,
-    addressBalance
+    addressBalance,
+    setIotaBip44BasePath,
+    LocalPowProvider,
+    getBalance
 }
