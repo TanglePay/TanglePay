@@ -11,7 +11,8 @@ import {
     addressBalance,
     setIotaBip44BasePath,
     LocalPowProvider,
-    getBalance
+    getBalance,
+    IndexerPluginClient
 } from '@iota/iota.js-next/dist/cjs/index-browser'
 
 export default {
@@ -29,5 +30,6 @@ export default {
     addressBalance,
     setIotaBip44BasePath,
     LocalPowProvider,
-    getBalance
+    getBalance,
+    IndexerPluginClient
 }

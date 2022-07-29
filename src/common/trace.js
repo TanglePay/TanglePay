@@ -11,12 +11,12 @@ const trace = async (url, params) => {
     if (disTrace == 1) {
         return
     }
-    return Http.POST(url, {
-        clientType,
-        deviceNo,
-        isHandlerError: true,
-        ...params
-    })
+    // return Http.POST(url, {
+    //     clientType,
+    //     deviceNo,
+    //     isHandlerError: true,
+    //     ...params
+    // })
 }
 const TraceMethod = {
     // Trace.login

@@ -21,19 +21,23 @@ import Web3 from 'web3'
 import * as Web3Bip39 from 'bip39'
 import { hdkey as ethereumjsHdkey } from 'ethereumjs-wallet'
 import * as ethereumjsUtils from 'ethereumjs-util'
+import { NeonPowProvider } from '@iota/pow-neon.js'
 const tokenAbi = require('./TokenERC20.json')
 
 const soon = new Soon(true)
 
 let IotaObj = Iota
 
+const IOTA_NODE_ID = 1
+const SMR_NODE_ID = 101
 const IotaSDK = {
+    IOTA_NODE_ID,
     IOTA_MI: 1000000, // 1mi = 1000000i
     convertUnits(value, fromUnit, toUnit) {
         return convertUnits(value, fromUnit, toUnit)
     },
     changeIota(nodeId) {
-        if (nodeId == 1) {
+        if (nodeId == IOTA_NODE_ID) {
             IotaObj = Iota
         } else {
             IotaObj = IotaNext
@@ -45,7 +49,7 @@ const IotaSDK = {
     // filterAssetsList: ['stake', 'soonaverse']
     _nodes: [
         {
-            id: 1,
+            id: IOTA_NODE_ID,
             url: 'https://chrysalis-nodes.iota.org',
             explorer: 'https://thetangle.org',
             name: 'IOTA Mainnet',
@@ -62,9 +66,10 @@ const IotaSDK = {
             decimal: 6
         },
         {
-            id: 101,
-            url: 'https://api.alphanet.iotaledger.net',
-            explorer: 'https://explorer.alphanet.iotaledger.net',
+            id: SMR_NODE_ID,
+            // url: 'https://api.alphanet.iotaledger.net',
+            url: 'https://api.testnet.shimmer.network',
+            explorer: 'https://explorer.alphanet.iotaledger.net/alphanet',
             name: 'Shimmer Mainnet',
             enName: 'Shimmer Mainnet',
             deName: 'Shimmer Mainnet',
@@ -184,12 +189,14 @@ const IotaSDK = {
                     })
                 }
             } else {
-                if (id == 1) {
+                if (id == IOTA_NODE_ID) {
                     this.client = new IotaObj.SingleNodeClient(curNode.url)
+                    this.IndexerPluginClient = null
                 } else {
                     this.client = new IotaObj.SingleNodeClient(curNode.url, {
-                        powProvider: new IotaObj.LocalPowProvider()
+                        powProvider: new INeonPowProvider()
                     })
+                    this.IndexerPluginClient = new IotaObj.IndexerPluginClient(this.client)
                 }
                 this.info = await this.client.info()
                 this.mqttClient = new MqttClient(curNode.mqtt)
@@ -439,22 +446,27 @@ const IotaSDK = {
         if (!this.info || this.isWeb3Node) {
             return []
         }
-        const res = await Promise.all(
-            addressList.map((e) => {
-                return Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${e}`, {
-                    isHandlerError: true
-                })
-            })
-        )
         let list = []
         let outputs = []
-        res.forEach((e, i) => {
-            const addressOutputIds = e?.addressOutputIds || []
-            const historicAddressOutputIds = e?.historicAddressOutputIds || []
-            const ids = [...addressOutputIds, ...historicAddressOutputIds]
-            list = [...list, ...ids]
-            outputs[i] = ids
-        })
+        if (this.IndexerPluginClient) {
+            outputs = await Promise.all(addressList.map((e) => this.getAllSMROutputIds(e)))
+            list = _flatten(outputs)
+        } else {
+            const res = await Promise.all(
+                addressList.map((e) => {
+                    return Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${e}`, {
+                        isHandlerError: true
+                    })
+                })
+            )
+            res.forEach((e, i) => {
+                const addressOutputIds = e?.addressOutputIds || []
+                const historicAddressOutputIds = e?.historicAddressOutputIds || []
+                const ids = [...addressOutputIds, ...historicAddressOutputIds]
+                list = [...list, ...ids]
+                outputs[i] = ids
+            })
+        }
         return { list, outputs }
     },
     async getValidAddresses({ seed, password, address, nodeId }) {
@@ -1051,79 +1063,100 @@ const IotaSDK = {
             }
             return []
         } else {
-            const outputDatas = await Promise.all(outputList.map((e) => this.outputData(e)))
-            let metadataList = await Promise.all(outputDatas.map((e) => this.messageMetadata(e.messageId)))
-            const newMetadataList = []
-            const newOutputDatas = []
-            metadataList.forEach((e, i) => {
-                if (e) {
-                    newMetadataList.push(e)
-                    newOutputDatas.push(outputDatas[i])
-                }
-            })
-            const milestoneList = await Promise.all(
-                newMetadataList.map((e) => this.milestone(e.referencedByMilestoneIndex))
-            )
-            const transactionFrom = await Promise.all(
-                newOutputDatas.map((e) => this.transactionIncludedMessage(e.transactionId))
-            )
-            const allList = []
-            milestoneList.forEach((e, i) => {
-                const { isSpent, output, transactionId, outputIndex, messageId } = newOutputDatas[i]
-                const { payload } = transactionFrom[i]
-                const outputAddress = output.address.address
-                let payloadData = payload?.essence?.payload?.data
-                let payloadIndex = payload?.essence?.payload?.index
-                const unlockBlocks = payload?.unlockBlocks || []
-                const unlockBlock = unlockBlocks.find((e) => e.signature)
-                try {
-                    payloadIndex = IotaObj.Converter.hexToUtf8(payloadIndex)
-                } catch (error) {
-                    payloadIndex = ''
-                }
-                try {
-                    if (payloadIndex === 'PARTICIPATE') {
-                        payloadData = [...IotaObj.Converter.hexToBytes(payloadData)]
-                        payloadData.shift()
-                        payloadData = _chunk(payloadData, 33)
-                        payloadData = payloadData.map((e) => {
-                            e.pop()
-                            return IotaObj.Converter.bytesToHex(Uint8Array.from(e))
-                        })
-                    } else {
-                        payloadData = IotaObj.Converter.hexToUtf8(payloadData)
-                        payloadData = JSON.parse(payloadData)
+            let allList = []
+            if (this.checkSMR(nodeId)) {
+                let outputDatas = await Promise.all(outputList.map((e) => this.client.output(e)))
+                console.log(outputDatas, '======')
+                // outputDatas.sort =
+                allList = outputDatas.map((e) => {
+                    const { milestoneTimestampBooked, blockId, transactionId } = e.metadata
+                    const { unlockConditions } = e.output
+                    const unlockCondition = unlockConditions.find((e) => e?.address?.pubKeyHash)
+                    this.client.transactionIncludedBlockRaw(transactionId).then((e) => {
+                        console.log(e, '-==')
+                    })
+                    return {
+                        timestamp: milestoneTimestampBooked,
+                        blockId,
+                        decimal: nodeInfo.decimal,
+                        unlockCondition,
+                        bech32Address: address
                     }
-                } catch (error) {
-                    payloadData = payload?.essence?.payload?.data || {}
-                }
-                allList.push({
-                    ...e,
-                    messageId,
-                    decimal: this.curNode?.decimal,
-                    isSpent,
-                    transactionId,
-                    token: this.curNode?.token,
-                    address: outputAddress,
-                    outputIndex,
-                    output,
-                    bech32Address: this.hexToBech32(outputAddress),
-                    amount: output.amount,
-                    inputs: payload?.essence?.inputs,
-                    payloadIndex,
-                    payloadData,
-                    outputs: payload?.essence?.outputs.map((d) => {
-                        return {
-                            ...d,
-                            bech32Address: this.hexToBech32(d.address.address)
-                        }
-                    }),
-                    unlockBlock
                 })
-            })
-            allList.sort((a, b) => a.timestamp - b.timestamp)
-            actionTime = new Date().getTime() - actionTime
-            Trace.actionLog(20, address, actionTime, Base.curLang, nodeId, nodeInfo.token)
+            } else {
+                const outputDatas = await Promise.all(outputList.map((e) => this.outputData(e)))
+                let metadataList = await Promise.all(outputDatas.map((e) => this.messageMetadata(e.messageId)))
+                const newMetadataList = []
+                const newOutputDatas = []
+                metadataList.forEach((e, i) => {
+                    if (e) {
+                        newMetadataList.push(e)
+                        newOutputDatas.push(outputDatas[i])
+                    }
+                })
+                const milestoneList = await Promise.all(
+                    newMetadataList.map((e) => this.milestone(e.referencedByMilestoneIndex))
+                )
+                const transactionFrom = await Promise.all(
+                    newOutputDatas.map((e) => this.transactionIncludedMessage(e.transactionId))
+                )
+                milestoneList.forEach((e, i) => {
+                    const { isSpent, output, transactionId, outputIndex, messageId } = newOutputDatas[i]
+                    const { payload } = transactionFrom[i]
+                    const outputAddress = output.address.address
+                    let payloadData = payload?.essence?.payload?.data
+                    let payloadIndex = payload?.essence?.payload?.index
+                    const unlockBlocks = payload?.unlockBlocks || []
+                    const unlockBlock = unlockBlocks.find((e) => e.signature)
+                    try {
+                        payloadIndex = IotaObj.Converter.hexToUtf8(payloadIndex)
+                    } catch (error) {
+                        payloadIndex = ''
+                    }
+                    try {
+                        if (payloadIndex === 'PARTICIPATE') {
+                            payloadData = [...IotaObj.Converter.hexToBytes(payloadData)]
+                            payloadData.shift()
+                            payloadData = _chunk(payloadData, 33)
+                            payloadData = payloadData.map((e) => {
+                                e.pop()
+                                return IotaObj.Converter.bytesToHex(Uint8Array.from(e))
+                            })
+                        } else {
+                            payloadData = IotaObj.Converter.hexToUtf8(payloadData)
+                            payloadData = JSON.parse(payloadData)
+                        }
+                    } catch (error) {
+                        payloadData = payload?.essence?.payload?.data || {}
+                    }
+                    allList.push({
+                        ...e,
+                        messageId,
+                        decimal: this.curNode?.decimal,
+                        isSpent,
+                        transactionId,
+                        token: this.curNode?.token,
+                        address: outputAddress,
+                        outputIndex,
+                        output,
+                        bech32Address: this.hexToBech32(outputAddress),
+                        amount: output.amount,
+                        inputs: payload?.essence?.inputs,
+                        payloadIndex,
+                        payloadData,
+                        outputs: payload?.essence?.outputs.map((d) => {
+                            return {
+                                ...d,
+                                bech32Address: this.hexToBech32(d.address.address)
+                            }
+                        }),
+                        unlockBlock
+                    })
+                })
+                allList.sort((a, b) => a.timestamp - b.timestamp)
+                actionTime = new Date().getTime() - actionTime
+                Trace.actionLog(20, address, actionTime, Base.curLang, nodeId, nodeInfo.token)
+            }
             return allList
         }
     },
@@ -1626,6 +1659,10 @@ const IotaSDK = {
     },
     /**************** web3 end *******************/
     /**************** SMR start *******************/
+    SMR_NODE_ID: 101,
+    checkSMR(nodeId) {
+        return nodeId == SMR_NODE_ID
+    },
     async importSMRBySeed(seed, password) {
         const baseSeed = await this.checkPassword(seed, password)
         const addressKeyPair = this.getPair(baseSeed)
@@ -1679,6 +1716,20 @@ const IotaSDK = {
             amount: Number(smr4218Balance),
             addressInfo: smr4219
         }
+    },
+    async getAllSMROutputIds(addressBech32) {
+        if (this.IndexerPluginClient) {
+            let response
+            let cursor
+            let outputIds = []
+            do {
+                response = await this.IndexerPluginClient.outputs({ addressBech32, cursor })
+                outputIds = [...outputIds, ...response.items]
+                cursor = response.cursor
+            } while (cursor && response.items.length > 0)
+            return outputIds
+        }
+        return []
     }
     /**************** SMR end *******************/
 }

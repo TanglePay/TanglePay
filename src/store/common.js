@@ -338,6 +338,7 @@ const useUpdateHisList = () => {
         const hisList = []
         const stakeHisList = []
         const isWeb3 = IotaSDK.checkWeb3Node(nodeId)
+        const isSMR = IotaSDK.checkSMR(nodeId)
         if (isWeb3) {
             const nodeInfo = IotaSDK.nodes.find((e) => e.id === nodeId)
             activityList.forEach((e) => {
@@ -358,6 +359,60 @@ const useUpdateHisList = () => {
                     amount
                 }
                 hisList.push(obj)
+            })
+        } else if (isSMR) {
+            const token = IotaSDK.curNode?.token || ''
+            const iotaPrice = price ? IotaSDK.priceDic[token] : 0
+            const nodeInfo = IotaSDK.nodes.find((e) => e.id === nodeId)
+            activityList.forEach((e, i) => {
+                const { timestamp, blockId, unlockCondition, decimal } = e
+                const obj = {
+                    viewUrl: `${nodeInfo.explorer}/block/${blockId}`,
+                    id: blockId,
+                    coin: token,
+                    token,
+                    timestamp,
+                    decimal: decimal || IotaSDK.curNode?.decimal || 0
+                }
+
+                const unlockAddress = IotaSDK.publicKeyToBech32(unlockCondition?.address?.pubKeyHash)
+                console.log(unlockAddress, '----')
+                // TODO
+                // if (unlockAddress === address) {
+                //     let filterOutputs = outputs.filter((e) => e.bech32Address !== unlockAddress)
+                //     if (filterOutputs.length === 0) {
+                //         Object.assign(obj, {
+                //             type: 0,
+                //             num: 0,
+                //             address: address,
+                //             amount: 0
+                //         })
+                //     } else {
+                //         Object.assign(obj, {
+                //             type: 1,
+                //             num: filterOutputs[0]?.amount || 0,
+                //             address: filterOutputs[0]?.bech32Address,
+                //             amount: filterOutputs[0]?.amount || 0
+                //         })
+                //     }
+                // } else {
+                //     let filterOutputs = outputs.filter((e) => e.bech32Address === address)
+                //     if (filterOutputs.length === 0) {
+                //         Object.assign(obj, {
+                //             type: 0,
+                //             num: 0,
+                //             address: unlockAddress,
+                //             amount: 0
+                //         })
+                //     } else {
+                //         Object.assign(obj, {
+                //             type: 0,
+                //             num: filterOutputs[0]?.amount || 0,
+                //             address: unlockAddress,
+                //             amount: filterOutputs[0]?.amount || 0
+                //         })
+                //     }
+                // }
             })
         } else {
             const token = IotaSDK.curNode?.token || ''
