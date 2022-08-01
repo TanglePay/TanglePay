@@ -21,7 +21,6 @@ import Web3 from 'web3'
 import * as Web3Bip39 from 'bip39'
 import { hdkey as ethereumjsHdkey } from 'ethereumjs-wallet'
 import * as ethereumjsUtils from 'ethereumjs-util'
-import { NeonPowProvider } from '@iota/pow-neon.js'
 const tokenAbi = require('./TokenERC20.json')
 
 const soon = new Soon(true)
@@ -194,7 +193,7 @@ const IotaSDK = {
                     this.IndexerPluginClient = null
                 } else {
                     this.client = new IotaObj.SingleNodeClient(curNode.url, {
-                        powProvider: new INeonPowProvider()
+                        powProvider: new IotaObj.LocalPowProvider()
                     })
                     this.IndexerPluginClient = new IotaObj.IndexerPluginClient(this.client)
                 }
@@ -410,7 +409,6 @@ const IotaSDK = {
         }
         const indexEd25519Address = new IotaObj.Ed25519Address(publicKey)
         let indexPublicKeyAddress = indexEd25519Address.toAddress()
-        indexPublicKeyAddress = IotaObj.Converter.bytesToHex(indexPublicKeyAddress)
         const bech32Address = this.hexToBech32(indexPublicKeyAddress)
         return bech32Address
     },
@@ -1072,9 +1070,6 @@ const IotaSDK = {
                     const { milestoneTimestampBooked, blockId, transactionId } = e.metadata
                     const { unlockConditions } = e.output
                     const unlockCondition = unlockConditions.find((e) => e?.address?.pubKeyHash)
-                    this.client.transactionIncludedBlockRaw(transactionId).then((e) => {
-                        console.log(e, '-==')
-                    })
                     return {
                         timestamp: milestoneTimestampBooked,
                         blockId,
@@ -1704,7 +1699,6 @@ const IotaSDK = {
             startIndex: 0,
             zeroCount: 20
         })
-        console.log(smr4218Balance)
         IotaObj.setIotaBip44BasePath("m/44'/4218'")
         try {
             await this.send(smr4218, smr4219.address, Number(smr4218Balance))
