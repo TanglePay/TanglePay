@@ -1,8 +1,7 @@
 const DE = {
     account: {
-        title: 'TanglePay Wallet',
-        subTitle: `IOTA Tangle\n
-Weit mehr als eine Blockchain`,
+        title: '##TanglePay## Wallet',
+        subTitle: `IOTA Tangle\nWeit mehr als eine Blockchain`,
         create: 'Erstelle eine neue Wallet',
         hasWallet: 'Ich habe bereits eine Wallet',
         intoTitle1: 'Wiederherstellungsphrase importieren',
