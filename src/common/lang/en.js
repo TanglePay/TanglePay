@@ -77,7 +77,7 @@ This data has been aggregated to meet the requirements of EU Regulation 2016/679
         mnemonicWordError: 'The mnemonic contains a word not in the wordlist {word}',
         mnemonicOtherError: 'Invalid mnemonic. Please enter the correct mnemonic phrase.',
 
-        dearFam: 'Dear IOTA fam,',
+        dearFam: 'Dear ##IOTA## fam,',
         betaReady: `Welcome to use TanglePay,
 the IOTA token and NFT wallet. Soon we will be able to support Shimmer network and Shimmer EVM all in one wallet interface. Please choose the network first.`,
         changeTips:

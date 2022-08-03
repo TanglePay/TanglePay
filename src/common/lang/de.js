@@ -81,7 +81,7 @@ Um den Anforderungen der Verordnung (EU) 2016/679 über den Schutz personenbezog
             'Die Wiederherstellungsphrase enthält ein Wort das nicht in der BIP39 Wortliste enthalten ist: {word}',
         mnemonicOtherError: 'Fehlerhafte Wiederherstellungsphrase. Bitte versuche es erneut.',
 
-        dearFam: 'Liebe IOTA Familie,',
+        dearFam: 'Liebe ##IOTA## Familie,',
         betaReady: `Willkommen bei TanglePay, 
 der all-in-one Wallet für IOTA Token und NFTs.Bald werdet ihr in der Lage sein das Shimmer Netzwerk und die Shimmer-EVM in unserer Wallet zu benutzen.
 Bitte wähle dafür zunächst ein Netzwerk.`,

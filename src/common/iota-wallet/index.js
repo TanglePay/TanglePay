@@ -36,11 +36,11 @@ const IotaSDK = {
         return convertUnits(value, fromUnit, toUnit)
     },
     changeIota(nodeId) {
-        if (nodeId == IOTA_NODE_ID) {
-            IotaObj = Iota
-        } else {
+        if (nodeId == SMR_NODE_ID) {
             IotaObj = IotaNext
             IotaObj.setIotaBip44BasePath("m/44'/4219'")
+        } else {
+            IotaObj = Iota
         }
     },
     // type:1.iota, 2.web3,

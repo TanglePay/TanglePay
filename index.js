@@ -16,8 +16,6 @@ const paths = klawSync(sourcePath, { filter: filterFn, nodir: true, traverseAll:
 //     fs.copy(e.path, toPath, () => {})
 // })
 paths.forEach((e) => {
-    const toPath = e.path
-        .replace('src', `../TanglePay-Extension/node_modules/tanglepay/lib/${env}`)
-        .replace(`.${env}`, '')
+    const toPath = e.path.replace('src', `../TanglePay-Mobile/node_modules/tanglepay/lib/${env}`).replace(`.${env}`, '')
     fs.copy(e.path, toPath, () => {})
 })
