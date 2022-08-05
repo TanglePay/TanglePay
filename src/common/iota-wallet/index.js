@@ -1690,26 +1690,33 @@ const IotaSDK = {
     // gen 4218 ——> gen 4219 ——> 4218 to 4219
     async claimSMR(fromInfo) {
         const { seed, password } = fromInfo
-        const baseSeed = await this.checkPassword(seed, password)
-        IotaObj.setIotaBip44BasePath("m/44'/4218'")
-        const smr4218 = await this.importSMRBySeed(seed, password)
-        IotaObj.setIotaBip44BasePath("m/44'/4219'")
-        const smr4219 = await this.importSMRBySeed(seed, password)
-        const smr4218Balance = await IotaObj.getBalance(this.client, baseSeed, 0, {
-            startIndex: 0,
-            zeroCount: 20
-        })
-        IotaObj.setIotaBip44BasePath("m/44'/4218'")
+        Base.globalToast.showLoading()
+        let res = {}
+        let smr4218, smr4218Balance, smr4219
         try {
-            await this.send(smr4218, smr4219.address, Number(smr4218Balance))
+            const baseSeed = await this.checkPassword(seed, password)
+            IotaObj.setIotaBip44BasePath("m/44'/4218'")
+            smr4218 = await this.importSMRBySeed(seed, password)
+            smr4218Balance = await IotaObj.getBalance(this.client, baseSeed, 0, {
+                startIndex: 0,
+                zeroCount: 20
+            })
+            IotaObj.setIotaBip44BasePath("m/44'/4219'")
+            smr4219 = await this.importSMRBySeed(seed, password)
+            IotaObj.setIotaBip44BasePath("m/44'/4218'")
         } catch (error) {
-            console.log(error)
+            res = { code: -1 }
         }
+        try {
+            Base.globalToast.showLoading()
+            await this.send(smr4218, smr4219.address, Number(smr4218Balance))
+            res = { code: 200, amount: Number(smr4218Balance), addressInfo: smr4219 }
+        } catch (error) {
+            res = { code: 1 }
+        }
+        Base.globalToast.hideLoading()
         IotaObj.setIotaBip44BasePath("m/44'/4219'")
-        return {
-            amount: Number(smr4218Balance),
-            addressInfo: smr4219
-        }
+        return res
     },
     async getAllSMROutputIds(addressBech32) {
         if (this.IndexerPluginClient) {
