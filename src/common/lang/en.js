@@ -271,6 +271,29 @@ Allow the site to: See address, account balance
         title: 'Discover',
         buyIota: 'Buy IOTA',
         addressCopy: 'Address copied'
+    },
+    shimmer: {
+        network: 'Shimmer Mainnet',
+        claimStakingReward: 'Claim staking reward',
+        chooseAWallet: 'Choose a Wallet to Claim ##SMR Staking Rewards##',
+        claimStakingRewards: 'Claim SMR Staking Rewards',
+        importTips: 'Please ##Import your IOTA wallet## in TanglePay to claim the staking reward.',
+        claim: 'Claim',
+        claimingFailed: 'Claiming Failed',
+        claimingFailedTips: 'There is no SMR staking rewards available in uour IOTA wallet ##{name} {address}##',
+        understand: 'I Understand',
+        smrClaimStakingReward: 'SMR Staking Rewards Claimed',
+        smrAmount: 'SMR Amount: ',
+        createTips:
+            'The new Shimmer wallet has the same mnemonics and password as your IOTA wallet ##{name} {address}##.',
+        createSuccTips:
+            'For the safetly of your assets, we suggest you to change the wallet password or transfer fund into a new Shimmer wallet.',
+        tradingList: 'Trading List',
+        conditionsClaim: 'Conditions to claim:',
+        transaction: 'Transaction',
+        acceptTransaction: 'Accept The Transaction',
+        accept: 'Accept',
+        dismiss: 'Dismiss'
     }
 }
 
