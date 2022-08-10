@@ -279,7 +279,7 @@ Erlaube der Seite: Adressen und Kontostände einsehen
     },
     shimmer: {
         network: 'Shimmer Mainnet',
-        claimStakingReward: 'Claim staking reward',
+        claimStakingReward: 'Claim Staking Reward',
         chooseAWallet: 'Choose a Wallet to Claim ##SMR Staking Rewards##',
         claimStakingRewards: 'Claim SMR Staking Rewards',
         importTips: 'Please ##Import your IOTA wallet## in TanglePay to claim the staking reward.',
@@ -298,7 +298,9 @@ Erlaube der Seite: Adressen und Kontostände einsehen
         transaction: 'Transaction',
         acceptTransaction: 'Accept The Transaction',
         accept: 'Accept',
-        dismiss: 'Dismiss'
+        dismiss: 'Dismiss',
+        sendFailTips: 'The transaction is loading. The Shimmer node synchronization is currently slow.',
+        sendCancel: 'Cancel'
     }
 }
 
