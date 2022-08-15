@@ -11,12 +11,12 @@ const trace = async (url, params) => {
     if (disTrace == 1) {
         return
     }
-    return Http.POST(url, {
-        clientType,
-        deviceNo,
-        isHandlerError: true,
-        ...params
-    })
+    // return Http.POST(url, {
+    //     clientType,
+    //     deviceNo,
+    //     isHandlerError: true,
+    //     ...params
+    // })
 }
 const TraceMethod = {
     // Trace.login
@@ -63,6 +63,18 @@ const TraceMethod = {
         trace('method=dapp.create', {
             domain,
             address: CryptoJS.MD5(address).toString(),
+            blockChainCode,
+            tokenCode
+        })
+    },
+    // action logs
+    //type: 10.assets, 20.logs, 30.stake, 40.transaction, 50.nft
+    actionLog: async (type, address, costTime, language, blockChainCode, tokenCode) => {
+        trace('method=actionLog.create', {
+            type,
+            address: CryptoJS.MD5(address).toString(),
+            costTime,
+            language: language || 'en',
             blockChainCode,
             tokenCode
         })
