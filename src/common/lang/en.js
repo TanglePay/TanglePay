@@ -295,7 +295,8 @@ Allow the site to: See address, account balance
         accept: 'Accept',
         dismiss: 'Dismiss',
         sendFailTips: 'The transaction is loading. The Shimmer node synchronization is currently slow.',
-        sendCancel: 'Cancel'
+        sendCancel: 'Cancel',
+        sendTips: 'We will support sending features on Shimmer Beta soon.'
     }
 }
 
