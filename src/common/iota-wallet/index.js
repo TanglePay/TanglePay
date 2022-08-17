@@ -1597,8 +1597,8 @@ const IotaSDK = {
         }
     },
     //get evm privatekey
-    getPrivateKey(seed, password) {
-        let baseSeed = this.getSeed(seed, password)
+    async getPrivateKey(seed, password) {
+        let baseSeed = await this.checkPassword(seed, password)
         baseSeed = baseSeed?._secretKey
         let passwordHex = ethereumjsUtils.fromUtf8(password).replace(/^0x/, '')
         if (passwordHex.length % 2) {
