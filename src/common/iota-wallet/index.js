@@ -622,9 +622,9 @@ const IotaSDK = {
         return addressKeyPair
     },
     getKeyAndIvV2(password) {
-        const kdf1 = CryptoJS.PBKDF2(password, password, { keySize: 16, iterations: 1000 })
+        const md5 = CryptoJS.MD5(password, 16).toString()
+        const kdf1 = CryptoJS.PBKDF2(md5, md5, { keySize: 16, iterations: 1000 })
         const kdf2 = CryptoJS.PBKDF2(kdf1.toString(), kdf1.toString(), { keySize: 16, iterations: 1000 })
-        console.log(kdf1, kdf2)
         return [kdf1, kdf2]
     },
     getKeyAndIv(password) {
