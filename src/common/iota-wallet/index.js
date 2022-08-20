@@ -27,6 +27,7 @@ const soon = new Soon(true)
 
 let IotaObj = Iota
 
+const V2_FLAG = 'TanglePayV2'
 const IOTA_NODE_ID = 1
 const SMR_NODE_ID = 101
 const IotaSDK = {
@@ -620,6 +621,12 @@ const IotaSDK = {
         const addressKeyPair = addressSeed.keyPair()
         return addressKeyPair
     },
+    getKeyAndIvV2(password) {
+        const kdf1 = CryptoJS.PBKDF2(password, password, { keySize: 16, iterations: 1000 })
+        const kdf2 = CryptoJS.PBKDF2(kdf1.toString(), kdf1.toString(), { keySize: 16, iterations: 1000 })
+        console.log(kdf1, kdf2)
+        return [kdf1, kdf2]
+    },
     getKeyAndIv(password) {
         let key = CryptoJS.MD5(password, 16).toString().toLocaleUpperCase()
         let iv = CryptoJS.MD5(password.slice(0, parseInt(password.length / 2)))
@@ -630,7 +637,10 @@ const IotaSDK = {
         return [key, iv]
     },
     decryptSeed(seed, password) {
-        const [key, iv] = this.getKeyAndIv(password)
+        const reg = new RegExp(`${V2_FLAG}$`)
+        let func = reg.test(seed) ? 'getKeyAndIvV2' : 'getKeyAndIv'
+        seed = seed.replace(reg, '')
+        const [key, iv] = this[func](password)
         let encryptedHexStr = CryptoJS.enc.Hex.parse(seed)
         let srcs = CryptoJS.enc.Base64.stringify(encryptedHexStr)
         let decrypt = CryptoJS.AES.decrypt(srcs, key, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 })
@@ -638,7 +648,10 @@ const IotaSDK = {
         return decryptedStr.toString()
     },
     encryptSeed(seed, password) {
-        const [key, iv] = this.getKeyAndIv(password)
+        const reg = new RegExp(`${V2_FLAG}$`)
+        let func = reg.test(seed) ? 'getKeyAndIvV2' : 'getKeyAndIv'
+        seed = seed.replace(reg, '')
+        const [key, iv] = this[func](password)
         let srcs = CryptoJS.enc.Utf8.parse(seed)
         let encrypted = CryptoJS.AES.encrypt(srcs, key, {
             iv: iv,
@@ -675,7 +688,8 @@ const IotaSDK = {
     getLocalSeed(seed, password) {
         const localSeed = Array.from(seed._secretKey || seed)
         const localHex = IotaObj.Converter.bytesToHex(localSeed)
-        const localHexNew = this.encryptSeed(localHex, password)
+        let localHexNew = this.encryptSeed(`${localHex}${V2_FLAG}`, password)
+        localHexNew = `${localHexNew}${V2_FLAG}`
         return localHexNew
     },
     changePassword(old, oldSeed, password) {
@@ -827,7 +841,7 @@ const IotaSDK = {
             const nonce = await eth.getTransactionCount(address)
             const { contract, token } = ext || {}
             let res = null
-            const privateKey = this.getPrivateKey(seed, password)
+            const privateKey = await this.getPrivateKey(seed, password)
             if (contract) {
                 const contractInfo = (nodeInfo.contractList || []).find((e) => e.token === token)
                 if (!contractInfo) {
@@ -1365,7 +1379,7 @@ const IotaSDK = {
             if (!this.client?.eth) {
                 return false
             }
-            const privateKey = this.getPrivateKey(seed, password)
+            const privateKey = await this.getPrivateKey(seed, password)
             signRes = await this.client.eth.accounts.sign(content, privateKey)
             signRes = signRes.messageHash
         } else {
