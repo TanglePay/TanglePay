@@ -68,8 +68,10 @@ const IotaSDK = {
         {
             id: SMR_NODE_ID,
             // url: 'https://api.alphanet.iotaledger.net',
-            url: 'https://api.testnet.shimmer.network',
-            explorer: 'https://explorer.shimmer.network/testnet',
+            // url: 'https://api.testnet.shimmer.network',
+            // explorer: 'https://explorer.shimmer.network/testnet',
+            url: 'https://shimmer.iotaichi.com',
+            explorer: 'https://shimmer.iotaichi.com/dashboard/explorer',
             name: 'Shimmer Beta',
             enName: 'Shimmer Beta',
             deName: 'Shimmer Beta',
@@ -194,7 +196,7 @@ const IotaSDK = {
                     this.IndexerPluginClient = null
                 } else {
                     this.client = new IotaObj.SingleNodeClient(curNode.url, {
-                        powProvider: new IotaObj.LocalPowProvider()
+                        // powProvider: new IotaObj.LocalPowProvider()
                     })
                     this.IndexerPluginClient = new IotaObj.IndexerPluginClient(this.client)
                 }
@@ -1101,7 +1103,7 @@ const IotaSDK = {
                         decimal: nodeInfo.decimal,
                         unlockBlock,
                         bech32Address: address,
-                        output: e.output
+                        outputs: blockData?.payload?.essence?.outputs || []
                     }
                 })
             } else {
@@ -1731,16 +1733,20 @@ const IotaSDK = {
             smr4219 = await this.importSMRBySeed(seed, password)
             IotaObj.setIotaBip44BasePath("m/44'/4218'")
         } catch (error) {
+            console.log(error, '----')
             res = { code: -1 }
         }
-        try {
-            Base.globalToast.showLoading()
-            await this.send(smr4218, smr4219.address, Number(smr4218Balance))
-            res = { code: 200, amount: Number(smr4218Balance), addressInfo: smr4219 }
-        } catch (error) {
-            res = { code: 1 }
+        if (res.code !== -1) {
+            try {
+                Base.globalToast.showLoading()
+                await this.send(smr4218, smr4219.address, Number(smr4218Balance))
+                res = { code: 200, amount: Number(smr4218Balance), addressInfo: smr4219 }
+            } catch (error) {
+                console.log(error, '-----')
+                res = { code: 1 }
+            }
+            Base.globalToast.hideLoading()
         }
-        Base.globalToast.hideLoading()
         IotaObj.setIotaBip44BasePath("m/44'/4219'")
         return res
     },
