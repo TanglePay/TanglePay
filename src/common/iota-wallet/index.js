@@ -621,6 +621,11 @@ const IotaSDK = {
         const addressKeyPair = addressSeed.keyPair()
         return addressKeyPair
     },
+    // check isV2
+    checkKeyAndIvIsV2(localSeed) {
+        const reg = new RegExp(`${V2_FLAG}$`)
+        return reg.test(localSeed)
+    },
     getKeyAndIvV2(password) {
         const md5 = CryptoJS.MD5(password, 16).toString()
         const kdf1 = CryptoJS.PBKDF2(md5, md5, { keySize: 16, iterations: 1000 })
