@@ -341,6 +341,7 @@ const IotaSDK = {
                         }
                         // const keystore = this.client.eth.accounts.encrypt(privateKey, password)
                         Trace.createWallet(uuid, name, address, this.curNode?.id, this.curNode?.token)
+                        Base.setLocalData(`valid.addresses.${address}`, [address])
                         resolve({
                             address,
                             name,
@@ -366,6 +367,7 @@ const IotaSDK = {
                             return
                         }
                         Trace.createWallet(uuid, name, bech32Address, this.curNode?.id, this.curNode?.token)
+                        Base.setLocalData(`valid.addresses.${bech32Address}`, [bech32Address])
                         // encrypt the seed and save to local storage
                         resolve({
                             address: bech32Address,
@@ -473,71 +475,76 @@ const IotaSDK = {
         }
         return { list, outputs }
     },
+    // cache valid address
     async getValidAddresses({ seed, password, address, nodeId }) {
-        if (!seed) return []
-        let addressList = []
+        let addressList = [address]
         let outputIds = []
-        if (this.checkWeb3Node(nodeId)) {
-            addressList = [address]
-        } else {
-            let actionTime = new Date().getTime()
-            let num = 0
-            const accountState = {
-                accountIndex: 0,
-                addressIndex: 0,
-                isInternal: false
-            }
-            const baseSeed = this.getSeed(seed, password)
-            const getAddressList = async (accountState) => {
-                if (!this.info || this.isWeb3Node) {
-                    return
-                }
-                const LIMIT = 1
-                const temAddress = this.getBatchBech32Address(baseSeed, accountState, 20)
-                // const addressOutputs = await Promise.all(
-                //     temAddress.map((e) => this.client.addressOutputs(e, undefined, true))
-                // )
-                // let flag = false
-                // temAddress.forEach((e, i) => {
-                //     const { outputIds } = addressOutputs[i]
-                //     if (!!outputIds.length) {
-                //         if (!addressList.includes(e)) {
-                //             addressList.push(e)
-                //         }
-                //         flag = true
-                //     }
-                // })
-                let flag = false
-                let addressOutputs = await this.getAllOutputIds(temAddress)
-                addressOutputs = addressOutputs?.outputs || []
-                temAddress.forEach((e, i) => {
-                    if (addressOutputs[i].length > 0) {
-                        if (!addressList.includes(e)) {
-                            addressList.push(e)
+        if (seed) {
+            if (this.checkWeb3Node(nodeId)) {
+                addressList = [address]
+            } else {
+                let actionTime = new Date().getTime()
+                if (!password || /^password_/.test(password)) {
+                    const addressList = (await Base.getLocalData(`valid.addresses.${address}`)) || []
+                    let addressOutputs = await this.getAllOutputIds(addressList)
+                    addressOutputs = addressOutputs?.outputs || []
+                    addressList.forEach((e, i) => {
+                        if (addressOutputs[i].length > 0) {
+                            addressOutputs[i].forEach((c) => {
+                                if (!outputIds.includes(c)) {
+                                    outputIds.push(c)
+                                }
+                            })
                         }
-                        addressOutputs[i].forEach((c) => {
-                            if (!outputIds.includes(c)) {
-                                outputIds.push(c)
+                    })
+                } else {
+                    let num = 0
+                    const accountState = {
+                        accountIndex: 0,
+                        addressIndex: 0,
+                        isInternal: false
+                    }
+                    const baseSeed = this.getSeed(seed, password)
+                    const getAddressList = async (accountState) => {
+                        if (!this.info || this.isWeb3Node) {
+                            return
+                        }
+                        const LIMIT = 1
+                        const temAddress = this.getBatchBech32Address(baseSeed, accountState, 20)
+                        let flag = false
+                        let addressOutputs = await this.getAllOutputIds(temAddress)
+                        addressOutputs = addressOutputs?.outputs || []
+                        temAddress.forEach((e, i) => {
+                            if (addressOutputs[i].length > 0) {
+                                if (!addressList.includes(e)) {
+                                    addressList.push(e)
+                                }
+                                addressOutputs[i].forEach((c) => {
+                                    if (!outputIds.includes(c)) {
+                                        outputIds.push(c)
+                                    }
+                                })
+                                flag = true
                             }
                         })
-                        flag = true
+                        if (!flag) {
+                            num++
+                        }
+                        if (num < LIMIT) {
+                            await getAddressList(accountState)
+                        }
                     }
-                })
-                if (!flag) {
-                    num++
-                }
-                if (num < LIMIT) {
                     await getAddressList(accountState)
+                    if (!addressList.includes(address)) {
+                        addressList.unshift(address)
+                    }
                 }
+                actionTime = new Date().getTime() - actionTime
+                const nodeInfo = this.nodes.find((e) => e.id === nodeId) || {}
+                Trace.actionLog(60, address, actionTime, Base.curLang, nodeId, nodeInfo.token)
             }
-            await getAddressList(accountState)
-            actionTime = new Date().getTime() - actionTime
-            const nodeInfo = this.nodes.find((e) => e.id === nodeId) || {}
-            Trace.actionLog(60, address, actionTime, Base.curLang, nodeId, nodeInfo.token)
         }
-        if (!addressList.includes(address)) {
-            addressList.unshift(address)
-        }
+        Base.setLocalData(`valid.addresses.${address}`, addressList)
         return { addressList, requestAddress: address, outputIds }
     },
     async getBalanceAddress({ seed, password }) {
@@ -1188,18 +1195,18 @@ const IotaSDK = {
     },
     async inputPassword(curWallet) {
         return new Promise((resolve) => {
-            if (curWallet.password) {
-                resolve(curWallet)
-            } else {
-                // prompt password input if it is not available in context
-                if (this._passwordDialog) {
-                    this._passwordDialog.current.show(curWallet, (data) => {
-                        if (data) {
-                            resolve(data)
-                        }
-                    })
-                }
+            // if (curWallet.password) {
+            //     resolve(curWallet)
+            // } else {
+            // prompt password input if it is not available in context
+            if (this._passwordDialog) {
+                this._passwordDialog.current.show(curWallet, (data) => {
+                    if (data) {
+                        resolve(data)
+                    }
+                })
             }
+            // }
         })
     },
     /**************** Staking start *******************/
@@ -1396,31 +1403,31 @@ const IotaSDK = {
         }
         return signRes
     },
-    async sign(content, wallet, amount) {
-        const { seed, password, address } = wallet
-        const baseSeed = this.getSeed(seed, password)
-        const res = await IotaObj.sendMultiple(
-            this.client,
-            baseSeed,
-            0,
-            [
-                {
-                    addressBech32: address,
-                    amount,
-                    isDustAllowance: false
-                }
-            ],
-            {
-                key: IotaObj.Converter.utf8ToBytes('TanglePay.Sign'),
-                data: IotaObj.Converter.utf8ToBytes(content)
-            },
-            {
-                startIndex: 0,
-                zeroCount: 20
-            }
-        )
-        return res
-    },
+    // async sign(content, wallet, amount) {
+    //     const { seed, password, address } = wallet
+    //     const baseSeed = this.getSeed(seed, password)
+    //     const res = await IotaObj.sendMultiple(
+    //         this.client,
+    //         baseSeed,
+    //         0,
+    //         [
+    //             {
+    //                 addressBech32: address,
+    //                 amount,
+    //                 isDustAllowance: false
+    //             }
+    //         ],
+    //         {
+    //             key: IotaObj.Converter.utf8ToBytes('TanglePay.Sign'),
+    //             data: IotaObj.Converter.utf8ToBytes(content)
+    //         },
+    //         {
+    //             startIndex: 0,
+    //             zeroCount: 20
+    //         }
+    //     )
+    //     return res
+    // },
     /**************** Sign end **********************/
 
     /**************** Nft start *******************/
@@ -1490,6 +1497,7 @@ const IotaSDK = {
                 const seed = this.getSeedFromPrivateKey(privateKey, password)
                 const uuid = Base.guid()
                 Trace.createWallet(uuid, name, address)
+                Base.setLocalData(`valid.addresses.${address}`, [address])
                 resolve({
                     address,
                     name,

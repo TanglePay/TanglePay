@@ -76,16 +76,9 @@ export const reducer = (state, action) => {
                 }
                 return e
             })
-            let localList = list
-            if (Base.isBrowser) {
-                localList = list.map((e) => {
-                    return { ...e, password: undefined }
-                })
-                const bg = window.chrome?.extension?.getBackgroundPage()
-                if (bg) {
-                    bg.setBackgroundData('common.walletsList', list)
-                }
-            }
+            let localList = list.map((e) => {
+                return { ...e, password: e.password ? `password_${e.address}` : undefined }
+            })
             const saveFunc = Base.isBrowser ? 'setLocalData' : 'setSensitiveInfo'
             Base[saveFunc]('common.walletsList', localList)
             return { ...state, [type]: list }
@@ -647,10 +640,11 @@ export const useGetAssetsList = (curWallet) => {
         //     return
         // }
         let newCurWallet = curWallet
-        if (Base.isBrowser) {
+        const curAddress = newCurWallet.address
+        const cacheValidList = await Base.getLocalData(`valid.addresses.${curAddress}`)
+        if (!cacheValidList?.length) {
             newCurWallet = await IotaSDK.inputPassword(curWallet)
         }
-        const curAddress = newCurWallet.address
         if (IotaSDK.checkWeb3Node(newCurWallet.nodeId)) {
             IotaSDK?.client?.eth && (IotaSDK.client.eth.defaultAccount = curAddress)
         }
