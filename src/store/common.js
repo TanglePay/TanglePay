@@ -161,7 +161,7 @@ export const useEditWallet = () => {
             if (e.id === id) {
                 // reencrypt seed on password change
                 if (isChangePassword) {
-                    data.seed = IotaSDK.changePassword(e.password, e.seed, data.password)
+                    data.seed = IotaSDK.changePassword(data.oldPassword, e.seed, data.password)
                 }
                 walletsList[i] = { ...e, ...data }
             }
