@@ -390,8 +390,7 @@ const useUpdateHisList = () => {
                     // receive
                     const receiverList = outputs.filter((e) =>
                         e.unlockConditions.find(
-                            (d) =>
-                                d?.address?.pubKeyHash && IotaSDK.publicKeyToBech32(d?.address?.pubKeyHash) !== address
+                            (d) => d?.address?.pubKeyHash && IotaSDK.hexToBech32(d?.address?.pubKeyHash) === address
                         )
                     )
                     const otherOutput = receiverList[0] || {}
