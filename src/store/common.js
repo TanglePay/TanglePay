@@ -373,12 +373,13 @@ const useUpdateHisList = () => {
                     //  send
                     const receiverList = outputs.filter((e) =>
                         e.unlockConditions.find(
-                            (d) => d?.address?.pubKeyHash && d?.address?.pubKeyHash !== senderPublicKey
+                            (d) =>
+                                d?.address?.pubKeyHash && IotaSDK.hexToBech32(d?.address?.pubKeyHash) !== senderAddress
                         )
                     )
                     const otherOutput = receiverList[0] || {}
                     let otherAddress = (otherOutput?.unlockConditions || []).find((e) => e?.address?.pubKeyHash)
-                    otherAddress = IotaSDK.publicKeyToBech32(otherAddress)
+                    otherAddress = IotaSDK.hexToBech32(otherAddress?.address?.pubKeyHash)
                     Object.assign(obj, {
                         type: 1,
                         num: otherOutput?.amount || 0,
