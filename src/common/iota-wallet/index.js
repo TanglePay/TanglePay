@@ -72,9 +72,9 @@ const IotaSDK = {
             id: SMR_NODE_ID,
             // url: 'https://api.alphanet.iotaledger.net',
             // url: 'https://api.testnet.shimmer.network',
-            // explorer: 'https://explorer.shimmer.network/testnet',
+            explorer: 'https://explorer.shimmer.network/testnet',
             url: 'https://shimmer.iotaichi.com',
-            explorer: 'https://shimmer.iotaichi.com/dashboard/explorer',
+            // explorer: 'https://shimmer.iotaichi.com/dashboard/explorer',
             name: 'Shimmer Beta',
             enName: 'Shimmer Beta',
             deName: 'Shimmer Beta',
@@ -500,10 +500,23 @@ const IotaSDK = {
                 })
             })
         )
+        let hisRes = []
+        if (this.checkSMR(this.curNode?.id)) {
+            hisRes = await Promise.all(
+                addressList.map((e) => {
+                    return Http.GET(`${this.explorerApiUrl}/transactionhistory/${this.curNode.network}/${e}`, {
+                        isHandlerError: true,
+                        pageSize: 30,
+                        sort: 'newest'
+                    })
+                })
+            )
+        }
         res.forEach((e, i) => {
             const addressOutputIds = e?.addressOutputIds || []
             const historicAddressOutputIds = e?.historicAddressOutputIds || []
-            const ids = [...addressOutputIds, ...historicAddressOutputIds]
+            const smrHisOutputIds = (hisRes[i]?.items || []).map((e) => e.outputId)
+            const ids = [...addressOutputIds, ...historicAddressOutputIds, ...smrHisOutputIds]
             list = [...list, ...ids]
             outputs[i] = ids
         })
