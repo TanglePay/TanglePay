@@ -358,7 +358,7 @@ const useUpdateHisList = () => {
             const iotaPrice = price ? IotaSDK.priceDic[token] : 0
             const nodeInfo = IotaSDK.nodes.find((e) => e.id === nodeId)
             activityList.forEach((e, i) => {
-                const { timestamp, blockId, unlockBlock, decimal, outputs } = e
+                const { timestamp, blockId, unlockBlock, decimal, outputs, isSpent, output } = e
                 const obj = {
                     viewUrl: `${nodeInfo.explorer}/block/${blockId}`,
                     id: blockId,
@@ -369,7 +369,7 @@ const useUpdateHisList = () => {
                 }
                 const senderPublicKey = unlockBlock?.signature?.publicKey
                 const senderAddress = IotaSDK.publicKeyToBech32(senderPublicKey)
-                if (senderAddress === address) {
+                if (isSpent) {
                     //  send
                     const receiverList = outputs.filter((e) =>
                         e.unlockConditions.find(
@@ -382,25 +382,53 @@ const useUpdateHisList = () => {
                     otherAddress = IotaSDK.hexToBech32(otherAddress?.address?.pubKeyHash)
                     Object.assign(obj, {
                         type: 1,
-                        num: otherOutput?.amount || 0,
+                        num: output?.amount || 0,
                         address: otherAddress,
-                        amount: otherOutput?.amount || 0
+                        amount: output?.amount || 0
                     })
                 } else {
                     // receive
-                    const receiverList = outputs.filter((e) =>
-                        e.unlockConditions.find(
-                            (d) => d?.address?.pubKeyHash && IotaSDK.hexToBech32(d?.address?.pubKeyHash) === address
-                        )
-                    )
-                    const otherOutput = receiverList[0] || {}
                     Object.assign(obj, {
                         type: 0,
-                        num: otherOutput?.amount || 0,
+                        num: output?.amount || 0,
                         address: senderAddress,
-                        amount: otherOutput?.amount || 0
+                        amount: output?.amount || 0
                     })
                 }
+                // const senderPublicKey = unlockBlock?.signature?.publicKey
+                // const senderAddress = IotaSDK.publicKeyToBech32(senderPublicKey)
+                // if (senderAddress === address) {
+                //     //  send
+                //     const receiverList = outputs.filter((e) =>
+                //         e.unlockConditions.find(
+                //             (d) =>
+                //                 d?.address?.pubKeyHash && IotaSDK.hexToBech32(d?.address?.pubKeyHash) !== senderAddress
+                //         )
+                //     )
+                //     const otherOutput = receiverList[receiverList.length-1] || {}
+                //     let otherAddress = (otherOutput?.unlockConditions || []).find((e) => e?.address?.pubKeyHash)
+                //     otherAddress = IotaSDK.hexToBech32(otherAddress?.address?.pubKeyHash)
+                //     Object.assign(obj, {
+                //         type: 1,
+                //         num: otherOutput?.amount || 0,
+                //         address: otherAddress,
+                //         amount: otherOutput?.amount || 0
+                //     })
+                // } else {
+                //     // receive
+                //     const receiverList = outputs.filter((e) =>
+                //         e.unlockConditions.find(
+                //             (d) => d?.address?.pubKeyHash && IotaSDK.hexToBech32(d?.address?.pubKeyHash) === address
+                //         )
+                //     )
+                //     const otherOutput = receiverList[receiverList.length-1] || {}
+                //     Object.assign(obj, {
+                //         type: 0,
+                //         num: otherOutput?.amount || 0,
+                //         address: senderAddress,
+                //         amount: otherOutput?.amount || 0
+                //     })
+                // }
                 const num = new BigNumber(obj.amount || '').div(Math.pow(10, obj.decimal))
                 const assets = num.times(iotaPrice)
                 hisList.push({
@@ -409,7 +437,7 @@ const useUpdateHisList = () => {
                     assets: Base.formatNum(assets)
                 })
             })
-            hisList.sort((a, b) => b.timestamp - a.timestamp)
+            // hisList.sort((a, b) => b.timestamp - a.timestamp)
         } else {
             const token = IotaSDK.curNode?.token || ''
             const iotaPrice = price && nodeId !== 2 ? IotaSDK.priceDic[token] : 0
@@ -648,7 +676,7 @@ export const useGetAssetsList = (curWallet) => {
         if (IotaSDK.checkWeb3Node(newCurWallet.nodeId)) {
             IotaSDK?.client?.eth && (IotaSDK.client.eth.defaultAccount = curAddress)
         }
-        IotaSDK.getValidAddresses(newCurWallet).then(({ addressList, outputIds }) => {
+        IotaSDK.getValidAddresses(newCurWallet).then(({ addressList, outputIds, smrOutputIds }) => {
             // if(requestAddress !== newCurWallet.address){
             //     return;
             // }
@@ -678,7 +706,7 @@ export const useGetAssetsList = (curWallet) => {
                     })
             } else {
                 // IotaSDK.getAllOutputIds(addressList).then((outputList) => {
-                IotaSDK.getHisList(outputIds, newCurWallet)
+                IotaSDK.getHisList(outputIds, newCurWallet, smrOutputIds)
                     .then((activityList) => {
                         updateHisList(activityList, newCurWallet)
                     })
