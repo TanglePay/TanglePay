@@ -1,5 +1,3 @@
-import { MqttClient } from '@iota/mqtt.js'
-import { MqttClient as NextMqttClient } from '@iota/mqtt.js-next'
 import I18n from '../lang'
 import { Base } from '../base'
 import Http, { API_URL } from '../http'
@@ -198,14 +196,13 @@ const IotaSDK = {
                 if (id == IOTA_NODE_ID) {
                     this.client = new IotaObj.SingleNodeClient(curNode.url)
                     this.IndexerPluginClient = null
-                    this.mqttClient = new MqttClient(curNode.mqtt)
                 } else {
-                    this.mqttClient = new NextMqttClient(curNode.mqtt)
                     this.client = new IotaObj.SingleNodeClient(curNode.url, {
                         // powProvider: new IotaObj.LocalPowProvider()
                     })
                     this.IndexerPluginClient = new IotaObj.IndexerPluginClient(this.client)
                 }
+                this.mqttClient = new IotaObj.MqttClient(curNode.mqtt)
                 this.info = await this.client.info()
             }
             Base.globalToast.hideLoading()

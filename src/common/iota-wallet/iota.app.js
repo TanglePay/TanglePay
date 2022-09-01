@@ -11,6 +11,8 @@ import {
     addressBalance
 } from '@iota/iota.js/dist/cjs/index-node'
 
+import { MqttClient } from '@iota/mqtt.js/dist/cjs/index-node'
+
 export default {
     Converter,
     Bip32Path,
@@ -23,5 +25,6 @@ export default {
     SingleNodeClient,
     sendMultiple,
     Ed25519,
-    addressBalance
+    addressBalance,
+    MqttClient
 }

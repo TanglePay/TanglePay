@@ -14,6 +14,7 @@ import {
     getBalance,
     IndexerPluginClient
 } from '@iota/iota.js-next/dist/cjs/index-browser'
+import { MqttClient } from '@iota/mqtt.js-next/dist/cjs/index-browser'
 
 export default {
     Converter,
@@ -31,5 +32,6 @@ export default {
     setIotaBip44BasePath,
     LocalPowProvider,
     getBalance,
-    IndexerPluginClient
+    IndexerPluginClient,
+    MqttClient
 }
