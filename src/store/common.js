@@ -328,7 +328,7 @@ const useUpdateHisList = () => {
         // if (!activityList || !activityList.length) {
         //     activityList = activityData[address] || []
         // }
-        const hisList = []
+        let hisList = []
         const stakeHisList = []
         const isWeb3 = IotaSDK.checkWeb3Node(nodeId)
         const isSMR = IotaSDK.checkSMR(nodeId)
@@ -358,14 +358,15 @@ const useUpdateHisList = () => {
             const iotaPrice = price ? IotaSDK.priceDic[token] : 0
             const nodeInfo = IotaSDK.nodes.find((e) => e.id === nodeId)
             activityList.forEach((e, i) => {
-                const { timestamp, blockId, unlockBlock, decimal, outputs, isSpent, output } = e
+                const { timestamp, blockId, mergeTransactionId, unlockBlock, decimal, outputs, isSpent, output } = e
                 const obj = {
                     viewUrl: `${nodeInfo.explorer}/block/${blockId}`,
                     id: blockId,
                     coin: token,
                     token,
                     timestamp,
-                    decimal: decimal || IotaSDK.curNode?.decimal || 0
+                    decimal: decimal || IotaSDK.curNode?.decimal || 0,
+                    mergeTransactionId
                 }
                 const senderPublicKey = unlockBlock?.signature?.publicKey
                 const senderAddress = IotaSDK.publicKeyToBech32(senderPublicKey)
@@ -437,7 +438,36 @@ const useUpdateHisList = () => {
                     assets: Base.formatNum(assets)
                 })
             })
-            // hisList.sort((a, b) => b.timestamp - a.timestamp)
+            // merge start
+            const newHisList = {}
+            hisList.forEach((e) => {
+                const hisData = newHisList[e.mergeTransactionId]
+                if (hisData) {
+                    const { amount, type, address } = hisData
+                    let newAmount = 0
+                    if (e.type == type) {
+                        newAmount = new BigNumber(amount).plus(e.amount)
+                        newHisList[e.mergeTransactionId].newAmount = Number(newAmount)
+                    } else {
+                        newAmount = new BigNumber(amount).minus(e.amount)
+                        newAmount = Number(newAmount)
+                        newHisList[e.mergeTransactionId].type = newAmount > 0 ? type : e.type
+                        newHisList[e.mergeTransactionId].amount = Math.abs(newAmount)
+                        newHisList[e.mergeTransactionId].address = newAmount > 0 ? address : e.address
+                    }
+                } else {
+                    newHisList[e.mergeTransactionId] = e
+                }
+            })
+            hisList = Object.values(newHisList)
+            hisList.forEach((obj) => {
+                const num = new BigNumber(obj.amount || '').div(Math.pow(10, obj.decimal))
+                const assets = num.times(iotaPrice)
+                obj.num = Base.formatNum(num)
+                obj.assets = Base.formatNum(assets)
+            })
+            // merge end
+            hisList.sort((a, b) => b.timestamp - a.timestamp)
         } else {
             const token = IotaSDK.curNode?.token || ''
             const iotaPrice = price && nodeId !== 2 ? IotaSDK.priceDic[token] : 0

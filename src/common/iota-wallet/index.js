@@ -71,7 +71,7 @@ const IotaSDK = {
             // url: 'https://api.alphanet.iotaledger.net',
             // url: 'https://api.testnet.shimmer.network',
             explorer: 'https://explorer.shimmer.network/testnet',
-            url: 'https://shimmer.iotaichi.com',
+            url: 'https://test.shimmer.node.tanglepay.com',
             // explorer: 'https://shimmer.iotaichi.com/dashboard/explorer',
             name: 'Shimmer Beta',
             enName: 'Shimmer Beta',
@@ -1174,6 +1174,7 @@ const IotaSDK = {
             let allList = []
             if (this.checkSMR(nodeId)) {
                 let outputDatas = await Promise.all(smrOutputIds.map((e) => this.outputData(e)))
+                console.log(outputDatas, '-----')
                 const blockDatas = await Promise.all(
                     outputDatas.map((e) =>
                         this.blockData(!e.metadata?.isSpent ? e.metadata.blockId : e.metadata?.transactionId)
@@ -1181,24 +1182,32 @@ const IotaSDK = {
                 )
                 let blockIds = []
                 allList = outputDatas.map((e, i) => {
-                    const { milestoneTimestampBooked, milestoneTimestampSpent, blockId, isSpent, transactionId } =
-                        e.metadata
+                    const {
+                        milestoneTimestampBooked,
+                        milestoneTimestampSpent,
+                        blockId,
+                        isSpent,
+                        transactionId,
+                        transactionIdSpent
+                    } = e.metadata
                     const isOldisSpent = blockIds.includes(blockId)
                     blockIds.push(blockId)
                     const blockData = blockDatas[i]?.transactionBlock || blockDatas[i]?.block || {}
                     const unlockBlocks = blockData?.payload?.unlocks || []
                     const unlockBlock = unlockBlocks.find((e) => e.signature)
+                    const timestamp =
+                        (!isOldisSpent && isSpent ? milestoneTimestampSpent : milestoneTimestampBooked) ||
+                        milestoneTimestampBooked
                     return {
                         isSpent: isOldisSpent ? false : isSpent,
-                        timestamp:
-                            (!isOldisSpent && isSpent ? milestoneTimestampSpent : milestoneTimestampBooked) ||
-                            milestoneTimestampBooked,
+                        timestamp,
                         blockId: isSpent ? transactionId : blockId,
                         decimal: nodeInfo.decimal,
                         unlockBlock,
                         bech32Address: address,
                         outputs: blockData?.payload?.essence?.outputs || [],
-                        output: e.output
+                        output: e.output,
+                        mergeTransactionId: `${transactionIdSpent || transactionId}_${timestamp}`
                     }
                 })
             } else {
