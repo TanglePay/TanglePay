@@ -439,33 +439,33 @@ const useUpdateHisList = () => {
                 })
             })
             // merge start
-            // const newHisList = {}
-            // hisList.forEach((e) => {
-            //     const hisData = newHisList[e.mergeTransactionId]
-            //     if (hisData) {
-            //         const { amount, type, address } = hisData
-            //         let newAmount = 0
-            //         if (e.type == type) {
-            //             newAmount = new BigNumber(amount).plus(e.amount)
-            //             newHisList[e.mergeTransactionId].amount = Number(newAmount)
-            //         } else {
-            //             newAmount = new BigNumber(amount).minus(e.amount)
-            //             newAmount = Number(newAmount)
-            //             newHisList[e.mergeTransactionId].type = newAmount > 0 ? type : e.type
-            //             newHisList[e.mergeTransactionId].amount = Math.abs(newAmount)
-            //             newHisList[e.mergeTransactionId].address = newAmount > 0 ? address : e.address
-            //         }
-            //     } else {
-            //         newHisList[e.mergeTransactionId] = e
-            //     }
-            // })
-            // hisList = Object.values(newHisList)
-            // hisList.forEach((obj) => {
-            //     const num = new BigNumber(obj.amount || '').div(Math.pow(10, obj.decimal))
-            //     const assets = num.times(iotaPrice)
-            //     obj.num = Base.formatNum(num)
-            //     obj.assets = Base.formatNum(assets)
-            // })
+            const newHisList = {}
+            hisList.forEach((e) => {
+                const hisData = newHisList[e.mergeTransactionId]
+                if (hisData) {
+                    const { amount, type, address } = hisData
+                    let newAmount = 0
+                    if (e.type == type) {
+                        newAmount = new BigNumber(amount).plus(e.amount)
+                        newHisList[e.mergeTransactionId].amount = Number(newAmount)
+                    } else {
+                        newAmount = new BigNumber(amount).minus(e.amount)
+                        newAmount = Number(newAmount)
+                        newHisList[e.mergeTransactionId].type = newAmount > 0 ? type : e.type
+                        newHisList[e.mergeTransactionId].amount = Math.abs(newAmount)
+                        newHisList[e.mergeTransactionId].address = newAmount > 0 ? address : e.address
+                    }
+                } else {
+                    newHisList[e.mergeTransactionId] = e
+                }
+            })
+            hisList = Object.values(newHisList)
+            hisList.forEach((obj) => {
+                const num = new BigNumber(obj.amount || '').div(Math.pow(10, obj.decimal))
+                const assets = num.times(iotaPrice)
+                obj.num = Base.formatNum(num)
+                obj.assets = Base.formatNum(assets)
+            })
             // merge end
             hisList.sort((a, b) => b.timestamp - a.timestamp)
         } else {

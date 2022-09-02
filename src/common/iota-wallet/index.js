@@ -516,7 +516,7 @@ const IotaSDK = {
             const ids = [...addressOutputIds, ...historicAddressOutputIds]
             list = [...list, ...ids]
             outputs[i] = ids
-            const smrHisOutputIds = (hisRes[i]?.items || []).map((e) => e.outputId)
+            const smrHisOutputIds = (hisRes[i]?.items || []).map((e) => e)
             smrOutputIds = [...smrOutputIds, ...smrHisOutputIds]
         })
         return { list, outputs, smrOutputIds }
@@ -1174,7 +1174,7 @@ const IotaSDK = {
         } else {
             let allList = []
             if (this.checkSMR(nodeId)) {
-                let outputDatas = await Promise.all(smrOutputIds.map((e) => this.outputData(e)))
+                let outputDatas = await Promise.all(smrOutputIds.map((e) => this.outputData(e.outputId)))
                 const blockDatas = await Promise.all(
                     outputDatas.map((e) =>
                         this.blockData(!e.metadata?.isSpent ? e.metadata.blockId : e.metadata?.transactionId)
@@ -1182,7 +1182,6 @@ const IotaSDK = {
                 )
                 let blockIds = []
                 allList = outputDatas.map((e, i) => {
-                    console.log(e, '------')
                     const {
                         milestoneTimestampBooked,
                         milestoneTimestampSpent,
@@ -1201,7 +1200,8 @@ const IotaSDK = {
                         (!isOldisSpent && isSpent ? milestoneTimestampSpent : milestoneTimestampBooked) ||
                         milestoneTimestampBooked
                     return {
-                        isSpent: isOldisSpent ? false : isSpent,
+                        // isSpent: isOldisSpent ? false : isSpent,
+                        isSpent: smrOutputIds[i].isSpent,
                         timestamp,
                         blockId: isSpent ? transactionId : blockId,
                         decimal: nodeInfo.decimal,
@@ -1209,7 +1209,7 @@ const IotaSDK = {
                         bech32Address: address,
                         outputs: blockData?.payload?.essence?.outputs || [],
                         output: e.output,
-                        mergeTransactionId: `${transactionIdSpent || transactionId}_${timestamp}`
+                        mergeTransactionId: smrOutputIds[i].milestoneIndex
                     }
                 })
             } else {
