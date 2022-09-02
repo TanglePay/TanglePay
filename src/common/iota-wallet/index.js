@@ -261,11 +261,8 @@ const IotaSDK = {
                 }
             } else {
                 if (this.mqttClient) {
-                    // const publicKey = this.getPu
                     if (this.mqttClient?.outputByConditionAndAddress) {
-                        let curPublicKey = ''
                         this.subscriptionId = this.mqttClient.blocksTransaction((topic, data) => {
-                            // console.log(topic,data,'----');
                             const sender = (data?.payload?.unlocks || []).find((e) => {
                                 const publicKey = e?.signature?.publicKey
                                 return publicKey && this.publicKeyToBech32(publicKey) === address
@@ -386,7 +383,11 @@ const IotaSDK = {
                             id: uuid,
                             nodeId: this.curNode?.id,
                             seed: this.getLocalSeed(baseSeed, password),
-                            bech32HRP: this.curNode?.bech32HRP
+                            bech32HRP: this.curNode?.bech32HRP,
+                            // publicKey:ethereumjsUtils.bufferToHex(key._hdkey._publicKey)
+                            publicKey: ethereumjsUtils.bufferToHex(
+                                ethereumjsUtils.privateToPublic(key._hdkey._privateKey)
+                            )
                             // keystore
                         })
                     } else {
@@ -413,7 +414,8 @@ const IotaSDK = {
                             id: uuid,
                             nodeId: this.curNode?.id,
                             seed: this.getLocalSeed(baseSeed, password),
-                            bech32HRP: this.info?.bech32HRP
+                            bech32HRP: this.info?.bech32HRP,
+                            publicKey: ethereumjsUtils.bufferToHex(addressKeyPair.publicKey)
                         })
                     }
                 }
@@ -443,6 +445,17 @@ const IotaSDK = {
     },
     bytesToHex(bytes) {
         return IotaObj.Converter.bytesToHex(bytes)
+    },
+    async seedToPublicKey({ localSeed, password, nodeId }) {
+        if (this.checkWeb3Node(nodeId)) {
+            const privateKey = await this.getPrivateKey(localSeed, password)
+            const publicKey = ethereumjsUtils.privateToPublic(ethereumjsUtils.toBuffer(privateKey))
+            return ethereumjsUtils.bufferToHex(publicKey)
+        } else {
+            const seed = this.getSeed(localSeed, password)
+            const addressKeyPair = IotaSDK.getPair(seed)
+            return IotaSDK.bytesToHex(addressKeyPair.publicKey)
+        }
     },
     publicKeyToBech32(publicKey) {
         if (!publicKey) {
@@ -504,7 +517,7 @@ const IotaSDK = {
                 addressList.map((e) => {
                     return Http.GET(`${this.explorerApiUrl}/transactionhistory/${this.curNode.network}/${e}`, {
                         isHandlerError: true,
-                        pageSize: 30,
+                        pageSize: 100,
                         sort: 'newest'
                     })
                 })
@@ -1597,6 +1610,8 @@ const IotaSDK = {
                 const uuid = Base.guid()
                 Trace.createWallet(uuid, name, address)
                 Base.setLocalData(`valid.addresses.${address}`, [address])
+
+                const publicKey = ethereumjsUtils.privateToPublic(ethereumjsUtils.toBuffer(privateKey))
                 resolve({
                     address,
                     name,
@@ -1605,7 +1620,8 @@ const IotaSDK = {
                     id: uuid,
                     nodeId: this.curNode?.id,
                     seed: this.getLocalSeed(seed, password),
-                    bech32HRP: this.curNode?.bech32HRP
+                    bech32HRP: this.curNode?.bech32HRP,
+                    publicKey: ethereumjsUtils.bufferToHex(publicKey)
                 })
             } catch (error) {
                 Base.globalToast.error(String(error))
@@ -1819,7 +1835,8 @@ const IotaSDK = {
             id: uuid,
             nodeId: this.curNode?.id,
             seed: this.getLocalSeed(baseSeed, password),
-            bech32HRP: this.info?.bech32HRP
+            bech32HRP: this.info?.bech32HRP,
+            publicKey: ethereumjsUtils.bufferToHex(addressKeyPair.publicKey)
         }
     },
     // gen 4218 ——> gen 4219 ——> 4218 to 4219

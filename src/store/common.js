@@ -155,15 +155,22 @@ export const useSelectWallet = () => {
 
 export const useEditWallet = () => {
     const { store, dispatch } = useContext(StoreContext)
-    const editWallet = (id, data, isChangePassword) => {
+    const editWallet = async (id, data, isChangePassword) => {
         let walletsList = _get(store, 'common.walletsList')
+        if (isChangePassword && !data.publicKey) {
+            data.publicKey = await IotaSDK.seedToPublicKey({
+                localSeed: data.seed,
+                password: data.oldPassword,
+                nodeId: data.nodeId
+            })
+        }
         walletsList.forEach((e, i) => {
             if (e.id === id) {
                 // reencrypt seed on password change
                 if (isChangePassword) {
                     data.seed = IotaSDK.changePassword(data.oldPassword, e.seed, data.password)
                 }
-                walletsList[i] = { ...e, ...data }
+                walletsList[i] = { ...e, ...data, oldPassword: undefined }
             }
         })
         dispatch({
