@@ -81,7 +81,7 @@ export const reducer = (state, action) => {
             })
             const saveFunc = Base.isBrowser ? 'setLocalData' : 'setSensitiveInfo'
             Base[saveFunc]('common.walletsList', localList)
-            return { ...state, [type]: list }
+            return { ...state, [type]: localList }
         }
         case 'disTrace': {
             Base.setLocalData('common.disTrace', data)
@@ -170,7 +170,9 @@ export const useEditWallet = () => {
                 if (isChangePassword) {
                     data.seed = IotaSDK.changePassword(data.oldPassword, e.seed, data.password)
                 }
-                walletsList[i] = { ...e, ...data, oldPassword: undefined }
+                delete data.oldPassword
+                delete data.password
+                walletsList[i] = { ...e, ...data }
             }
         })
         dispatch({
@@ -270,8 +272,8 @@ const setAssetsData = (totalAssets, list, dispatch) => {
 
 export const useUpdateBalance = () => {
     const { store, dispatch } = useContext(StoreContext)
-    const curNodeId = _get(store, 'common.curNodeId')
-    const updateBalance = async (address, list) => {
+    // const curNodeId = _get(store, 'common.curNodeId')
+    const updateBalance = async (address, list, curNodeId) => {
         await Promise.all(
             list.map((e) => {
                 return getPrice(e.token)
@@ -296,12 +298,14 @@ export const useUpdateBalance = () => {
         const totalAssets = {
             assets: Base.formatNum(total)
         }
-        Base.setLocalData(address, {
-            assetsList: newList,
-            totalAssets
-        })
-        setRequestAssets(true, dispatch)
-        setAssetsData(totalAssets, newList, dispatch)
+        if (IotaSDK?.curNode?.id == curNodeId) {
+            Base.setLocalData(address, {
+                assetsList: newList,
+                totalAssets
+            })
+            setRequestAssets(true, dispatch)
+            setAssetsData(totalAssets, newList, dispatch)
+        }
     }
     return updateBalance
 }
@@ -718,14 +722,18 @@ export const useGetAssetsList = (curWallet) => {
             //     return;
             // }
             //validAddresses
-            dispatch({
-                type: 'common.validAddresses',
-                data: addressList
-            })
+            if (newCurWallet.nodeId == IotaSDK?.curNode?.id) {
+                dispatch({
+                    type: 'common.validAddresses',
+                    data: addressList
+                })
+            }
             // Sync balance
             IotaSDK.getBalance(newCurWallet, addressList)
                 .then((list) => {
-                    updateBalance(curAddress, list)
+                    if (newCurWallet.nodeId == IotaSDK?.curNode?.id) {
+                        updateBalance(curAddress, list, newCurWallet.nodeId)
+                    }
                 })
                 .catch(() => {
                     setRequestAssets(true, dispatch)
@@ -736,7 +744,9 @@ export const useGetAssetsList = (curWallet) => {
             if (IotaSDK.checkWeb3Node(newCurWallet.nodeId)) {
                 IotaSDK.getHisList([], newCurWallet)
                     .then((activityList) => {
-                        updateHisList(activityList, newCurWallet)
+                        if (newCurWallet.nodeId == IotaSDK?.curNode?.id) {
+                            updateHisList(activityList, newCurWallet)
+                        }
                     })
                     .catch(() => {
                         updateHisList([], newCurWallet)
@@ -745,7 +755,9 @@ export const useGetAssetsList = (curWallet) => {
                 // IotaSDK.getAllOutputIds(addressList).then((outputList) => {
                 IotaSDK.getHisList(outputIds, newCurWallet, smrOutputIds)
                     .then((activityList) => {
-                        updateHisList(activityList, newCurWallet)
+                        if (newCurWallet.nodeId == IotaSDK?.curNode?.id) {
+                            updateHisList(activityList, newCurWallet)
+                        }
                     })
                     .catch(() => {
                         updateHisList([], newCurWallet)
@@ -754,10 +766,12 @@ export const useGetAssetsList = (curWallet) => {
                 // Sync stake rewards
                 IotaSDK.getAddressListRewards(addressList)
                     .then((dic) => {
-                        dispatch({
-                            type: 'staking.stakedRewards',
-                            data: dic
-                        })
+                        if (newCurWallet.nodeId == IotaSDK?.curNode?.id) {
+                            dispatch({
+                                type: 'staking.stakedRewards',
+                                data: dic
+                            })
+                        }
                     })
                     .catch(() => {
                         dispatch({
