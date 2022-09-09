@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react'
-import { IotaSDK, API_URL } from '../common'
+import { IotaSDK, API_URL, Base } from '../common'
 import { StoreContext } from './context'
 import { useGetNodeWallet } from './common'
 import _uniqWith from 'lodash/uniqWith'
@@ -55,6 +55,9 @@ export const reducer = (state, action) => {
             }
             return { ...state, ...obj }
         }
+        case 'participationEvents':
+            Base.setLocalData('staking.participationEvents', data)
+            return { ...state, [type]: data }
     }
     return { ...state, [type]: data }
 }

@@ -652,9 +652,11 @@ const useUpdateHisList = () => {
                     } else {
                         e.type = 4
                     }
-                } else if (preInfo) {
+                } else if (preInfo && !tLen) {
                     e.type = 3
                     e.tokens = [...preInfo.tokens]
+                } else {
+                    e.type = 1
                 }
                 preInfo = { ...e }
             })
