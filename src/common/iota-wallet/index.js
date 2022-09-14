@@ -191,9 +191,9 @@ const IotaSDK = {
                     ) {
                         const bech32Hrp = ShimmerHornet.Protocol.bech32Hrp
                         if (bech32Hrp == 'rms') {
-                            shimmerRmsList.push({ ...info })
+                            shimmerRmsList.push({ ...info, curNodeKey: i })
                         } else if (bech32Hrp === 'smr') {
-                            shimmerSmrList.push({ ...info })
+                            shimmerSmrList.push({ ...info, curNodeKey: i })
                         }
                     }
                 }
@@ -207,7 +207,7 @@ const IotaSDK = {
                         IotaHornet.bech32Hrp == 'iota' &&
                         IotaHornet.isHealthy
                     ) {
-                        iotaList.push({ ...info })
+                        iotaList.push({ ...info, curNodeKey: i })
                     }
                 }
                 const selectNode = (list) => {
@@ -219,10 +219,10 @@ const IotaSDK = {
                 // shimmer rms
                 if (shimmerRmsList.length > 0) {
                     const selectInfo = selectNode(shimmerRmsList)
-                    console.log(selectInfo)
                     const info = _nodes.find((e) => e.bech32HRP === 'rms')
                     if (selectInfo?.ShimmerHornet) {
                         info.url = `https://${selectInfo.ShimmerHornet.Domain}`
+                        info.curNodeKey = selectInfo.curNodeKey
                     }
                 }
                 // shimmer smr
@@ -231,6 +231,7 @@ const IotaSDK = {
                     const info = _nodes.find((e) => e.bech32HRP === 'smr')
                     if (selectInfo?.ShimmerHornet) {
                         info.url = `https://${selectInfo.ShimmerHornet.Domain}`
+                        info.curNodeKey = selectInfo.curNodeKey
                     }
                 }
                 // iota
@@ -239,6 +240,7 @@ const IotaSDK = {
                     const info = _nodes.find((e) => e.bech32HRP === 'iota')
                     if (selectInfo?.IotaHornet) {
                         info.url = `https://${selectInfo.IotaHornet.Domain}`
+                        info.curNodeKey = selectInfo.curNodeKey
                     }
                 }
             } catch (error) {
@@ -731,6 +733,7 @@ const IotaSDK = {
         let realBalance = BigNumber(0)
         let balance = BigNumber(0)
         let actionTime = new Date().getTime()
+        const smrTokens = {}
         if (this.checkWeb3Node(nodeId)) {
             const res = await Promise.all(addressList.map((e) => this.client.eth.getBalance(e)))
             res.forEach((e) => {
@@ -746,11 +749,41 @@ const IotaSDK = {
                 }
                 res.forEach((e) => {
                     realBalance = realBalance.plus(e.balance)
+                    if (e.nativeTokens) {
+                        for (const i in e.nativeTokens) {
+                            smrTokens[i] = smrTokens[i] || BigNumber(0)
+                            smrTokens[i] = smrTokens[i].plus(e.nativeTokens[i])
+                        }
+                    }
                 })
             } catch (error) {
                 console.log(error)
             }
         }
+        const tokens = Object.keys(smrTokens)
+        const foundryList = await Promise.all(tokens.map((e) => this.foundry(e)))
+        let nativeTokens = []
+        tokens.forEach((e, i) => {
+            const immutableFeatures = foundryList[i]?.output?.immutableFeatures || []
+            let info = immutableFeatures.find((e) => !!e.data)
+            try {
+                info = IotaObj.Converter.hexToUtf8(info.data)
+                info = JSON.parse(info)
+                const { decimals, symbol } = info
+                let realBalance = smrTokens[e]
+                const balance = realBalance.div(Math.pow(10, decimals))
+                realBalance = Number(smrTokens[e])
+                nativeTokens.push({
+                    realBalance,
+                    balance: Number(balance),
+                    decimal: decimals,
+                    token: symbol
+                })
+            } catch (error) {
+                console.log(error)
+            }
+        })
+        console.log(foundryList, '----')
 
         actionTime = new Date().getTime() - actionTime
         Trace.actionLog(10, address, actionTime, Base.curLang, nodeId, token)
@@ -767,7 +800,8 @@ const IotaSDK = {
                 decimal,
                 token
             },
-            ...contractAssets
+            ...contractAssets,
+            ...nativeTokens
         ]
         return balanceList
     },
@@ -1271,6 +1305,15 @@ const IotaSDK = {
             return null
         }
         return await requestFunc()
+    },
+    // foundry
+    async foundry(foundryId) {
+        const res = await this.requestQueue([
+            Http.GET(`${this.explorerApiUrl}/foundry/${this.curNode.network}/${foundryId}`, {
+                isHandlerError: true
+            })
+        ])
+        return res?.foundryDetails || {}
     },
     // handle block 404 ？
     async blockData(messageId) {

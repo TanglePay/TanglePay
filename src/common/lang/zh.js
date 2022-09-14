@@ -167,7 +167,7 @@ const ZH = {
         me: '個人',
         manageWallets: '管理錢包',
         setting: '設置',
-        network: 'Network',
+        network: '節點',
         privacy: '隱私',
         privacyTips: '參加TangleMetrics',
         aboutUs: '關於我們',
@@ -227,7 +227,8 @@ const ZH = {
         noAvailableTips: '您的賬戶沒有可用IOTA，請轉入IOTA參與空投。',
         stakeBelow1Tips: '數量不能少於1Mi，請重新輸入。',
         soon: '即將開始',
-        limitAmount: '至少需要 {num} MIOTA 才可參與 {token} staking.'
+        limitAmount: '至少需要 {num} MIOTA 才可參與 {token} staking.',
+        restake: '自動 Restake'
     },
     apps: {
         title: 'Dapps',
