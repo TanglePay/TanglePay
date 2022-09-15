@@ -783,7 +783,6 @@ const IotaSDK = {
                 console.log(error)
             }
         })
-        console.log(foundryList, '----')
 
         actionTime = new Date().getTime() - actionTime
         Trace.actionLog(10, address, actionTime, Base.curLang, nodeId, token)
@@ -792,7 +791,6 @@ const IotaSDK = {
         realBalance = Number(realBalance)
         Trace.updateAddressAmount(id, address, realBalance, nodeId, token)
         const contractAssets = await this.getContractAssets(nodeId, address, id)
-
         const balanceList = [
             {
                 realBalance,
@@ -1092,7 +1090,7 @@ const IotaSDK = {
                 const contractGasLimit = contractInfo?.gasLimit
                 const { gasLimit } = await this.getGasLimit(contractGasLimit, address, 0)
                 if (gasLimit === -1) {
-                    return Base.globalToast.error(I18n.t('assets.balanceError'))
+                    return Base.globalToast.error(I18n.t('assets.evmGasNotSufficient').replace(/{token}/, token))
                 }
                 // const estimatePrice = this.client.utils
                 const signData = {
@@ -1103,7 +1101,6 @@ const IotaSDK = {
                     gasLimit,
                     data: taggedData || web3Contract.methods.transfer(toAddress, sendAmountHex).encodeABI()
                 }
-                console.log(web3Contract.methods.transfer(toAddress, sendAmountHex).encodeABI(), '------')
                 if (contractInfo?.maxPriorityFeePerGas) {
                     signData.maxPriorityFeePerGas = contractInfo?.maxPriorityFeePerGas
                 }
@@ -1128,7 +1125,9 @@ const IotaSDK = {
                 const nodeGasLimit = nodeInfo?.gasLimit
                 const { gasLimit, gasPrice } = await this.getGasLimit(nodeGasLimit, address, sendAmount)
                 if (gasLimit === -1) {
-                    return Base.globalToast.error(I18n.t('assets.balanceError'))
+                    return Base.globalToast.error(
+                        I18n.t('assets.evmGasNotSufficient').replace(/{token}/, nodeInfo?.token)
+                    )
                 }
                 try {
                     const signed = await eth.accounts.signTransaction(
@@ -2061,8 +2060,9 @@ const IotaSDK = {
         if (res.code !== -1) {
             try {
                 Base.globalToast.showLoading()
+                const bigNumber = BigNumber(smr4218Balance).div(Math.pow(10, this.curNode.decimal))
                 await this.send(smr4218, smr4219.address, Number(smr4218Balance))
-                res = { code: 200, amount: Number(smr4218Balance), addressInfo: smr4219 }
+                res = { code: 200, amount: Number(bigNumber), addressInfo: smr4219 }
             } catch (error) {
                 console.log(error, '-----')
                 res = { code: 1 }

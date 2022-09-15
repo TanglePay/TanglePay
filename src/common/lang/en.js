@@ -170,7 +170,8 @@ Secret Recovery Phrase or private key for this wallet before continuing.`,
         album: 'album',
         readFail: 'QR code recognition failed',
         residueBelow1Tips: 'The remaining amount cannot be a decimal number below 1. Please enter the amount again.',
-        sendBelow1Tips: 'Sending amount cannot be less than 1 Mi, please enter the amount again.'
+        sendBelow1Tips: 'Sending amount cannot be less than 1 Mi, please enter the amount again.',
+        evmGasNotSufficient: 'The {token} in the address is not sufficient for the transaction gas fee. Please deposit.'
     },
     user: {
         me: 'Me',
