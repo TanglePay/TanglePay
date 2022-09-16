@@ -279,7 +279,7 @@ export const useUpdateBalance = () => {
             })
         )
         let total = BigNumber(0)
-        const newList = list.map(({ realBalance, token, contract, balance, decimal }) => {
+        const newList = list.map(({ realBalance, token, contract, balance, decimal, isSMRToken }) => {
             const price = IotaSDK.priceDic[token]
             const assets = price && curNodeId !== 2 ? BigNumber(balance).times(price || 0) : 0
             total = total.plus(assets)
@@ -290,7 +290,8 @@ export const useUpdateBalance = () => {
                 unit: curNodeId === 1 ? 'Mi' : '',
                 name: token,
                 contract,
-                assets: Base.formatNum(assets)
+                assets: Base.formatNum(assets),
+                isSMRToken
             }
         })
 
