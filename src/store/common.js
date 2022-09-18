@@ -362,7 +362,8 @@ const useUpdateHisList = () => {
                     num: Base.formatNum(num),
                     decimal: 0,
                     assets: Base.formatNum(assets),
-                    amount
+                    amount,
+                    unit: ''
                 }
                 hisList.push(obj)
             })
@@ -396,11 +397,12 @@ const useUpdateHisList = () => {
                 const obj = {
                     viewUrl: `${nodeInfo.explorer}/block/${blockId}`,
                     id: blockId,
-                    coin: token,
+                    coin: 'SMR',
                     token,
                     timestamp,
                     decimal: decimal || IotaSDK.curNode?.decimal || 0,
-                    mergeTransactionId
+                    mergeTransactionId,
+                    unit: ''
                 }
                 const senderPublicKey = unlockBlock?.signature?.publicKey
                 const senderAddress = IotaSDK.publicKeyToBech32(senderPublicKey)
@@ -465,69 +467,6 @@ const useUpdateHisList = () => {
                 })
             })
 
-            // token start
-            // const tokenActivityList = activityList.filter(
-            //     (e) => e.output?.nativeTokens && e.output?.nativeTokens?.length
-            // )
-            // tokenActivityList.sort((a, b) => b.timestamp - a.timestamp)
-            // tokenActivityList.forEach((e, i) => {
-            //     const { timestamp, blockId, mergeTransactionId, unlockBlock, decimal, outputs, isSpent, output } = e
-            //     const senderPublicKey = unlockBlock?.signature?.publicKey
-            //     const senderAddress = IotaSDK.publicKeyToBech32(senderPublicKey)
-            //     let num = BigNumber(output?.nativeTokens?.[0]?.amount || 0)
-            //     num = Number(num)
-            //     const id = output?.nativeTokens?.[0]?.id || ''
-            //     const symbol = tokenDic[id]?.symbol || ''
-            //     const decimals = tokenDic[id]?.decimals || 0
-            //     const obj = {
-            //         viewUrl: `${nodeInfo.explorer}/block/${blockId}`,
-            //         id: blockId,
-            //         timestamp,
-            //         mergeTransactionId:`${mergeTransactionId}_token`,
-            //         coin: symbol,
-            //         token: symbol,
-            //         decimal: decimals
-            //     }
-
-            //     if (isSpent) {
-            //         //  send
-            //         const receiverList = outputs.filter((e) =>
-            //             e.unlockConditions.find(
-            //                 (d) =>
-            //                     d?.address?.pubKeyHash && IotaSDK.hexToBech32(d?.address?.pubKeyHash) !== senderAddress
-            //             )
-            //         )
-            //         const otherOutput = receiverList[0] || {}
-            //         let otherAddress = (otherOutput?.unlockConditions || []).find((e) => e?.address?.pubKeyHash)
-            //         otherAddress = otherAddress?.address?.pubKeyHash
-            //             ? IotaSDK.hexToBech32(otherAddress?.address?.pubKeyHash)
-            //             : ''
-            //         Object.assign(obj, {
-            //             type: 6,
-            //             num: num,
-            //             address: otherAddress,
-            //             amount: num
-            //         })
-            //     } else {
-            //         // receive
-            //         Object.assign(obj, {
-            //             type: 5,
-            //             num: num,
-            //             address: senderAddress,
-            //             amount: num
-            //         })
-            //     }
-
-            //     num = new BigNumber(obj.amount || '').div(Math.pow(10, obj.decimal))
-            //     const assets = num.times(iotaPrice)
-            //     hisList.push({
-            //         ...obj,
-            //         num: Base.formatNum(num),
-            //         assets: Base.formatNum(assets)
-            //     })
-            // })
-            // token end
-
             // merge start
             const newHisList = {}
             hisList.forEach((e) => {
@@ -572,7 +511,8 @@ const useUpdateHisList = () => {
                     coin: 'Miota',
                     token: 'IOTA',
                     timestamp,
-                    decimal: decimal || IotaSDK.curNode?.decimal || 0
+                    decimal: decimal || IotaSDK.curNode?.decimal || 0,
+                    unit: 'Mi'
                 }
                 // type：0->receive, 1->send, 2->stake, 3->unstake, 4->sign, 5->receive smr token, 6->send smr token,
                 // stake
@@ -672,23 +612,27 @@ const useUpdateHisList = () => {
         const lastData = hisList[0]
         if (
             Base.globalTemData.isGetMqttMessage &&
-            lastData?.type === 0 &&
             lastData?.timestamp &&
-            lastData?.address !== address &&
             new Date().getTime() / 1000 - lastData?.timestamp <= 600
         ) {
-            // prompt users when receiving transfers from mqtt messages
             Base.globalTemData.isGetMqttMessage = false
-            Trace.transaction(
-                'receive',
-                lastData.id,
-                lastData.address,
-                address,
-                lastData.amount,
-                nodeId,
-                lastData.token
-            )
-            Base.globalToast.success(I18n.t('assets.receivedSucc').replace('{num}', lastData.num))
+            if ((lastData?.type === 0 || lastData?.type === 5) && lastData?.address !== address) {
+                // prompt users when receiving transfers from mqtt messages
+                Trace.transaction(
+                    'receive',
+                    lastData.id,
+                    lastData.address,
+                    address,
+                    lastData.amount,
+                    nodeId,
+                    lastData.token
+                )
+                const str = I18n.t('assets.receivedSucc')
+                    .replace('{num}', lastData.num)
+                    .replace('{unit}', lastData.unit || '')
+                    .replace('{token}', lastData.token)
+                Base.globalToast.success(str)
+            }
         }
         dispatch({
             type: 'common.activityData',
