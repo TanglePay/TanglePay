@@ -605,13 +605,7 @@ const IotaSDK = {
         }
         let list = []
         let outputs = []
-        const res = await Promise.all(
-            addressList.map((e) => {
-                return Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${e}`, {
-                    isHandlerError: true
-                })
-            })
-        )
+
         let hisRes = []
         let smrOutputIds = []
         if (this.checkSMR(this.curNode?.id)) {
@@ -624,16 +618,30 @@ const IotaSDK = {
                     })
                 })
             )
+            hisRes.forEach((e, i) => {
+                list = []
+                outputs[i] = []
+                const smrHisOutputIds = (e?.items || []).map((e) => e)
+                smrOutputIds = [...smrOutputIds, ...smrHisOutputIds]
+            })
+        } else {
+            const res = await Promise.all(
+                addressList.map((e) => {
+                    return Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${e}`, {
+                        isHandlerError: true
+                    })
+                })
+            )
+            res.forEach((e, i) => {
+                const addressOutputIds = e?.addressOutputIds || []
+                const historicAddressOutputIds = e?.historicAddressOutputIds || []
+                const ids = [...addressOutputIds, ...historicAddressOutputIds]
+                list = [...list, ...ids]
+                outputs[i] = ids
+                const smrHisOutputIds = (hisRes[i]?.items || []).map((e) => e)
+                smrOutputIds = [...smrOutputIds, ...smrHisOutputIds]
+            })
         }
-        res.forEach((e, i) => {
-            const addressOutputIds = e?.addressOutputIds || []
-            const historicAddressOutputIds = e?.historicAddressOutputIds || []
-            const ids = [...addressOutputIds, ...historicAddressOutputIds]
-            list = [...list, ...ids]
-            outputs[i] = ids
-            const smrHisOutputIds = (hisRes[i]?.items || []).map((e) => e)
-            smrOutputIds = [...smrOutputIds, ...smrHisOutputIds]
-        })
         return { list, outputs, smrOutputIds }
     },
     // cache valid address
@@ -775,26 +783,19 @@ const IotaSDK = {
         const foundryList = await Promise.all(tokens.map((e) => this.foundry(e)))
         let nativeTokens = []
         tokens.forEach((e, i) => {
-            const immutableFeatures = foundryList[i]?.output?.immutableFeatures || []
-            let info = immutableFeatures.find((e) => !!e.data)
-            try {
-                info = IotaObj.Converter.hexToUtf8(info.data)
-                info = JSON.parse(info)
-                const { decimals, symbol } = info
-                let realBalance = smrTokens[e]
-                const balance = realBalance.div(Math.pow(10, decimals))
-                realBalance = Number(smrTokens[e])
-                nativeTokens.push({
-                    tokenId: e,
-                    realBalance,
-                    balance: Number(balance),
-                    decimal: decimals,
-                    token: symbol,
-                    isSMRToken: true
-                })
-            } catch (error) {
-                console.log(error)
-            }
+            const info = this.handleFoundry(foundryList[i])
+            const { decimals, symbol } = info
+            let realBalance = smrTokens[e]
+            const balance = realBalance.div(Math.pow(10, decimals))
+            realBalance = Number(smrTokens[e])
+            nativeTokens.push({
+                tokenId: e,
+                realBalance,
+                balance: Number(balance),
+                decimal: decimals,
+                token: symbol,
+                isSMRToken: true
+            })
         })
 
         actionTime = new Date().getTime() - actionTime
@@ -1353,6 +1354,18 @@ const IotaSDK = {
         ])
         return res?.foundryDetails || {}
     },
+    // handle foundry
+    handleFoundry(foundryData) {
+        const immutableFeatures = foundryData?.output?.immutableFeatures || []
+        let info = immutableFeatures.find((e) => !!e.data)
+        try {
+            info = IotaObj.Converter.hexToUtf8(info.data)
+            info = JSON.parse(info)
+        } catch (error) {
+            info = { decimals: 0, symbol: '' }
+        }
+        return info
+    },
     // handle block 404 ？
     async blockData(messageId) {
         const res = await this.requestQueue([
@@ -1442,7 +1455,6 @@ const IotaSDK = {
                     const isOldisSpent = blockIds.includes(blockId)
                     blockIds.push(blockId)
                     const blockData = blockDatas[i]?.transactionBlock || blockDatas[i]?.block || {}
-                    console.log(blockDatas, '------')
                     const unlockBlocks = blockData?.payload?.unlocks || []
                     const unlockBlock = unlockBlocks.find((e) => e.signature)
                     const timestamp =
