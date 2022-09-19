@@ -352,7 +352,6 @@ const IotaSDK = {
                         const list = _flatten(res)
                         if (list.length > 0) {
                             await this.setPastLogs(address, this.curNode?.id, list)
-                            Base.globalTemData.isGetMqttMessage = true
                             self.refreshAssets()
                         }
                         this.web3Subscription = setTimeout(getData, 5000)
@@ -392,32 +391,24 @@ const IotaSDK = {
                                     })
                                 }
                                 setTimeout(() => {
-                                    Base.globalTemData.isGetMqttMessage = true
                                     self.refreshAssets()
                                 }, 8000)
                             }
                         })
                     } else {
-                        this.subscriptionId = this.mqttClient.addressOutputs(
-                            address,
-                            _debounce(async () => {
-                                try {
-                                    Base.globalTemData.isGetMqttMessage = true
-                                    if (this.isNeedRestake == 1) {
-                                        this.isNeedRestake = 2
-                                    }
-                                    if (this.isAwaitStake == 1) {
-                                        this.isAwaitStake = 2
-                                    }
-                                    self.refreshAssets()
-                                    // SyncAccounts
-                                    // Data are tagged with isGetMqttMessage for subsequent processing and differentiates against manual refresh
-                                } catch (error) {
-                                    console.log(error)
+                        this.subscriptionId = this.mqttClient.addressOutputs(address, () => {
+                            try {
+                                if (this.isNeedRestake == 1) {
+                                    this.isNeedRestake = 2
                                 }
-                            }),
-                            1000
-                        )
+                                if (this.isAwaitStake == 1) {
+                                    this.isAwaitStake = 2
+                                }
+                                self.refreshAssets()
+                            } catch (error) {
+                                console.log(error)
+                            }
+                        })
                     }
                 }
             }
@@ -1470,7 +1461,7 @@ const IotaSDK = {
                     return {
                         // isSpent: isOldisSpent ? false : isSpent,
                         isSpent: smrOutputIds[i].isSpent,
-                        timestamp,
+                        timestamp: smrOutputIds[i].milestoneTimestamp,
                         blockId: isSpent ? transactionId : blockId,
                         decimal: nodeInfo.decimal,
                         unlockBlock,
@@ -2292,7 +2283,7 @@ const IotaSDK = {
             if (outputBalance.lt(0)) {
                 throw new Error(
                     `Insufficient funds to carry out the transaction, need ${
-                        receiverStorageDeposit.toString() + remainderStorageDeposit.toString()
+                        Number(receiverStorageDeposit.toString()) + Number(remainderStorageDeposit.toString())
                     }`
                 )
             }
