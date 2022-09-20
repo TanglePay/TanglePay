@@ -31,8 +31,8 @@ const IOTA_NODE_ID = 1
 const IotaSDK = {
     IOTA_NODE_ID,
     checkIota(nodeId) {
-        const nodeInfo = this.nodes.find((e) => e.id === nodeId)
-        return nodeInfo?.type === 1
+        const nodeInfo = this.nodes.find((e) => e.id == nodeId)
+        return nodeInfo?.type == 1
     },
     IOTA_MI: 1000000, // 1mi = 1000000i
     convertUnits(value, fromUnit, toUnit) {
@@ -45,7 +45,7 @@ const IotaSDK = {
         } else {
             IotaObj = Iota
         }
-        this.explorerApiUrl = this.nodes.find((e) => e.id === nodeId)?.explorerApiUrl || 'https://explorer-api.iota.org'
+        this.explorerApiUrl = this.nodes.find((e) => e.id == nodeId)?.explorerApiUrl || 'https://explorer-api.iota.org'
     },
     // type:1.iota, 2.web3,
     // filterMenuList:['assets','apps','staking','me']
@@ -165,7 +165,7 @@ const IotaSDK = {
             res = await res.json()
             const _nodes = this._nodes
             res.forEach((e) => {
-                const index = _nodes.findIndex((d) => d.id !== e.id)
+                const index = _nodes.findIndex((d) => d.id != e.id)
                 if (index >= 0) {
                     _nodes.push(e)
                 } else {
@@ -268,7 +268,7 @@ const IotaSDK = {
         }
     },
     hasStake(nodeId) {
-        return !(this.nodes.find((e) => e.id === nodeId)?.filterAssetsList || []).includes('stake')
+        return !(this.nodes.find((e) => e.id == nodeId)?.filterAssetsList || []).includes('stake')
     },
     // token price
     priceDic: {},
@@ -276,8 +276,8 @@ const IotaSDK = {
     async init(id) {
         this.changeIota(id)
         Base.globalToast.showLoading()
+        const curNode = this.nodes.find((e) => e.id == id) || this.nodes[0]
         try {
-            const curNode = this.nodes.find((e) => e.id === id) || this.nodes[0]
             this.curNode = curNode
             if (this.web3Subscription) {
                 clearTimeout(this.web3Subscription)
@@ -292,7 +292,7 @@ const IotaSDK = {
                 this.info = this.client
                 if (this.client?.eth) {
                     this.client.eth.getChainId().catch(() => {
-                        Base.globalToast.error(I18n.t('user.nodeError'))
+                        Base.globalToast.error(I18n.t('user.nodeError') + ':' + (curNode.curNodeKey || curNode.name))
                     })
                 }
             } else {
@@ -312,7 +312,7 @@ const IotaSDK = {
         } catch (error) {
             console.log(error)
             Base.globalToast.hideLoading()
-            Base.globalToast.error(I18n.t('user.nodeError'))
+            Base.globalToast.error(I18n.t('user.nodeError') + ':' + (curNode.curNodeKey || curNode.name))
         }
     },
     // refresh assets & activity list
@@ -426,7 +426,9 @@ const IotaSDK = {
     async importMnemonic({ mnemonic, name, password }) {
         return new Promise(async (resolve, reject) => {
             if (!this.info) {
-                Base.globalToast.error(I18n.t('user.nodeError'))
+                Base.globalToast.error(
+                    I18n.t('user.nodeError') + ':' + (this?.curNode?.curNodeKey || this?.curNode?.name)
+                )
                 reject()
                 return
             }
@@ -714,7 +716,7 @@ const IotaSDK = {
                     }
                 }
                 actionTime = new Date().getTime() - actionTime
-                const nodeInfo = this.nodes.find((e) => e.id === nodeId) || {}
+                const nodeInfo = this.nodes.find((e) => e.id == nodeId) || {}
                 Trace.actionLog(60, address, actionTime, Base.curLang, nodeId, nodeInfo.token)
             }
         }
@@ -747,7 +749,7 @@ const IotaSDK = {
         if (!this.client) {
             return []
         }
-        const node = IotaSDK.nodes.find((e) => e.id === nodeId)
+        const node = IotaSDK.nodes.find((e) => e.id == nodeId)
         const token = node?.token
         const decimal = node?.decimal
         let realBalance = BigNumber(0)
@@ -1080,11 +1082,13 @@ const IotaSDK = {
     },
     async send(fromInfo, toAddress, sendAmount, ext) {
         if (!this.client) {
-            return Base.globalToast.error(I18n.t('user.nodeError'))
+            return Base.globalToast.error(
+                I18n.t('user.nodeError') + ':' + (this?.curNode?.curNodeKey || this?.curNode?.name)
+            )
         }
         const { seed, address, password, nodeId } = fromInfo
         const baseSeed = this.getSeed(seed, password)
-        const nodeInfo = this.nodes.find((e) => e.id === nodeId) || {}
+        const nodeInfo = this.nodes.find((e) => e.id == nodeId) || {}
         let actionTime = new Date().getTime()
         let traceToken = ''
         if (this.checkWeb3Node(nodeId)) {
@@ -1445,9 +1449,11 @@ const IotaSDK = {
     },
     async getHisList(outputList, { address, nodeId }, smrOutputIds) {
         if (!this.client) {
-            return Base.globalToast.error(I18n.t('user.nodeError'))
+            return Base.globalToast.error(
+                I18n.t('user.nodeError') + ':' + (this?.curNode?.curNodeKey || this?.curNode?.name)
+            )
         }
-        const nodeInfo = this.nodes.find((e) => e.id === nodeId) || {}
+        const nodeInfo = this.nodes.find((e) => e.id == nodeId) || {}
         let actionTime = new Date().getTime()
         if (this.checkWeb3Node(nodeId)) {
             if (this.client?.eth) {
@@ -1602,7 +1608,7 @@ const IotaSDK = {
             }, 500)
             return
         }
-        const apiUrl = this._nodes.find((e) => e.id === 1)?.url
+        const apiUrl = this._nodes.find((e) => e.id == 1)?.url
         url = `${apiUrl}/api/plugins/participation/${url}`
         const res = await Http.GET(url, { isHandlerError: true })
         return res?.data
@@ -1849,7 +1855,9 @@ const IotaSDK = {
     async importPrivateKey({ privateKey, name, password }) {
         return new Promise(async (resolve, reject) => {
             if (!this.client || !this.isWeb3Node) {
-                Base.globalToast.error(I18n.t('user.nodeError'))
+                Base.globalToast.error(
+                    I18n.t('user.nodeError') + ':' + (this?.curNode?.curNodeKey || this?.curNode?.name)
+                )
                 reject()
                 return
             }
@@ -1912,7 +1920,7 @@ const IotaSDK = {
     },
     async changeLogData(address, nodeId, list) {
         address = (address || '').toLocaleLowerCase()
-        const curNode = this.nodes.find((e) => e.id === nodeId)
+        const curNode = this.nodes.find((e) => e.id == nodeId)
         const blocks = await Promise.all(list.map((e) => this.client.eth.getBlock(e.blockNumber)))
         const contractList = curNode?.contractList || []
         let curToken = curNode?.token
@@ -2028,7 +2036,7 @@ const IotaSDK = {
         return buffer
     },
     async getContractAssets(nodeId, address, walletId) {
-        const nodeInfo = this.nodes.find((e) => e.id === nodeId)
+        const nodeInfo = this.nodes.find((e) => e.id == nodeId)
         if (!nodeInfo?.contractList?.length) {
             return []
         }
@@ -2067,8 +2075,8 @@ const IotaSDK = {
     /**************** SMR start *******************/
     SMR_NODE_ID: 101,
     checkSMR(nodeId) {
-        const nodeInfo = this.nodes.find((e) => e.id === nodeId)
-        return nodeInfo?.type === 3
+        const nodeInfo = this.nodes.find((e) => e.id == nodeId)
+        return nodeInfo?.type == 3
     },
     async importSMRBySeed(seed, password) {
         const baseSeed = await this.checkPassword(seed, password)
