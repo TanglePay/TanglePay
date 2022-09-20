@@ -14,7 +14,8 @@ import {
     getBalance,
     IndexerPluginClient,
     sendAdvanced,
-    TransactionHelper
+    TransactionHelper,
+    addressUnlockBalance
 } from '@iota/iota.js-next/dist/cjs/index-browser'
 import { MqttClient } from '@iota/mqtt.js-next/dist/cjs/index-browser'
 
@@ -37,5 +38,6 @@ export default {
     IndexerPluginClient,
     MqttClient,
     sendAdvanced,
-    TransactionHelper
+    TransactionHelper,
+    addressUnlockBalance
 }

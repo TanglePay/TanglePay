@@ -165,8 +165,11 @@ const IotaSDK = {
             res = await res.json()
             const _nodes = this._nodes
             res.forEach((e) => {
-                if (_nodes.find((d) => d.id !== e.id)) {
+                const index = _nodes.findIndex((d) => d.id !== e.id)
+                if (index >= 0) {
                     _nodes.push(e)
+                } else {
+                    _nodes[index] = e
                 }
                 ;(e.contractList || []).forEach((d) => {
                     if (d.isShowZero) {
@@ -618,8 +621,8 @@ const IotaSDK = {
             )
             hisRes.forEach((e, i) => {
                 list = []
-                outputs[i] = []
                 const smrHisOutputIds = (e?.items || []).map((e) => e)
+                outputs[i] = smrHisOutputIds
                 smrOutputIds = [...smrOutputIds, ...smrHisOutputIds]
             })
         } else {
@@ -683,7 +686,7 @@ const IotaSDK = {
                         const temAddress = this.getBatchBech32Address(baseSeed, accountState, 20)
                         let flag = false
                         let addressOutputsRes = await this.getAllOutputIds(temAddress)
-                        const addressOutputs = addressOutputsRes?.outputs || []
+                        let addressOutputs = addressOutputsRes?.outputs || []
                         temAddress.forEach((e, i) => {
                             if (addressOutputs[i].length > 0) {
                                 if (!addressList.includes(e)) {
@@ -1296,22 +1299,46 @@ const IotaSDK = {
                         amount: residue,
                         type: 1
                     }
+                    Base.globalToast.success(I18n.t('assets.sendSuccRestakeTips'))
                     if (awaitStake) {
+                        setTimeout(() => {
+                            Base.globalToast.showLoading()
+                        }, 2000)
                         try {
                             await this.restakeAfterSend(stakeInfo)
+                            Base.globalToast.success(I18n.t('assets.restakeSuccTips'))
+                            setTimeout(() => {
+                                Base.globalToast.hideLoading()
+                            }, 2000)
                         } catch (error) {
+                            Base.globalToast.hideLoading()
                             console.log(error)
                         }
                     } else {
                         this.restakeAfterSend(stakeInfo)
                             .then((res) => {
+                                Base.globalToast.success(I18n.t('assets.restakeSuccTips'))
+                                setTimeout(() => {
+                                    Base.globalToast.hideLoading()
+                                }, 2000)
                                 console.log(res)
                             })
                             .catch((error) => {
+                                Base.globalToast.hideLoading()
                                 console.log(error)
                             })
                     }
+                } else {
+                    Base.globalToast.success(I18n.t('assets.sendSucc'))
+                    setTimeout(() => {
+                        Base.globalToast.hideLoading()
+                    }, 2000)
                 }
+            } else {
+                Base.globalToast.success(I18n.t('assets.sendSucc'))
+                setTimeout(() => {
+                    Base.globalToast.hideLoading()
+                }, 2000)
             }
             // restake end
             return sendOut
@@ -2080,12 +2107,22 @@ const IotaSDK = {
         let res = {}
         let smr4218, smr4218Balance, smr4219
         try {
-            const baseSeed = await this.checkPassword(seed, password)
+            await this.checkPassword(seed, password)
             IotaObj.setIotaBip44BasePath("m/44'/4218'")
             smr4218 = await this.importSMRBySeed(seed, password)
-            smr4218Balance = await IotaObj.getBalance(this.client, baseSeed, 0, {
-                startIndex: 0,
-                zeroCount: 20
+            const validAddresses = await this.getValidAddresses({
+                seed,
+                password,
+                address: smr4218.address,
+                nodeId: this.curNode.id
+            })
+            const addressList = validAddresses.addressList
+            const smr4218BalanceRes = await Promise.all(
+                addressList.map((e) => IotaObj.addressUnlockBalance(this.client, e))
+            )
+            smr4218Balance = BigNumber(0)
+            smr4218BalanceRes.forEach((e) => {
+                smr4218Balance = smr4218Balance.plus(e.balance)
             })
             IotaObj.setIotaBip44BasePath("m/44'/4219'")
             smr4219 = await this.importSMRBySeed(seed, password)
@@ -2112,7 +2149,7 @@ const IotaSDK = {
     async SMRTokenSend(fromInfo, toAddress, sendAmount, ext) {
         const { seed, password, address } = fromInfo
         const baseSeed = this.getSeed(seed, password)
-        const { tokenId, taggedData } = ext
+        const { tokenId, token, taggedData, realBalance, mainBalance } = ext
         let SMRFinished = false
         let finished = false
         let outputSMRBalance = BigNumber(0) //
@@ -2281,11 +2318,18 @@ const IotaSDK = {
                 outputs.push(remainderSMROutput)
             }
             if (outputBalance.lt(0)) {
-                throw new Error(
-                    `Insufficient funds to carry out the transaction, need ${
+                let str = I18n.t('assets.sendErrorInsufficient')
+                str = str
+                    .replace(/{token}/g, token)
+                    .replace(/{amount}/g, sendAmount)
+                    .replace(
+                        /{deposit}/g,
                         Number(receiverStorageDeposit.toString()) + Number(remainderStorageDeposit.toString())
-                    }`
-                )
+                    )
+                    .replace(/{balance1}/g, realBalance)
+                    .replace(/{balance2}/g, mainBalance)
+                    .replace(/{balance3}/g, Number(outputBalance))
+                throw new Error(str)
             }
             const res = await IotaObj.sendAdvanced(this.client, inputsAndSignatureKeyPairs, outputs, {
                 tag: IotaObj.Converter.utf8ToBytes('TanglePay'),

@@ -12,7 +12,10 @@ import {
     setIotaBip44BasePath,
     LocalPowProvider,
     getBalance,
-    IndexerPluginClient
+    IndexerPluginClient,
+    sendAdvanced,
+    TransactionHelper,
+    addressUnlockBalance
 } from '@iota/iota.js-next/dist/cjs/index-node'
 import { MqttClient } from '@iota/mqtt.js-next/dist/cjs/index-node'
 
@@ -33,5 +36,8 @@ export default {
     LocalPowProvider,
     getBalance,
     IndexerPluginClient,
-    MqttClient
+    MqttClient,
+    sendAdvanced,
+    TransactionHelper,
+    addressUnlockBalance
 }

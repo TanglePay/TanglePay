@@ -27,9 +27,9 @@ const EN = {
         backupTips: 'Backup Tips',
         backupTipsContent: `Obtaining mnemonic equals owning all assets.
 
-Mnemonic is the only way to recover your wallet.
+Assests will not be recovered once the mnemonic words are lost. Please store your mnemonic in safe and isolate it from network.
 
-The mnemonic consists of English words. Please transcribe and keep them in a safe place.`,
+Do not share or store mnemonic through network, such as screenshots, email, social media, etc.`,
         next: 'Next',
 
         backupScreenshoptTitle: 'Do Not Take Screenshot',
@@ -45,6 +45,7 @@ The mnemonic consists of English words. Please transcribe and keep them in a saf
         mnemonicPhraseTips2:
             'Do not share or store mnemonic through network, such as screenshots, email, social media, etc.',
         mnemonicBtn: 'Verify Now',
+        mnemonicExp: 'Mnemonic Import Example',
 
         registerSucc: `Allow Tanglepay to collect your data and help us to continue improving the user experience of the product.
 
@@ -161,6 +162,12 @@ Secret Recovery Phrase or private key for this wallet before continuing.`,
         passwordError: 'Please enter the password correctly.',
         balanceError: 'Insufficient balance.',
         balanceStakeError: 'Insufficient fund. Please unstake first.',
+        sendErrorInsufficient: `Error: Insufficient fund to carry out the transaction.
+Send {token} amount: {amount}
+Estimated storage deposit: {deposit} SMR
+Available {token} balance: {balance1}
+Available SMR balance: {balance2}
+Locked SMR balance: {balance3}`,
 
         requestAssets: 'Loading asset data.',
         requestHis: 'Loading transaction history.',
@@ -171,7 +178,10 @@ Secret Recovery Phrase or private key for this wallet before continuing.`,
         readFail: 'QR code recognition failed',
         residueBelow1Tips: 'The remaining amount cannot be a decimal number below 1. Please enter the amount again.',
         sendBelow1Tips: 'Sending amount cannot be less than 1 Mi, please enter the amount again.',
-        evmGasNotSufficient: 'The {token} in the address is not sufficient for the transaction gas fee. Please deposit.'
+        evmGasNotSufficient:
+            'The {token} in the address is not sufficient for the transaction gas fee. Please deposit.',
+        sendSuccRestakeTips: 'Transaction succeeded. Restaking...',
+        restakeSuccTips: 'Restaking succeeded.'
     },
     user: {
         me: 'Me',
