@@ -2138,10 +2138,11 @@ const IotaSDK = {
         } catch (error) {
             console.log(error, '----')
             res = { code: -1 }
+            Base.globalToast.hideLoading()
         }
         if (res.code !== -1) {
             try {
-                Base.globalToast.showLoading()
+                // Base.globalToast.showLoading()
                 const bigNumber = BigNumber(smr4218Balance).div(Math.pow(10, this.curNode.decimal))
                 await this.send(smr4218, smr4219.address, Number(smr4218Balance))
                 res = { code: 200, amount: Number(bigNumber), addressInfo: smr4219 }
@@ -2249,67 +2250,72 @@ const IotaSDK = {
                             if (BigNumber(addressOutput.output.amount).eq(0)) {
                                 zeroBalance++
                             } else {
-                                const nativeTokens = addressOutput?.output?.nativeTokens || []
-                                const curToken = nativeTokens.find((e) => e.id === tokenId)
-                                if (curToken) {
-                                    if (!SMRFinished) {
-                                        outputSMRBalance = outputSMRBalance.plus(curToken.amount)
-                                        pushInput(addressKeyPair, addressOutput)
-                                        outputBalance = outputBalance.plus(addressOutput.output.amount)
-                                        if (outputSMRBalance.minus(sendAmount).gte(0)) {
-                                            if (outputSMRBalance.minus(sendAmount).gt(0)) {
-                                                const addressUnlockCondition =
-                                                    addressOutput.output.unlockConditions.find(
-                                                        (u) => u.type === 0 // ADDRESS_UNLOCK_CONDITION_TYPE
-                                                    )
-                                                if (
-                                                    addressUnlockCondition &&
-                                                    addressUnlockCondition.address.type === 0 // ED25519_ADDRESS_TYPE
-                                                ) {
-                                                    remainderSMROutput = {
-                                                        address: `0x${this.bech32ToHex(bech32Address)}`,
-                                                        addressType: 0, // ED25519_ADDRESS_TYPE
-                                                        type: 3, //BASIC_OUTPUT_TYPE
-                                                        amount: '',
-                                                        nativeTokens: [
-                                                            {
-                                                                id: tokenId,
-                                                                amount: `0x${outputSMRBalance
-                                                                    .minus(sendAmount)
-                                                                    .toString(16)}`
-                                                            }
-                                                        ],
-                                                        unlockConditions: [
-                                                            {
-                                                                type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
-                                                                address: IotaObj.Bech32Helper.addressFromBech32(
-                                                                    bech32Address,
-                                                                    this.info.protocol.bech32Hrp
-                                                                )
-                                                            }
-                                                        ]
-                                                    }
-                                                    remainderStorageDeposit =
-                                                        IotaObj.TransactionHelper.getStorageDeposit(
-                                                            remainderSMROutput,
-                                                            this.info.protocol.rentStructure
+                                const addressUnlockCondition = addressOutput.output.unlockConditions.find(
+                                    (u) => u.type === 3 // EXPIRATION_UNLOCK_CONDITION_TYPE
+                                )
+                                if (!addressUnlockCondition) {
+                                    const nativeTokens = addressOutput?.output?.nativeTokens || []
+                                    const curToken = nativeTokens.find((e) => e.id === tokenId)
+                                    if (curToken) {
+                                        if (!SMRFinished) {
+                                            outputSMRBalance = outputSMRBalance.plus(curToken.amount)
+                                            pushInput(addressKeyPair, addressOutput)
+                                            outputBalance = outputBalance.plus(addressOutput.output.amount)
+                                            if (outputSMRBalance.minus(sendAmount).gte(0)) {
+                                                if (outputSMRBalance.minus(sendAmount).gt(0)) {
+                                                    const addressUnlockCondition =
+                                                        addressOutput.output.unlockConditions.find(
+                                                            (u) => u.type === 0 // ADDRESS_UNLOCK_CONDITION_TYPE
                                                         )
-                                                    remainderSMROutput.amount = remainderStorageDeposit.toString()
-                                                    outputBalance = outputBalance.minus(remainderSMROutput.amount)
+                                                    if (
+                                                        addressUnlockCondition &&
+                                                        addressUnlockCondition.address.type === 0 // ED25519_ADDRESS_TYPE
+                                                    ) {
+                                                        remainderSMROutput = {
+                                                            address: `0x${this.bech32ToHex(bech32Address)}`,
+                                                            addressType: 0, // ED25519_ADDRESS_TYPE
+                                                            type: 3, //BASIC_OUTPUT_TYPE
+                                                            amount: '',
+                                                            nativeTokens: [
+                                                                {
+                                                                    id: tokenId,
+                                                                    amount: `0x${outputSMRBalance
+                                                                        .minus(sendAmount)
+                                                                        .toString(16)}`
+                                                                }
+                                                            ],
+                                                            unlockConditions: [
+                                                                {
+                                                                    type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
+                                                                    address: IotaObj.Bech32Helper.addressFromBech32(
+                                                                        bech32Address,
+                                                                        this.info.protocol.bech32Hrp
+                                                                    )
+                                                                }
+                                                            ]
+                                                        }
+                                                        remainderStorageDeposit =
+                                                            IotaObj.TransactionHelper.getStorageDeposit(
+                                                                remainderSMROutput,
+                                                                this.info.protocol.rentStructure
+                                                            )
+                                                        remainderSMROutput.amount = remainderStorageDeposit.toString()
+                                                        outputBalance = outputBalance.minus(remainderSMROutput.amount)
+                                                        setOutput(outputBalance, bech32Address)
+                                                    }
+                                                } else {
                                                     setOutput(outputBalance, bech32Address)
                                                 }
+                                                SMRFinished = true
                                             } else {
                                                 setOutput(outputBalance, bech32Address)
                                             }
-                                            SMRFinished = true
-                                        } else {
-                                            setOutput(outputBalance, bech32Address)
                                         }
+                                    } else if (nativeTokens.length === 0 && !finished) {
+                                        pushInput(addressKeyPair, addressOutput)
+                                        outputBalance = outputBalance.plus(addressOutput.output.amount)
+                                        setOutput(outputBalance, bech32Address)
                                     }
-                                } else if (nativeTokens.length === 0 && !finished) {
-                                    pushInput(addressKeyPair, addressOutput)
-                                    outputBalance = outputBalance.plus(addressOutput.output.amount)
-                                    setOutput(outputBalance, bech32Address)
                                 }
                             }
                         }
