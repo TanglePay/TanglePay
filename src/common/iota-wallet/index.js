@@ -1305,15 +1305,19 @@ const IotaSDK = {
                     }
                     Base.globalToast.success(I18n.t('assets.sendSuccRestakeTips'))
                     if (awaitStake) {
-                        setTimeout(() => {
-                            Base.globalToast.showLoading()
-                        }, 2000)
+                        if(Base.isBrowser){
+                            setTimeout(() => {
+                                Base.globalToast.showLoading()
+                            }, 2000)
+                        }
                         try {
                             await this.restakeAfterSend(stakeInfo)
                             Base.globalToast.success(I18n.t('assets.restakeSuccTips'))
-                            setTimeout(() => {
-                                Base.globalToast.hideLoading()
-                            }, 2000)
+                            if(Base.isBrowser){
+                                setTimeout(() => {
+                                    Base.globalToast.hideLoading()
+                                }, 2000)
+                            }
                         } catch (error) {
                             Base.globalToast.hideLoading()
                             console.log(error)
@@ -1322,9 +1326,11 @@ const IotaSDK = {
                         this.restakeAfterSend(stakeInfo)
                             .then((res) => {
                                 Base.globalToast.success(I18n.t('assets.restakeSuccTips'))
-                                setTimeout(() => {
-                                    Base.globalToast.hideLoading()
-                                }, 2000)
+                                if(Base.isBrowser){
+                                    setTimeout(() => {
+                                        Base.globalToast.hideLoading()
+                                    }, 2000)
+                                }
                                 console.log(res)
                             })
                             .catch((error) => {
