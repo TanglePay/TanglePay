@@ -28,21 +28,24 @@ let IotaObj = Iota
 
 const V2_FLAG = 'TanglePayV2'
 const IOTA_NODE_ID = 1
-const SMR_NODE_ID = 101
 const IotaSDK = {
     IOTA_NODE_ID,
+    checkIota(nodeId) {
+        const nodeInfo = this.nodes.find((e) => e.id == nodeId)
+        return nodeInfo?.type == 1
+    },
     IOTA_MI: 1000000, // 1mi = 1000000i
     convertUnits(value, fromUnit, toUnit) {
         return convertUnits(value, fromUnit, toUnit)
     },
     changeIota(nodeId) {
-        if (nodeId == SMR_NODE_ID) {
+        if (this.checkSMR(nodeId)) {
             IotaObj = IotaNext
             IotaObj.setIotaBip44BasePath("m/44'/4219'")
         } else {
             IotaObj = Iota
         }
-        this.explorerApiUrl = this.nodes.find((e) => e.id === nodeId)?.explorerApiUrl || 'https://explorer-api.iota.org'
+        this.explorerApiUrl = this.nodes.find((e) => e.id == nodeId)?.explorerApiUrl || 'https://explorer-api.iota.org'
     },
     // type:1.iota, 2.web3,
     // filterMenuList:['assets','apps','staking','me']
@@ -67,7 +70,7 @@ const IotaSDK = {
             explorerApiUrl: 'https://explorer-api.iota.org'
         },
         {
-            id: SMR_NODE_ID,
+            id: 101,
             // url: 'https://api.alphanet.iotaledger.net',
             // url: 'https://api.testnet.shimmer.network',
             explorer: 'https://explorer.shimmer.network/testnet',
@@ -144,28 +147,128 @@ const IotaSDK = {
     get mnemonicLenList() {
         return this.isWeb3Node ? [12, 24] : [24]
     },
+    async getDlt(node) {
+        return new Promise((resolve, reject) => {
+            fetch(`https://dlt.green/api?dns=${node}&id=tanglepay&token=egm9jvee56sfjrohylvs0tkc6quwghyo`)
+                .then((res) => res.json())
+                .then((res) => {
+                    resolve(res)
+                })
+                .catch((err) => {
+                    reject(err)
+                })
+        })
+    },
     async getNodes() {
         try {
             let res = await fetch(`${API_URL}/evm.json?v=${new Date().getTime()}`)
             res = await res.json()
             const _nodes = this._nodes
             res.forEach((e) => {
-                if (_nodes.find((d) => d.id !== e.id)) {
+                const index = _nodes.findIndex((d) => d.id == e.id)
+                if (index >= 0) {
+                    _nodes[index] = e
+                } else {
                     _nodes.push(e)
                 }
-                e.contractList.forEach((d) => {
+                ;(e.contractList || []).forEach((d) => {
                     if (d.isShowZero) {
                         this._contracAssetsShowDic[d.contract] = true
                     }
                 })
             })
+            let shimmerInfo = _nodes.find((e) => e.bech32HRP === 'smr')
+            if (!shimmerInfo) {
+                shimmerInfo = _nodes.find((e) => e.bech32HRP === 'rms')
+            }
+            this.SMR_NODE_ID = shimmerInfo.id
+            // node router start
+            try {
+                // const dltList = await Promise.all([this.getDlt('shimmer'), this.getDlt('iota')])
+                const dltList = await Promise.all([this.getDlt('shimmer')])
+                const iotaList = []
+                const shimmerRmsList = []
+                const shimmerSmrList = []
+                for (const i in dltList[0]) {
+                    const info = dltList[0][i]
+                    const { ShimmerHornet } = info
+                    if (
+                        ShimmerHornet.Features.includes('pow') &&
+                        ShimmerHornet.BaseToken.name == 'Shimmer' &&
+                        ShimmerHornet.isHealthy
+                    ) {
+                        const bech32Hrp = ShimmerHornet.Protocol.bech32Hrp
+                        if (bech32Hrp == 'rms') {
+                            shimmerRmsList.push({ ...info, curNodeKey: i })
+                        } else if (bech32Hrp === 'smr') {
+                            shimmerSmrList.push({ ...info, curNodeKey: i })
+                        }
+                    }
+                }
+                // iota
+                // for (const i in dltList[1]) {
+                //     const info = dltList[1][i]
+                //     const { IotaHornet } = info
+                //     if (
+                //         IotaHornet.Features.includes('PoW') &&
+                //         IotaHornet.Features.includes('Participation') &&
+                //         IotaHornet.bech32Hrp == 'iota' &&
+                //         IotaHornet.isHealthy
+                //     ) {
+                //         iotaList.push({ ...info, curNodeKey: i })
+                //     }
+                // }
+                const selectNode = (list) => {
+                    list.sort((a, b) => a['dlt.green'].PoolRank - b['dlt.green'].PoolRank)
+                    list = list.slice(0, 5)
+                    const index = parseInt(Math.random() * list.length)
+                    return list[index]
+                }
+                // shimmer rms
+                if (shimmerRmsList.length > 0) {
+                    const selectInfo = selectNode(shimmerRmsList)
+                    const info = _nodes.find((e) => e.bech32HRP === 'rms')
+                    if (selectInfo?.ShimmerHornet) {
+                        info.url = `https://${selectInfo.ShimmerHornet.Domain}`
+                        info.curNodeKey = selectInfo.curNodeKey
+                        info.mqtt = `wss://${selectInfo.ShimmerHornet.Domain}:${selectInfo.ShimmerHornet.Port}/api/mqtt/v1`
+                    }
+                }
+                // shimmer smr
+                if (shimmerSmrList.length > 0) {
+                    const selectInfo = selectNode(shimmerSmrList)
+                    const info = _nodes.find((e) => e.bech32HRP === 'smr')
+                    if (selectInfo?.ShimmerHornet) {
+                        info.url = `https://${selectInfo.ShimmerHornet.Domain}`
+                        info.curNodeKey = selectInfo.curNodeKey
+                        info.mqtt = `wss://${selectInfo.ShimmerHornet.Domain}:${selectInfo.ShimmerHornet.Port}/api/mqtt/v1`
+                    }
+                }
+                // iota
+                if (iotaList.length > 0) {
+                    const selectInfo = selectNode(iotaList)
+                    const info = _nodes.find((e) => e.bech32HRP === 'iota')
+                    if (selectInfo?.IotaHornet) {
+                        info.url = `https://${selectInfo.IotaHornet.Domain}`
+                        info.curNodeKey = selectInfo.curNodeKey
+                        info.mqtt = `wss://${selectInfo.IotaHornet.Domain}:${selectInfo.IotaHornet.Port}/mqtt`
+                    }
+                }
+            } catch (error) {
+                console.log(error, '----')
+            }
+            // node router end
+
             this._nodes = _nodes
+            Base.setLocalData('tanglePayNodeList', {
+                list: _nodes
+            })
         } catch (error) {
             console.log(error)
         }
     },
     hasStake(nodeId) {
-        return !(this.nodes.find((e) => e.id === nodeId)?.filterAssetsList || []).includes('stake')
+        return !(this.nodes.find((e) => e.id == nodeId)?.filterAssetsList || []).includes('stake')
     },
     // token price
     priceDic: {},
@@ -173,8 +276,8 @@ const IotaSDK = {
     async init(id) {
         this.changeIota(id)
         Base.globalToast.showLoading()
+        const curNode = this.nodes.find((e) => e.id == id) || this.nodes[0]
         try {
-            const curNode = this.nodes.find((e) => e.id === id) || this.nodes[0]
             this.curNode = curNode
             if (this.web3Subscription) {
                 clearTimeout(this.web3Subscription)
@@ -189,7 +292,7 @@ const IotaSDK = {
                 this.info = this.client
                 if (this.client?.eth) {
                     this.client.eth.getChainId().catch(() => {
-                        Base.globalToast.error(I18n.t('user.nodeError'))
+                        Base.globalToast.error(I18n.t('user.nodeError') + ':' + (curNode.curNodeKey || curNode.name))
                     })
                 }
             } else {
@@ -209,7 +312,7 @@ const IotaSDK = {
         } catch (error) {
             console.log(error)
             Base.globalToast.hideLoading()
-            Base.globalToast.error(I18n.t('user.nodeError'))
+            Base.globalToast.error(I18n.t('user.nodeError') + ':' + (curNode.curNodeKey || curNode.name))
         }
     },
     // refresh assets & activity list
@@ -252,7 +355,6 @@ const IotaSDK = {
                         const list = _flatten(res)
                         if (list.length > 0) {
                             await this.setPastLogs(address, this.curNode?.id, list)
-                            Base.globalTemData.isGetMqttMessage = true
                             self.refreshAssets()
                         }
                         this.web3Subscription = setTimeout(getData, 5000)
@@ -285,26 +387,31 @@ const IotaSDK = {
                                 }
                             }
                             if (sender || isReceiver) {
-                                console.log(isReceiver)
-                                Base.globalTemData.isGetMqttMessage = true
-                                self.refreshAssets()
+                                if (Base.globalDispatch) {
+                                    Base.globalDispatch({
+                                        type: 'common.isRequestAssets',
+                                        data: false
+                                    })
+                                }
+                                setTimeout(() => {
+                                    self.refreshAssets()
+                                }, 8000)
                             }
                         })
                     } else {
-                        this.subscriptionId = this.mqttClient.addressOutputs(
-                            address,
-                            _debounce(async () => {
-                                try {
-                                    Base.globalTemData.isGetMqttMessage = true
-                                    self.refreshAssets()
-                                    // SyncAccounts
-                                    // Data are tagged with isGetMqttMessage for subsequent processing and differentiates against manual refresh
-                                } catch (error) {
-                                    console.log(error)
+                        this.subscriptionId = this.mqttClient.addressOutputs(address, () => {
+                            try {
+                                if (this.isNeedRestake == 1) {
+                                    this.isNeedRestake = 2
                                 }
-                            }),
-                            1000
-                        )
+                                if (this.isAwaitStake == 1) {
+                                    this.isAwaitStake = 2
+                                }
+                                self.refreshAssets()
+                            } catch (error) {
+                                console.log(error)
+                            }
+                        })
                     }
                 }
             }
@@ -319,7 +426,9 @@ const IotaSDK = {
     async importMnemonic({ mnemonic, name, password }) {
         return new Promise(async (resolve, reject) => {
             if (!this.info) {
-                Base.globalToast.error(I18n.t('user.nodeError'))
+                Base.globalToast.error(
+                    I18n.t('user.nodeError') + ':' + (this?.curNode?.curNodeKey || this?.curNode?.name)
+                )
                 reject()
                 return
             }
@@ -431,10 +540,6 @@ const IotaSDK = {
         const key = 'common.walletsList'
         if (Base.isBrowser) {
             list = (await Base.getLocalData(key)) || []
-            const bg = window?.chrome?.extension?.getBackgroundPage()
-            if (bg) {
-                list = bg.getBackgroundData(key) || list
-            }
         } else {
             list = (await Base.getSensitiveInfo(key)) || []
         }
@@ -503,13 +608,7 @@ const IotaSDK = {
         }
         let list = []
         let outputs = []
-        const res = await Promise.all(
-            addressList.map((e) => {
-                return Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${e}`, {
-                    isHandlerError: true
-                })
-            })
-        )
+
         let hisRes = []
         let smrOutputIds = []
         if (this.checkSMR(this.curNode?.id)) {
@@ -522,16 +621,30 @@ const IotaSDK = {
                     })
                 })
             )
+            hisRes.forEach((e, i) => {
+                list = []
+                const smrHisOutputIds = (e?.items || []).map((e) => e)
+                outputs[i] = smrHisOutputIds
+                smrOutputIds = [...smrOutputIds, ...smrHisOutputIds]
+            })
+        } else {
+            const res = await Promise.all(
+                addressList.map((e) => {
+                    return Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${e}`, {
+                        isHandlerError: true
+                    })
+                })
+            )
+            res.forEach((e, i) => {
+                const addressOutputIds = e?.addressOutputIds || []
+                const historicAddressOutputIds = e?.historicAddressOutputIds || []
+                const ids = [...addressOutputIds, ...historicAddressOutputIds]
+                list = [...list, ...ids]
+                outputs[i] = ids
+                const smrHisOutputIds = (hisRes[i]?.items || []).map((e) => e)
+                smrOutputIds = [...smrOutputIds, ...smrHisOutputIds]
+            })
         }
-        res.forEach((e, i) => {
-            const addressOutputIds = e?.addressOutputIds || []
-            const historicAddressOutputIds = e?.historicAddressOutputIds || []
-            const ids = [...addressOutputIds, ...historicAddressOutputIds]
-            list = [...list, ...ids]
-            outputs[i] = ids
-            const smrHisOutputIds = (hisRes[i]?.items || []).map((e) => e)
-            smrOutputIds = [...smrOutputIds, ...smrHisOutputIds]
-        })
         return { list, outputs, smrOutputIds }
     },
     // cache valid address
@@ -575,7 +688,7 @@ const IotaSDK = {
                         const temAddress = this.getBatchBech32Address(baseSeed, accountState, 20)
                         let flag = false
                         let addressOutputsRes = await this.getAllOutputIds(temAddress)
-                        const addressOutputs = addressOutputsRes?.outputs || []
+                        let addressOutputs = addressOutputsRes?.outputs || []
                         temAddress.forEach((e, i) => {
                             if (addressOutputs[i].length > 0) {
                                 if (!addressList.includes(e)) {
@@ -603,7 +716,7 @@ const IotaSDK = {
                     }
                 }
                 actionTime = new Date().getTime() - actionTime
-                const nodeInfo = this.nodes.find((e) => e.id === nodeId) || {}
+                const nodeInfo = this.nodes.find((e) => e.id == nodeId) || {}
                 Trace.actionLog(60, address, actionTime, Base.curLang, nodeId, nodeInfo.token)
             }
         }
@@ -636,12 +749,13 @@ const IotaSDK = {
         if (!this.client) {
             return []
         }
-        const node = IotaSDK.nodes.find((e) => e.id === nodeId)
+        const node = IotaSDK.nodes.find((e) => e.id == nodeId)
         const token = node?.token
         const decimal = node?.decimal
         let realBalance = BigNumber(0)
         let balance = BigNumber(0)
         let actionTime = new Date().getTime()
+        const smrTokens = {}
         if (this.checkWeb3Node(nodeId)) {
             const res = await Promise.all(addressList.map((e) => this.client.eth.getBalance(e)))
             res.forEach((e) => {
@@ -657,11 +771,35 @@ const IotaSDK = {
                 }
                 res.forEach((e) => {
                     realBalance = realBalance.plus(e.balance)
+                    if (e.nativeTokens) {
+                        for (const i in e.nativeTokens) {
+                            smrTokens[i] = smrTokens[i] || BigNumber(0)
+                            smrTokens[i] = smrTokens[i].plus(e.nativeTokens[i])
+                        }
+                    }
                 })
             } catch (error) {
                 console.log(error)
             }
         }
+        const tokens = Object.keys(smrTokens)
+        const foundryList = await Promise.all(tokens.map((e) => this.foundry(e)))
+        let nativeTokens = []
+        tokens.forEach((e, i) => {
+            const info = this.handleFoundry(foundryList[i])
+            const { decimals, symbol } = info
+            let realBalance = smrTokens[e]
+            const balance = realBalance.div(Math.pow(10, decimals))
+            realBalance = Number(smrTokens[e])
+            nativeTokens.push({
+                tokenId: e,
+                realBalance,
+                balance: Number(balance),
+                decimal: decimals,
+                token: symbol,
+                isSMRToken: true
+            })
+        })
 
         actionTime = new Date().getTime() - actionTime
         Trace.actionLog(10, address, actionTime, Base.curLang, nodeId, token)
@@ -670,7 +808,6 @@ const IotaSDK = {
         realBalance = Number(realBalance)
         Trace.updateAddressAmount(id, address, realBalance, nodeId, token)
         const contractAssets = await this.getContractAssets(nodeId, address, id)
-
         const balanceList = [
             {
                 realBalance,
@@ -678,7 +815,8 @@ const IotaSDK = {
                 decimal,
                 token
             },
-            ...contractAssets
+            ...contractAssets,
+            ...nativeTokens
         ]
         return balanceList
     },
@@ -915,13 +1053,42 @@ const IotaSDK = {
         this._stopCollect = true
     },
     /************************collect end**********************/
+    async restakeAfterSend(data) {
+        return new Promise((resolve, reject) => {
+            let nums = 0
+            const restakeHandle = setInterval(() => {
+                nums++
+                if (this.isNeedRestake == 2) {
+                    this.isNeedRestake = 3
+                    clearInterval(restakeHandle)
+                    this.sendParticipateMessage(data)
+                        .then((res) => {
+                            this.isNeedRestake = null
+                            resolve(res)
+                        })
+                        .catch((err) => {
+                            this.isNeedRestake = null
+                            reject(err)
+                        })
+                } else {
+                    if (nums > 60) {
+                        this.isNeedRestake = null
+                        clearInterval(restakeHandle)
+                        reject(null)
+                    }
+                }
+            }, 500)
+        })
+    },
     async send(fromInfo, toAddress, sendAmount, ext) {
         if (!this.client) {
-            return Base.globalToast.error(I18n.t('user.nodeError'))
+            return Base.globalToast.error(
+                I18n.t('user.nodeError') + ':' + (this?.curNode?.curNodeKey || this?.curNode?.name)
+            )
         }
         const { seed, address, password, nodeId } = fromInfo
         const baseSeed = this.getSeed(seed, password)
-        const nodeInfo = this.nodes.find((e) => e.id === nodeId) || {}
+        const nodeInfo = this.nodes.find((e) => e.id == nodeId) || {}
         let actionTime = new Date().getTime()
         let traceToken = ''
         if (this.checkWeb3Node(nodeId)) {
@@ -942,7 +1109,9 @@ const IotaSDK = {
                 const contractGasLimit = contractInfo?.gasLimit
                 const { gasLimit } = await this.getGasLimit(contractGasLimit, address, 0)
                 if (gasLimit === -1) {
-                    return Base.globalToast.error(I18n.t('assets.balanceError'))
+                    return Base.globalToast.error(
+                        I18n.t('assets.evmGasNotSufficient').replace(/{token}/, nodeInfo?.token)
+                    )
                 }
                 // const estimatePrice = this.client.utils
                 const signData = {
@@ -953,7 +1122,6 @@ const IotaSDK = {
                     gasLimit,
                     data: taggedData || web3Contract.methods.transfer(toAddress, sendAmountHex).encodeABI()
                 }
-                console.log(web3Contract.methods.transfer(toAddress, sendAmountHex).encodeABI(), '------')
                 if (contractInfo?.maxPriorityFeePerGas) {
                     signData.maxPriorityFeePerGas = contractInfo?.maxPriorityFeePerGas
                 }
@@ -978,7 +1146,9 @@ const IotaSDK = {
                 const nodeGasLimit = nodeInfo?.gasLimit
                 const { gasLimit, gasPrice } = await this.getGasLimit(nodeGasLimit, address, sendAmount)
                 if (gasLimit === -1) {
-                    return Base.globalToast.error(I18n.t('assets.balanceError'))
+                    return Base.globalToast.error(
+                        I18n.t('assets.evmGasNotSufficient').replace(/{token}/, nodeInfo?.token)
+                    )
                 }
                 try {
                     const signed = await eth.accounts.signTransaction(
@@ -1034,51 +1204,67 @@ const IotaSDK = {
             Trace.actionLog(40, address, actionTime, Base.curLang, nodeId, traceToken)
             return { ...res, messageId: logData.transactionHash }
         } else {
-            const { taggedData } = ext || {}
-            const amount = Base.formatNum(BigNumber(sendAmount).div(this.IOTA_MI))
             let sendOut = null
-            try {
-                sendOut = await IotaObj.sendMultiple(
-                    this.client,
-                    baseSeed,
-                    0,
-                    [
+            let amount = 0
+            const { taggedData, tokenId, decimal, token } = ext || {}
+            // smr token
+            if (tokenId) {
+                amount = Base.formatNum(BigNumber(sendAmount).div(Math.pow(10, decimal || 6)))
+                try {
+                    sendOut = await this.SMRTokenSend(fromInfo, toAddress, sendAmount, ext)
+                } catch (error) {
+                    throw error
+                }
+            } else {
+                amount = Base.formatNum(BigNumber(sendAmount).div(Math.pow(10, this.curNode.decimal || 6)))
+                try {
+                    sendOut = await IotaObj.sendMultiple(
+                        this.client,
+                        baseSeed,
+                        0,
+                        [
+                            {
+                                addressBech32: toAddress,
+                                amount: sendAmount,
+                                isDustAllowance: false
+                            }
+                        ],
                         {
-                            addressBech32: toAddress,
-                            amount: sendAmount,
-                            isDustAllowance: false
+                            key: IotaObj.Converter.utf8ToBytes('TanglePay'), //v1
+                            tag: IotaObj.Converter.utf8ToBytes('TanglePay'), //v2
+                            data: taggedData
+                                ? IotaObj.Converter.utf8ToBytes(taggedData)
+                                : IotaObj.Converter.utf8ToBytes(
+                                      JSON.stringify({
+                                          from: address, //main address
+                                          to: toAddress,
+                                          amount: sendAmount,
+                                          collection: ext?.isCollection ? 1 : 0
+                                      })
+                                  )
+                        },
+                        {
+                            startIndex: 0,
+                            zeroCount: 20
                         }
-                    ],
-                    {
-                        key: IotaObj.Converter.utf8ToBytes('TanglePay'), //v1
-                        tag: IotaObj.Converter.utf8ToBytes('TanglePay'), //v2
-                        data: taggedData
-                            ? IotaObj.Converter.utf8ToBytes(taggedData)
-                            : IotaObj.Converter.utf8ToBytes(
-                                  JSON.stringify({
-                                      from: address, //main address
-                                      to: toAddress,
-                                      amount: sendAmount,
-                                      collection: ext?.isCollection ? 1 : 0
-                                  })
-                              )
-                    },
-                    {
-                        startIndex: 0,
-                        zeroCount: 20
-                    }
-                )
-            } catch (error) {
-                throw error
+                    )
+                } catch (error) {
+                    throw error
+                }
             }
-            const { messageId } = sendOut
+            const messageId = sendOut.messageId || sendOut.blockId
+            // const blockData = await this.blockData(messageId)
+            // if (!blockData) {
+            //     throw 'Transaction failed.'
+            // }
             // Save transfer output when the balance remindar is 0
             // Context: in IOTA sdk, when remaining balance is 0, it transfer operation is not included in the messages sent to Tangle.
-            const outputs = _get(sendOut, 'message.payload.essence.outputs') || []
+            const outputs =
+                _get(sendOut, 'message.payload.essence.outputs') || _get(sendOut, 'block.payload.essence.outputs') || []
             if (outputs.length === 1) {
                 this.setSendList(address, {
                     id: messageId,
-                    coin: 'IOTA',
+                    coin: this.checkIota(nodeId) ? 'IOTA' : token,
                     num: amount,
                     type: 1,
                     timestamp: parseInt(new Date().getTime() / 1000),
@@ -1086,9 +1272,85 @@ const IotaSDK = {
                 })
             }
 
-            Trace.transaction('pay', messageId, address, toAddress, sendAmount, nodeId, nodeInfo.token)
+            Trace.transaction(
+                'pay',
+                messageId,
+                address,
+                toAddress,
+                sendAmount,
+                nodeId,
+                tokenId ? token : nodeInfo.token
+            )
             actionTime = new Date().getTime() - actionTime
-            Trace.actionLog(40, address, actionTime, Base.curLang, nodeId, nodeInfo.token)
+            Trace.actionLog(40, address, actionTime, Base.curLang, nodeId, tokenId ? token : nodeInfo.token)
+            // restake start
+            const isNoRestake = await Base.getLocalData('common.isNoRestake')
+            // awaitTime: await ms
+            const { residue, awaitStake } = ext || {}
+            if (this.checkIota(nodeId) && !isNoRestake && residue > 0) {
+                const participationEvents = await Base.getLocalData('staking.participationEvents')
+                const { commencingList = [], upcomingList = [] } = participationEvents || {}
+                const tokens = [...commencingList, ...upcomingList].map((e) => {
+                    return {
+                        eventId: e.id
+                    }
+                })
+                if (tokens.length > 0) {
+                    this.isNeedRestake = 1
+                    const stakeInfo = {
+                        wallet: { ...fromInfo },
+                        tokens,
+                        amount: residue,
+                        type: 1
+                    }
+                    Base.globalToast.success(I18n.t('assets.sendSuccRestakeTips'))
+                    if (awaitStake) {
+                        if(Base.isBrowser){
+                            setTimeout(() => {
+                                Base.globalToast.showLoading()
+                            }, 2000)
+                        }
+                        try {
+                            await this.restakeAfterSend(stakeInfo)
+                            Base.globalToast.success(I18n.t('assets.restakeSuccTips'))
+                            if(Base.isBrowser){
+                                setTimeout(() => {
+                                    Base.globalToast.hideLoading()
+                                }, 2000)
+                            }
+                        } catch (error) {
+                            Base.globalToast.hideLoading()
+                            console.log(error)
+                        }
+                    } else {
+                        this.restakeAfterSend(stakeInfo)
+                            .then((res) => {
+                                Base.globalToast.success(I18n.t('assets.restakeSuccTips'))
+                                if(Base.isBrowser){
+                                    setTimeout(() => {
+                                        Base.globalToast.hideLoading()
+                                    }, 2000)
+                                }
+                                console.log(res)
+                            })
+                            .catch((error) => {
+                                Base.globalToast.hideLoading()
+                                console.log(error)
+                            })
+                    }
+                } else {
+                    Base.globalToast.success(I18n.t('assets.sendSucc'))
+                    setTimeout(() => {
+                        Base.globalToast.hideLoading()
+                    }, 2000)
+                }
+            } else {
+                Base.globalToast.success(I18n.t('assets.sendSucc'))
+                setTimeout(() => {
+                    Base.globalToast.hideLoading()
+                }, 2000)
+            }
+            // restake end
             return sendOut
         }
     },
@@ -1117,6 +1379,27 @@ const IotaSDK = {
             return null
         }
         return await requestFunc()
+    },
+    // foundry
+    async foundry(foundryId) {
+        const res = await this.requestQueue([
+            Http.GET(`${this.explorerApiUrl}/foundry/${this.curNode.network}/${foundryId}`, {
+                isHandlerError: true
+            })
+        ])
+        return res?.foundryDetails || {}
+    },
+    // handle foundry
+    handleFoundry(foundryData) {
+        const immutableFeatures = foundryData?.output?.immutableFeatures || []
+        let info = immutableFeatures.find((e) => !!e.data)
+        try {
+            info = IotaObj.Converter.hexToUtf8(info.data)
+            info = JSON.parse(info)
+        } catch (error) {
+            info = { decimals: 0, symbol: '' }
+        }
+        return info
     },
     // handle block 404 ？
     async blockData(messageId) {
@@ -1172,9 +1455,11 @@ const IotaSDK = {
     },
     async getHisList(outputList, { address, nodeId }, smrOutputIds) {
         if (!this.client) {
-            return Base.globalToast.error(I18n.t('user.nodeError'))
+            return Base.globalToast.error(
+                I18n.t('user.nodeError') + ':' + (this?.curNode?.curNodeKey || this?.curNode?.name)
+            )
         }
-        const nodeInfo = this.nodes.find((e) => e.id === nodeId) || {}
+        const nodeInfo = this.nodes.find((e) => e.id == nodeId) || {}
         let actionTime = new Date().getTime()
         if (this.checkWeb3Node(nodeId)) {
             if (this.client?.eth) {
@@ -1215,7 +1500,7 @@ const IotaSDK = {
                     return {
                         // isSpent: isOldisSpent ? false : isSpent,
                         isSpent: smrOutputIds[i].isSpent,
-                        timestamp,
+                        timestamp: smrOutputIds[i].milestoneTimestamp,
                         blockId: isSpent ? transactionId : blockId,
                         decimal: nodeInfo.decimal,
                         unlockBlock,
@@ -1329,7 +1614,7 @@ const IotaSDK = {
             }, 500)
             return
         }
-        const apiUrl = this._nodes.find((e) => e.id === 1)?.url
+        const apiUrl = this._nodes.find((e) => e.id == 1)?.url
         url = `${apiUrl}/api/plugins/participation/${url}`
         const res = await Http.GET(url, { isHandlerError: true })
         return res?.data
@@ -1438,19 +1723,30 @@ const IotaSDK = {
     },
     // type：1->stake  2->add amount  3->unstake 4->add airdrop
     async handleStake({ wallet, tokens, amount, type }) {
-        try {
-            await this.sendParticipateMessage({ wallet, tokens, amount, type })
-            // await this.updateParticipateHis(tokens, amount, type);
-            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-            await sleep(2000)
-            this.refreshAssets()
-            // setTimeout(this.refreshAssets, 2000);
-            return { code: 0 }
-        } catch (error) {
-            console.log(error)
-            return { code: 1, msg: error.toString() }
-        }
-
+        return new Promise(async (resolve, reject) => {
+            this.sendParticipateMessage({ wallet, tokens, amount, type })
+                .then(() => {
+                    this.isAwaitStake = 1
+                    let nums = 0
+                    const awaitTakeHandle = setInterval(() => {
+                        nums++
+                        if (this.isAwaitStake == 2) {
+                            this.isAwaitStake = null
+                            clearInterval(awaitTakeHandle)
+                            resolve({ code: 0 })
+                        } else {
+                            if (nums > 60) {
+                                this.isAwaitStake = null
+                                clearInterval(awaitTakeHandle)
+                                resolve({ code: 0 })
+                            }
+                        }
+                    }, 500)
+                })
+                .catch((err) => {
+                    resolve({ code: 1, msg: err.toString() })
+                })
+        })
         // refresh assets & activity list
     },
     async sendParticipateMessage({ wallet, tokens, amount, type }) {
@@ -1512,34 +1808,10 @@ const IotaSDK = {
             const baseSeed = this.getSeed(seed, password)
             const addressKeyPair = this.getPair(baseSeed)
             signRes = IotaObj.Ed25519.sign(addressKeyPair.privateKey, IotaObj.Converter.utf8ToBytes(content))
+            signRes = `0x${IotaObj.Converter.bytesToHex(signRes)}`
         }
         return signRes
     },
-    // async sign(content, wallet, amount) {
-    //     const { seed, password, address } = wallet
-    //     const baseSeed = this.getSeed(seed, password)
-    //     const res = await IotaObj.sendMultiple(
-    //         this.client,
-    //         baseSeed,
-    //         0,
-    //         [
-    //             {
-    //                 addressBech32: address,
-    //                 amount,
-    //                 isDustAllowance: false
-    //             }
-    //         ],
-    //         {
-    //             key: IotaObj.Converter.utf8ToBytes('TanglePay.Sign'),
-    //             data: IotaObj.Converter.utf8ToBytes(content)
-    //         },
-    //         {
-    //             startIndex: 0,
-    //             zeroCount: 20
-    //         }
-    //     )
-    //     return res
-    // },
     /**************** Sign end **********************/
 
     /**************** Nft start *******************/
@@ -1589,7 +1861,9 @@ const IotaSDK = {
     async importPrivateKey({ privateKey, name, password }) {
         return new Promise(async (resolve, reject) => {
             if (!this.client || !this.isWeb3Node) {
-                Base.globalToast.error(I18n.t('user.nodeError'))
+                Base.globalToast.error(
+                    I18n.t('user.nodeError') + ':' + (this?.curNode?.curNodeKey || this?.curNode?.name)
+                )
                 reject()
                 return
             }
@@ -1652,7 +1926,7 @@ const IotaSDK = {
     },
     async changeLogData(address, nodeId, list) {
         address = (address || '').toLocaleLowerCase()
-        const curNode = this.nodes.find((e) => e.id === nodeId)
+        const curNode = this.nodes.find((e) => e.id == nodeId)
         const blocks = await Promise.all(list.map((e) => this.client.eth.getBlock(e.blockNumber)))
         const contractList = curNode?.contractList || []
         let curToken = curNode?.token
@@ -1768,7 +2042,7 @@ const IotaSDK = {
         return buffer
     },
     async getContractAssets(nodeId, address, walletId) {
-        const nodeInfo = this.nodes.find((e) => e.id === nodeId)
+        const nodeInfo = this.nodes.find((e) => e.id == nodeId)
         if (!nodeInfo?.contractList?.length) {
             return []
         }
@@ -1807,7 +2081,8 @@ const IotaSDK = {
     /**************** SMR start *******************/
     SMR_NODE_ID: 101,
     checkSMR(nodeId) {
-        return nodeId == SMR_NODE_ID
+        const nodeInfo = this.nodes.find((e) => e.id == nodeId)
+        return nodeInfo?.type == 3
     },
     async importSMRBySeed(seed, password) {
         const baseSeed = await this.checkPassword(seed, password)
@@ -1846,12 +2121,22 @@ const IotaSDK = {
         let res = {}
         let smr4218, smr4218Balance, smr4219
         try {
-            const baseSeed = await this.checkPassword(seed, password)
+            await this.checkPassword(seed, password)
             IotaObj.setIotaBip44BasePath("m/44'/4218'")
             smr4218 = await this.importSMRBySeed(seed, password)
-            smr4218Balance = await IotaObj.getBalance(this.client, baseSeed, 0, {
-                startIndex: 0,
-                zeroCount: 20
+            const validAddresses = await this.getValidAddresses({
+                seed,
+                password,
+                address: smr4218.address,
+                nodeId: this.curNode.id
+            })
+            const addressList = validAddresses.addressList
+            const smr4218BalanceRes = await Promise.all(
+                addressList.map((e) => IotaObj.addressUnlockBalance(this.client, e))
+            )
+            smr4218Balance = BigNumber(0)
+            smr4218BalanceRes.forEach((e) => {
+                smr4218Balance = smr4218Balance.plus(e.balance)
             })
             IotaObj.setIotaBip44BasePath("m/44'/4219'")
             smr4219 = await this.importSMRBySeed(seed, password)
@@ -1859,12 +2144,14 @@ const IotaSDK = {
         } catch (error) {
             console.log(error, '----')
             res = { code: -1 }
+            Base.globalToast.hideLoading()
         }
         if (res.code !== -1) {
             try {
-                Base.globalToast.showLoading()
+                // Base.globalToast.showLoading()
+                const bigNumber = BigNumber(smr4218Balance).div(Math.pow(10, this.curNode.decimal))
                 await this.send(smr4218, smr4219.address, Number(smr4218Balance))
-                res = { code: 200, amount: Number(smr4218Balance), addressInfo: smr4219 }
+                res = { code: 200, amount: Number(bigNumber), addressInfo: smr4219 }
             } catch (error) {
                 console.log(error, '-----')
                 res = { code: 1 }
@@ -1873,6 +2160,214 @@ const IotaSDK = {
         }
         IotaObj.setIotaBip44BasePath("m/44'/4219'")
         return res
+    },
+    async SMRTokenSend(fromInfo, toAddress, sendAmount, ext) {
+        const { seed, password, address } = fromInfo
+        const baseSeed = this.getSeed(seed, password)
+        const { tokenId, token, taggedData, realBalance, mainBalance } = ext
+        let SMRFinished = false
+        let finished = false
+        let outputSMRBalance = BigNumber(0) //
+        const inputsAndSignatureKeyPairs = []
+        let initialAddressState = {
+            accountIndex: 0,
+            addressIndex: 0,
+            isInternal: false
+        }
+        let remainderSMROutput = null
+        let remainderOutput = null
+        let receiverOutput = {
+            address: `0x${this.bech32ToHex(toAddress)}`,
+            addressType: 0, // ED25519_ADDRESS_TYPE
+            amount: '',
+            type: 3, // BASIC_OUTPUT_TYPE
+            nativeTokens: [
+                {
+                    id: tokenId,
+                    amount: `0x${BigNumber(sendAmount).toString(16)}`
+                }
+            ],
+            unlockConditions: [
+                {
+                    type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
+                    address: IotaObj.Bech32Helper.addressFromBech32(toAddress, this.info.protocol.bech32Hrp)
+                }
+            ]
+        }
+        const receiverStorageDeposit = IotaObj.TransactionHelper.getStorageDeposit(
+            receiverOutput,
+            this.info.protocol.rentStructure
+        )
+        receiverOutput.amount = receiverStorageDeposit.toString()
+        let remainderStorageDeposit = 0
+        let outputBalance = BigNumber(receiverOutput.amount * -1)
+        let zeroBalance = 0
+        const getAddressOutputIds = async () => {
+            const path = IotaObj.generateBip44Address(initialAddressState)
+            const addressSeed = baseSeed.generateSeedFromPath(new IotaObj.Bip32Path(path))
+            const addressKeyPair = addressSeed.keyPair()
+            const ed25519Address = new IotaObj.Ed25519Address(addressKeyPair.publicKey)
+            const addressBytes = ed25519Address.toAddress()
+            const bech32Address = this.hexToBech32(addressBytes)
+            const addressOutputIds = await this.IndexerPluginClient.outputs({ addressBech32: bech32Address })
+            return { addressOutputIds, addressKeyPair, bech32Address }
+        }
+        const pushInput = (addressKeyPair, addressOutput) => {
+            const input = {
+                type: 0, // UTXO_INPUT_TYPE
+                transactionId: addressOutput.metadata.transactionId,
+                transactionOutputIndex: addressOutput.metadata.outputIndex
+            }
+            inputsAndSignatureKeyPairs.push({
+                input,
+                addressKeyPair,
+                consumingOutput: addressOutput.output
+            })
+        }
+        const setOutput = (outputBalance, bech32Address) => {
+            if (outputBalance.gte(0)) {
+                if (outputBalance.gt(0)) {
+                    remainderOutput = {
+                        address: `0x${this.bech32ToHex(bech32Address)}`,
+                        addressType: 0, // ED25519_ADDRESS_TYPE
+                        type: 3, //BASIC_OUTPUT_TYPE
+                        amount: outputBalance.toString(),
+                        unlockConditions: [
+                            {
+                                type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
+                                address: IotaObj.Bech32Helper.addressFromBech32(
+                                    bech32Address,
+                                    this.info.protocol.bech32Hrp
+                                )
+                            }
+                        ]
+                    }
+                }
+                finished = true
+            }
+        }
+        try {
+            do {
+                const { addressOutputIds, addressKeyPair, bech32Address } = await getAddressOutputIds()
+                if (addressOutputIds.items.length > 0) {
+                    for (const outputId of addressOutputIds.items) {
+                        const addressOutput = await this.client.output(outputId)
+                        if (!addressOutput.metadata.isSpent) {
+                            if (BigNumber(addressOutput.output.amount).eq(0)) {
+                                zeroBalance++
+                            } else {
+                                const addressUnlockCondition = addressOutput.output.unlockConditions.find(
+                                    (u) => u.type === 3 // EXPIRATION_UNLOCK_CONDITION_TYPE
+                                )
+                                if (!addressUnlockCondition) {
+                                    const nativeTokens = addressOutput?.output?.nativeTokens || []
+                                    const curToken = nativeTokens.find((e) => e.id === tokenId)
+                                    if (curToken) {
+                                        if (!SMRFinished) {
+                                            outputSMRBalance = outputSMRBalance.plus(curToken.amount)
+                                            pushInput(addressKeyPair, addressOutput)
+                                            outputBalance = outputBalance.plus(addressOutput.output.amount)
+                                            if (outputSMRBalance.minus(sendAmount).gte(0)) {
+                                                if (outputSMRBalance.minus(sendAmount).gt(0)) {
+                                                    const addressUnlockCondition =
+                                                        addressOutput.output.unlockConditions.find(
+                                                            (u) => u.type === 0 // ADDRESS_UNLOCK_CONDITION_TYPE
+                                                        )
+                                                    if (
+                                                        addressUnlockCondition &&
+                                                        addressUnlockCondition.address.type === 0 // ED25519_ADDRESS_TYPE
+                                                    ) {
+                                                        remainderSMROutput = {
+                                                            address: `0x${this.bech32ToHex(bech32Address)}`,
+                                                            addressType: 0, // ED25519_ADDRESS_TYPE
+                                                            type: 3, //BASIC_OUTPUT_TYPE
+                                                            amount: '',
+                                                            nativeTokens: [
+                                                                {
+                                                                    id: tokenId,
+                                                                    amount: `0x${outputSMRBalance
+                                                                        .minus(sendAmount)
+                                                                        .toString(16)}`
+                                                                }
+                                                            ],
+                                                            unlockConditions: [
+                                                                {
+                                                                    type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
+                                                                    address: IotaObj.Bech32Helper.addressFromBech32(
+                                                                        bech32Address,
+                                                                        this.info.protocol.bech32Hrp
+                                                                    )
+                                                                }
+                                                            ]
+                                                        }
+                                                        remainderStorageDeposit =
+                                                            IotaObj.TransactionHelper.getStorageDeposit(
+                                                                remainderSMROutput,
+                                                                this.info.protocol.rentStructure
+                                                            )
+                                                        remainderSMROutput.amount = remainderStorageDeposit.toString()
+                                                        outputBalance = outputBalance.minus(remainderSMROutput.amount)
+                                                        setOutput(outputBalance, bech32Address)
+                                                    }
+                                                } else {
+                                                    setOutput(outputBalance, bech32Address)
+                                                }
+                                                SMRFinished = true
+                                            } else {
+                                                setOutput(outputBalance, bech32Address)
+                                            }
+                                        }
+                                    } else if (nativeTokens.length === 0 && !finished) {
+                                        pushInput(addressKeyPair, addressOutput)
+                                        outputBalance = outputBalance.plus(addressOutput.output.amount)
+                                        setOutput(outputBalance, bech32Address)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    zeroBalance++
+                }
+            } while ((!SMRFinished || !finished) && zeroBalance <= 20)
+            const outputs = [receiverOutput]
+            if (remainderOutput) {
+                outputs.push(remainderOutput)
+            }
+            if (remainderSMROutput) {
+                outputs.push(remainderSMROutput)
+            }
+            if (outputBalance.lt(0)) {
+                let str = I18n.t('assets.sendErrorInsufficient')
+                str = str
+                    .replace(/{token}/g, token)
+                    .replace(/{amount}/g, sendAmount)
+                    .replace(
+                        /{deposit}/g,
+                        Number(receiverStorageDeposit.toString()) + Number(remainderStorageDeposit.toString())
+                    )
+                    .replace(/{balance1}/g, realBalance)
+                    .replace(/{balance2}/g, mainBalance)
+                    .replace(/{balance3}/g, Number(outputBalance))
+                throw new Error(str)
+            }
+            const res = await IotaObj.sendAdvanced(this.client, inputsAndSignatureKeyPairs, outputs, {
+                tag: IotaObj.Converter.utf8ToBytes('TanglePay'),
+                data: taggedData
+                    ? IotaObj.Converter.utf8ToBytes(taggedData)
+                    : IotaObj.Converter.utf8ToBytes(
+                          JSON.stringify({
+                              from: address, //main address
+                              to: toAddress,
+                              amount: sendAmount,
+                              collection: 0
+                          })
+                      )
+            })
+            return res
+        } catch (error) {
+            throw error
+        }
     }
     /**************** SMR end *******************/
 }

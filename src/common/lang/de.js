@@ -46,6 +46,7 @@ Bitte verwahre deine Wiederherstellungsphrase und ein Backup an einem sicheren O
             `,
         mnemonicPhraseTips2: 'Teile deine Wiederherstellungsphrase oder .Stronghold Backup niemals über das Internet.',
         mnemonicBtn: 'Überprüfe meine Eingabe',
+        mnemonicExp: 'Mnemonic Import Example',
 
         registerSucc: `Erlaube Tanglepay Nutzerdaten zu sammeln, um das Nutzungserlebnis der App zu verbessern.
 
@@ -166,17 +167,27 @@ Wiederherstellungsphrase oder des Private Keys bist, bevor du fortfährst.`,
         passwordError: 'Bitte gib das korrekte Passwort ein.',
         balanceError: 'Nicht genügend Guthaben.',
         balanceStakeError: 'Zu wenig Guthaben. Bitte unstake zuerst.',
+        sendErrorInsufficient: `Error: Insufficient fund to carry out the transaction.
+Send {token} amount: {amount} 
+Estimated storage deposit: {deposit} SMR 
+Available {token} balance: {balance1} 
+Available SMR balance: {balance2} 
+Locked SMR balance: {balance3}`,
 
         requestAssets: 'Lade Asset Daten.',
         requestHis: 'Lade Historie.',
 
-        receivedSucc: 'Du hast {num} Mi IOTA erhalten!',
+        receivedSucc: 'Du hast {num} {unit} {token} erhalten!',
 
         album: 'Album',
         readFail: 'QR-Code-Erkennung fehlgeschlagen',
         residueBelow1Tips:
             'Der Restbetrag auf deiner Wallet kann nicht kleiner als 1 Miota betragen. Bitte ändere die Anzahl.',
-        sendBelow1Tips: 'Der zu versendende Betrag kann nicht kleiner als 1 Miota betragen. Bitte ändere die Anzahl'
+        sendBelow1Tips: 'Der zu versendende Betrag kann nicht kleiner als 1 Miota betragen. Bitte ändere die Anzahl',
+        evmGasNotSufficient:
+            'The {token} in the address is not sufficient for the transaction gas fee. Please deposit.',
+        sendSuccRestakeTips: 'Transaction succeeded. Restaking...',
+        restakeSuccTips: 'Restaking succeeded.'
     },
     user: {
         me: 'Profil',
@@ -241,7 +252,8 @@ Wiederherstellungsphrase oder des Private Keys bist, bevor du fortfährst.`,
         noAvailableTips: 'Deine Wallet ist leer. Transferiere Guthaben in deine Wallet um zu Staken.',
         stakeBelow1Tips: 'Anzahl kann nicht geringer als 1 Mi sein, bitte versuche es erneut.',
         soon: 'soon',
-        limitAmount: 'Du benötigst mindestens {num} MIOTA um am Staking für {token} teilzunehmen zu können.'
+        limitAmount: 'Du benötigst mindestens {num} MIOTA um am Staking für {token} teilzunehmen zu können.',
+        restake: 'Automatic Restake'
     },
     apps: {
         title: 'Dapps',
