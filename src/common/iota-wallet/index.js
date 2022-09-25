@@ -190,9 +190,9 @@ const IotaSDK = {
                     ) {
                         const bech32Hrp = ShimmerHornet.Protocol.bech32Hrp
                         if (bech32Hrp == 'rms') {
-                            shimmerRmsList.push({ ...info, curNodeKey: i })
+                            shimmerRmsList.push({ ...info, curNodeKey: `dlt.green:${i}` })
                         } else if (bech32Hrp === 'smr') {
-                            shimmerSmrList.push({ ...info, curNodeKey: i })
+                            shimmerSmrList.push({ ...info, curNodeKey: `dlt.green:${i}` })
                         }
                     }
                 }
@@ -206,18 +206,38 @@ const IotaSDK = {
                 //         IotaHornet.bech32Hrp == 'iota' &&
                 //         IotaHornet.isHealthy
                 //     ) {
-                //         iotaList.push({ ...info, curNodeKey: i })
+                //         iotaList.push({ ...info, curNodeKey: `dlt.green:${i}` })
                 //     }
                 // }
-                const selectNode = (list) => {
+                const selectNode = async (list) => {
                     list.sort((a, b) => a['dlt.green'].PoolRank - b['dlt.green'].PoolRank)
                     list = list.slice(0, 5)
                     const index = parseInt(Math.random() * list.length)
-                    return list[index]
+                    let info = null
+                    if (list[index]) {
+                        const select = list[index]
+                        const Domain = select?.ShimmerHornet?.Domain || select?.IotaHornet?.Domain
+                        if (Domain) {
+                            const url = `https://${Domain}`
+                            let client = null
+                            if (select?.ShimmerHornet) {
+                                client = new IotaNext.SingleNodeClient(url)
+                            } else {
+                                client = new Iota.SingleNodeClient(url)
+                            }
+                            if (client) {
+                                const clientInfo = await client.info()
+                                if (clientInfo?.status?.isHealthy || clientInfo?.isHealthy) {
+                                    info = select
+                                }
+                            }
+                        }
+                    }
+                    return info
                 }
                 // shimmer rms
                 if (shimmerRmsList.length > 0) {
-                    const selectInfo = selectNode(shimmerRmsList)
+                    const selectInfo = await selectNode(shimmerRmsList)
                     const info = _nodes.find((e) => e.bech32HRP === 'rms')
                     if (info && selectInfo?.ShimmerHornet) {
                         info.url = `https://${selectInfo.ShimmerHornet.Domain}`
@@ -227,7 +247,7 @@ const IotaSDK = {
                 }
                 // shimmer smr
                 if (shimmerSmrList.length > 0) {
-                    const selectInfo = selectNode(shimmerSmrList)
+                    const selectInfo = await selectNode(shimmerSmrList)
                     const info = _nodes.find((e) => e.bech32HRP === 'smr')
                     if (info && selectInfo?.ShimmerHornet) {
                         info.url = `https://${selectInfo.ShimmerHornet.Domain}`
@@ -237,7 +257,7 @@ const IotaSDK = {
                 }
                 // iota
                 if (iotaList.length > 0) {
-                    const selectInfo = selectNode(iotaList)
+                    const selectInfo = await selectNode(iotaList)
                     const info = _nodes.find((e) => e.bech32HRP === 'iota')
                     if (info && selectInfo?.IotaHornet) {
                         info.url = `https://${selectInfo.IotaHornet.Domain}`
