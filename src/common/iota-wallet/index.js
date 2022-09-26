@@ -166,6 +166,26 @@ const IotaSDK = {
             }
             //advanced end
 
+            // check start
+            if (Base.getClientType() === 'IOS') {
+                const version = Base.getVersion()
+                const versionRes = await fetch(`${API_URL}/switchConfig.json?v=${new Date().getTime()}`).then((res) =>
+                    res.json()
+                )
+                const isCheck = version == versionRes.checkVersion
+                if (isCheck) {
+                    _nodes.forEach((e) => {
+                        if (!e.filterMenuList.includes('apps')) {
+                            e.filterMenuList.push('apps')
+                        }
+                        if (!e.filterAssetsList.includes('soonaverse')) {
+                            e.filterAssetsList.push('soonaverse')
+                        }
+                    })
+                }
+            }
+            // check end
+
             let shimmerInfo = _nodes.find((e) => e.bech32HRP === 'smr')
             if (!shimmerInfo) {
                 shimmerInfo = _nodes.find((e) => e.bech32HRP === 'rms')
@@ -770,6 +790,8 @@ const IotaSDK = {
         const decimal = node?.decimal
         let realBalance = BigNumber(0)
         let balance = BigNumber(0)
+        let realAvailable = BigNumber(0)
+        let available = BigNumber(0)
         let actionTime = new Date().getTime()
         const smrTokens = {}
         if (this.checkWeb3Node(nodeId)) {
@@ -787,6 +809,7 @@ const IotaSDK = {
                 }
                 res.forEach((e) => {
                     realBalance = realBalance.plus(e.balance)
+                    realAvailable = realAvailable.plus(e.available || 0)
                     if (e.nativeTokens) {
                         for (const i in e.nativeTokens) {
                             smrTokens[i] = smrTokens[i] || BigNumber(0)
@@ -822,6 +845,8 @@ const IotaSDK = {
 
         balance = realBalance.div(Math.pow(10, decimal))
         realBalance = Number(realBalance)
+        available = realAvailable.div(Math.pow(10, decimal))
+        realAvailable = Number(realAvailable)
         Trace.updateAddressAmount(id, address, realBalance, nodeId, token)
         const contractAssets = await this.getContractAssets(nodeId, address, id)
         const balanceList = [
@@ -829,7 +854,9 @@ const IotaSDK = {
                 realBalance,
                 balance: Number(balance),
                 decimal,
-                token
+                token,
+                available,
+                realAvailable
             },
             ...contractAssets,
             ...nativeTokens
