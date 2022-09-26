@@ -16,7 +16,7 @@ export const reducer = (state, action) => {
 export const useGetDappsConfig = () => {
     const { _, dispatch } = useContext(StoreContext)
     useEffect(() => {
-        fetch(`${API_URL}/dapps.config.json`)
+        fetch(`${API_URL}/dapps.config.json?v=${new Date().getTime()}`)
             .then((res) => res.json())
             .then((res) => {
                 console.log(res, '---')
