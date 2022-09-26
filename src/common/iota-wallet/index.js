@@ -2299,10 +2299,12 @@ const IotaSDK = {
                             if (BigNumber(addressOutput.output.amount).eq(0)) {
                                 zeroBalance++
                             } else {
+                                const outputType = addressOutput?.output?.type
                                 const addressUnlockCondition = addressOutput.output.unlockConditions.find(
-                                    (u) => u.type === 3 // EXPIRATION_UNLOCK_CONDITION_TYPE
+                                    (u) => u.type != 0 // ADDRESS_UNLOCK_CONDITION_TYPE
                                 )
-                                if (!addressUnlockCondition) {
+                                //BASIC_OUTPUT_TYPE
+                                if (outputType == 3 && !addressUnlockCondition) {
                                     const nativeTokens = addressOutput?.output?.nativeTokens || []
                                     const curToken = nativeTokens.find((e) => e.id === tokenId)
                                     if (curToken) {
