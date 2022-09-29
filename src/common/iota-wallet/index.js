@@ -836,7 +836,8 @@ const IotaSDK = {
                 balance: Number(balance),
                 decimal: decimals,
                 token: symbol,
-                isSMRToken: true
+                isSMRToken: true,
+                uriId: info.uri
             })
         })
 
@@ -1425,12 +1426,31 @@ const IotaSDK = {
     },
     // foundry
     async foundry(foundryId) {
-        const res = await this.requestQueue([
-            Http.GET(`${this.explorerApiUrl}/foundry/${this.curNode.network}/${foundryId}`, {
-                isHandlerError: true
-            })
-        ])
-        return res?.foundryDetails || {}
+        try {
+            const localTokensConfig = (await Base.getLocalData('shimmer.tokensConfig')) || {}
+            if (localTokensConfig[foundryId]) {
+                return localTokensConfig[foundryId]
+            }
+            let foundryData = await this.IndexerPluginClient.foundry(e)
+            const outputId = foundryData.items[0] || ''
+            if (!outputId) {
+                return {}
+            }
+            const outputData = await this.client.output(outputId)
+            localTokensConfig[foundryId] = outputData
+            Base.setLocalData('shimmer.tokensConfig', localTokensConfig)
+            return outputData
+        } catch (error) {
+            return {}
+        }
+
+        // explorer api
+        // const res = await this.requestQueue([
+        //     Http.GET(`${this.explorerApiUrl}/foundry/${this.curNode.network}/${foundryId}`, {
+        //         isHandlerError: true
+        //     })
+        // ])
+        // return res?.foundryDetails || {}
     },
     // handle foundry
     handleFoundry(foundryData) {
