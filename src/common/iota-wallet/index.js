@@ -82,6 +82,74 @@ const initNodeList = [
         filterAssetsList: [],
         decimal: 6,
         explorerApiUrl: 'https://explorer-api.iota.org'
+    },
+    {
+        id: 102,
+        explorer: 'https://explorer.shimmer.network/shimmer',
+        url: 'https://mainnet.shimmer.node.tanglepay.com',
+        name: 'Shimmer Mainnet',
+        enName: 'Shimmer Mainnet',
+        deName: 'Shimmer Mainnet',
+        zhName: 'Shimmer 主網',
+        type: 3,
+        mqtt: 'wss://api.mainnet.shimmer.network:443/api/mqtt/v1',
+        network: 'shimmer',
+        bech32HRP: 'smr',
+        token: 'SMR',
+        filterMenuList: ['staking'],
+        filterAssetsList: ['stake', 'soonaverse'],
+        decimal: 6,
+        explorerApiUrl: 'https://explorer-api.shimmer.network/stardust'
+    },
+    {
+        id: 5,
+        url: 'https://evm.wasp.sc.iota.org/',
+        explorer: 'https://explorer.wasp.sc.iota.org',
+        name: 'IOTA EVM',
+        enName: 'IOTA EVM',
+        deName: 'IOTA EVM',
+        zhName: 'IOTA EVM',
+        type: 2,
+        network: 'iota-evm',
+        bech32HRP: 'iota-evm',
+        token: 'TEST',
+        filterMenuList: ['apps', 'staking'],
+        filterAssetsList: ['stake'],
+        contractList: [
+            {
+                contract: '0x903fE58170A44CF0D0eb5900d26cDedEA802635C',
+                token: 'TPT',
+                gasLimit: 0,
+                maxPriorityFeePerGas: 0
+            }
+        ],
+        decimal: 18,
+        gasLimit: 0
+    },
+    {
+        id: 4,
+        url: 'https://bsc-dataseed.binance.org/',
+        explorer: 'https://bscscan.com',
+        name: 'BSC',
+        enName: 'BSC',
+        deName: 'BSC',
+        zhName: 'BSC',
+        type: 2,
+        network: 'bsc',
+        bech32HRP: 'bsc',
+        token: 'BNB',
+        filterMenuList: ['apps', 'staking'],
+        filterAssetsList: ['stake'],
+        contractList: [
+            {
+                contract: '0x55d398326f99059ff775485246999027b3197955',
+                token: 'USDT',
+                gasLimit: 21000,
+                maxPriorityFeePerGas: 0
+            }
+        ],
+        decimal: 18,
+        gasLimit: 21000
     }
 ]
 const IotaSDK = {
