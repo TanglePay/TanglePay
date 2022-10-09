@@ -277,7 +277,7 @@ Erlaube der Seite: Adressen und Kontostände einsehen
         ConnectBtn: 'Verbinde'
     },
     nft: {
-        collectibles: 'NFT-Kunst',
+        collectibles: 'NFTs',
         zeroTips: 'du besitzt kein {name} ',
         clearCache: 'Leere deinen Cache',
         goBuy: 'Jetzt kaufen!',
