@@ -649,9 +649,6 @@ const IotaSDK = {
         list = list.filter((d) => this.nodes.find((e) => e.id == d.nodeId))
         return list
     },
-    async getWalletInfo(address) {
-        return this.client.address(address)
-    },
     bytesToHex(bytes) {
         return IotaObj.Converter.bytesToHex(bytes)
     },
@@ -1074,8 +1071,22 @@ const IotaSDK = {
     },
     // /************************collect start***********************/
     async getWalletInfo(validAddresses) {
-        const addresses = await Promise.all(validAddresses.map((e) => this.client.addressOutputs(e)))
-        const addressInfos = await Promise.all(validAddresses.map((e) => this.client.address(e)))
+        let addresses = []
+        let addressInfos = []
+        const curNodeId = this.curNode.id
+        const isSMR = this.checkSMR(curNodeId)
+        const isIOTA = this.checkIota(curNodeId)
+        if (isIOTA) {
+            addresses = await Promise.all(validAddresses.map((e) => this.client.addressOutputs(e)))
+            addressInfos = await Promise.all(validAddresses.map((e) => this.client.address(e)))
+        } else if (isSMR && this.IndexerPluginClient) {
+            addressInfos = await Promise.all(validAddresses.map((e) => IotaObj.addressBalance(this.client, e)))
+            addressInfos.forEach((e, i) => {
+                e.balance = e.available
+                addresses[i] = addresses[i] || {}
+                addresses[i].outputIds = e.availableOutputIds
+            })
+        }
         const total = { outputIds: [] }
         total.balance = new BigNumber(0)
         const decimal = Math.pow(10, IotaSDK.curNode.decimal)
@@ -1093,6 +1104,8 @@ const IotaSDK = {
         })
         total.balanceMIOTA = Number(total.balance.div(decimal))
         total.balance = Number(total.balance)
+        const unit = isIOTA ? 'MIOTA' : isSMR ? 'SMR' : ''
+        total.unit = unit
         return [arr, total]
     },
     _collectedList: [],
@@ -1100,6 +1113,7 @@ const IotaSDK = {
     _stopCollect: false,
     _isSend: false,
     async collectByOutputIds(validAddresses, curWallet, callBack) {
+        const isSMR = this.checkSMR(curWallet.nodeId)
         const getIds = async () => {
             const [, total] = await this.getWalletInfo(validAddresses)
             let outputIds = total?.outputIds || []
@@ -1113,16 +1127,27 @@ const IotaSDK = {
                 callBack(this._collectedList)
                 return
             }
-            const outputsRes = await Promise.all(ids.map((e) => this.client.output(e)))
+            let outputsRes = await Promise.all(ids.map((e) => this.client.output(e)))
             let amount = BigNumber(0)
             outputsRes.forEach((e, i) => {
                 const id = ids[i]
-                if (!e.isSpent && e.output.amount > 0) {
-                    amount = amount.plus(e.output.amount)
-                    this._collectingList.push(id)
+                if (!isSMR) {
+                    if (!e.isSpent && e.output.amount > 0) {
+                        amount = amount.plus(e.output.amount)
+                        this._collectingList.push(id)
+                    } else {
+                        if (this._collectedList.includes(id)) {
+                            this._collectedList.push(id)
+                        }
+                    }
                 } else {
-                    if (this._collectedList.includes(id)) {
-                        this._collectedList.push(id)
+                    if (IotaObj.checkOutput(e)) {
+                        amount = amount.plus(e.output.amount)
+                        this._collectingList.push(id)
+                    } else {
+                        if (this._collectedList.includes(id)) {
+                            this._collectedList.push(id)
+                        }
                     }
                 }
             })
@@ -1457,10 +1482,12 @@ const IotaSDK = {
                     }, 2000)
                 }
             } else {
-                Base.globalToast.success(I18n.t('assets.sendSucc'))
-                setTimeout(() => {
-                    Base.globalToast.hideLoading()
-                }, 2000)
+                if (!ext?.isCollection) {
+                    Base.globalToast.success(I18n.t('assets.sendSucc'))
+                    setTimeout(() => {
+                        Base.globalToast.hideLoading()
+                    }, 2000)
+                }
             }
             // restake end
             return sendOut
@@ -2262,12 +2289,10 @@ const IotaSDK = {
                 nodeId: this.curNode.id
             })
             const addressList = validAddresses.addressList
-            const smr4218BalanceRes = await Promise.all(
-                addressList.map((e) => IotaObj.addressUnlockBalance(this.client, e))
-            )
+            const smr4218BalanceRes = await Promise.all(addressList.map((e) => IotaObj.addressBalance(this.client, e)))
             smr4218Balance = BigNumber(0)
             smr4218BalanceRes.forEach((e) => {
-                smr4218Balance = smr4218Balance.plus(e.balance)
+                smr4218Balance = smr4218Balance.plus(e.available)
             })
             IotaObj.setIotaBip44BasePath("m/44'/4219'")
             smr4219 = await this.importSMRBySeed(seed, password)

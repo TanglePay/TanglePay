@@ -30,7 +30,7 @@ const Utils = {
     },
     formatNum(num, len) {
         num = num || 0
-        len = len || 4
+        len = len || len === 0 ? len : 4
         if (num.constructor.name === 'BigNumber') {
             num = num.valueOf()
         }

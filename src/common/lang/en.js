@@ -79,7 +79,7 @@ This data has been aggregated to meet the requirements of EU Regulation 2016/679
 
         dearFam: 'Dear ##IOTA## fam,',
         betaReady: `Welcome to use TanglePay,
-the IOTA token and NFT wallet. Soon we will be able to support Shimmer network and Shimmer EVM all in one wallet interface. Please choose the network first.`,
+the IOTA token and NFT wallet. Shimmer and other EVM networks are supported. Shimmer EVM and Assembly will be supported soon. Please choose the network first.`,
         changeTips:
             'Please choose the network you want to use first and you can always add other network in the wallet.',
         devnet: 'IOTA Devnet',
