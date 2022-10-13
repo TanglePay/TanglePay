@@ -186,7 +186,10 @@ Locked SMR balance: {balance3}`,
         evmGasNotSufficient:
             'The {token} in the address is not sufficient for the transaction gas fee. Please deposit.',
         sendSuccRestakeTips: 'Transaction succeeded. Restaking...',
-        restakeSuccTips: 'Restaking succeeded.'
+        restakeSuccTips: 'Restaking succeeded.',
+        tradingList: 'Trading List',
+        tradingFrom: 'From',
+        tradingTitle: 'Transaction'
     },
     user: {
         me: 'Profil',

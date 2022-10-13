@@ -171,7 +171,10 @@ const ZH = {
         sendBelow1Tips: '發送金額不能少於1 Mi，請重新輸入金額。',
         evmGasNotSufficient: '地址中 {token} 余额不足以支付Gas Fee，请充值',
         sendSuccRestakeTips: '交易成功。恢復Staking中',
-        restakeSuccTips: 'Restaking 成功'
+        restakeSuccTips: 'Restaking 成功',
+        tradingList: 'Trading List',
+        tradingFrom: 'From',
+        tradingTitle: 'Transaction'
     },
     user: {
         me: '個人',

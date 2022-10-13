@@ -35,7 +35,8 @@ export const initState = {
 
     detailList: [], // wallet info
     detailTotalInfo: {},
-    unlockConditions: []
+    unlockConditions: [], // receive
+    unlockConditionsSend: [] // send
 }
 
 export const reducer = (state, action) => {
@@ -730,27 +731,63 @@ const useUpdateHisList = () => {
     return updateHisList
 }
 
+export const useHandleUnlocalConditions = () => {
+    const { store, dispatch } = useContext(StoreContext)
+    const onDismiss = async (blockId) => {
+        let unlockConditionsList = _get(store, 'common.unlockConditions')
+        const localDismissList = (await Base.getLocalData('common.unlockConditions.dismiss')) || []
+        localDismissList.push(blockId)
+        unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.blockId))
+        Base.setLocalData('common.unlockConditions.dismiss', localDismissList)
+        dispatch({
+            type: 'common.unlockConditions',
+            data: unlockConditionsList
+        })
+    }
+    const onAccept = async (item) => {
+        console.log(item)
+    }
+    return { onDismiss, onAccept }
+}
 const useUpdateUnlockConditions = () => {
     const { store, dispatch } = useContext(StoreContext)
-    const updateUnlockConditions = async (activityList, { nodeId }) => {
+    const updateUnlockConditions = async (activityList, { nodeId, address }) => {
         if (IotaSDK.checkSMR(nodeId)) {
             activityList = activityList.filter((e) =>
                 e.outputs.find((d) => d.unlockConditions.find((g) => g.type != 0))
             )
             let unlockConditionsList = []
+            const token = IotaSDK.checkSMR(IotaSDK.curNode.id) ? 'SMR' : IotaSDK.curNode.token
+            const decimal = IotaSDK.curNode.decimal
+            const nowTime = parseInt(new Date().getTime() / 1000)
             activityList.forEach((e) => {
-                const { unlockBlock, isSpent, timestamp, outputs } = e
+                const { unlockBlock, isSpent, timestamp, outputs, blockId } = e
                 const unlockConditionOutput = outputs.find((d) => d.unlockConditions.find((g) => g.type != 0))
-                if (unlockConditionOutput) {
+                const timeConditions = unlockConditionOutput.unlockConditions.find((e) => e.type == 3)
+                const unixTime = timeConditions?.unixTime
+                if (unlockConditionOutput && (!unixTime || unixTime > nowTime)) {
                     let unlockAddress = ''
                     if (unlockBlock) {
                         unlockAddress = IotaSDK.publicKeyToBech32(unlockBlock?.signature?.publicKey)
                     }
+                    const amount = unlockConditionOutput.amount
+                    let timeStr = ''
+                    if (unixTime) {
+                        const time = unixTime - nowTime
+                        const d = parseInt(time / 60 / 60 / 24)
+                        const h = parseInt((time % (3600 * 24)) / 3600)
+                        timeStr = `${d}D ${h}H`
+                    }
+                    const amountStr = BigNumber(amount).div(Math.pow(10, decimal))
                     unlockConditionsList.push({
+                        token,
+                        blockId,
                         isSpent,
                         timestamp,
+                        timeStr,
                         unlockBlock,
                         amount: unlockConditionOutput.amount,
+                        amountStr: parseFloat(amountStr),
                         unlockAddress,
                         unlockConditions: unlockConditionOutput.unlockConditions.map((d) => {
                             let pubKeyHash = d.address?.pubKeyHash || d.returnAddress?.pubKeyHash || ''
@@ -765,13 +802,24 @@ const useUpdateUnlockConditions = () => {
                     })
                 }
             })
+            const localDismissList = (await Base.getLocalData('common.unlockConditions.dismiss')) || []
+            unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.blockId))
+            const unlockConditionsSendList = unlockConditionsList.filter((e) => e.unlockAddress == address)
             dispatch({
-                type: 'unlockConditions',
-                data: unlockConditionsList
+                type: 'common.unlockConditions',
+                data: unlockConditionsList.filter((e) => e.unlockAddress != address)
+            })
+            dispatch({
+                type: 'common.unlockConditionsSend',
+                data: unlockConditionsSendList
             })
         } else {
             dispatch({
-                type: 'unlockConditions',
+                type: 'common.unlockConditions',
+                data: []
+            })
+            dispatch({
+                type: 'common.unlockConditionsSend',
                 data: []
             })
         }
