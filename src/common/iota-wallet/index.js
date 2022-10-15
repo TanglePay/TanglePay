@@ -1468,7 +1468,6 @@ const IotaSDK = {
                                         Base.globalToast.hideLoading()
                                     }, 2000)
                                 }
-                                console.log(res)
                             })
                             .catch((error) => {
                                 Base.globalToast.hideLoading()
@@ -2263,6 +2262,45 @@ const IotaSDK = {
             bech32HRP: this.info?.bech32HRP,
             publicKey: ethereumjsUtils.bufferToHex(addressKeyPair.publicKey)
         }
+    },
+    // check claim
+    async checkClaimSMR(fromInfo) {
+        const { seed, password, nodeId, address } = fromInfo
+        const isClaim = await Base.getLocalData(`claim.smr.${address}`)
+        if (!isClaim) {
+            if (this.checkIota(nodeId)) {
+                try {
+                    const baseSeed = this.getSeed(seed, password)
+                    IotaNext.setIotaBip44BasePath("m/44'/4218'")
+                    const addressKeyPair = this.getPair(baseSeed)
+                    const indexEd25519Address = new IotaNext.Ed25519Address(addressKeyPair.publicKey)
+                    const indexPublicKeyAddress = indexEd25519Address.toAddress()
+                    const nodeInfo =
+                        this.curNode.id == this.IOTA_NODE_ID
+                            ? initNodeList.find((e) => this.checkSMR(e.id))
+                            : shimmerTestnet
+                    const addressBech32 = IotaNext.Bech32Helper.toBech32(
+                        IotaNext.ED25519_ADDRESS_TYPE,
+                        indexPublicKeyAddress,
+                        nodeInfo.bech32HRP
+                    )
+
+                    const client = new IotaNext.SingleNodeClient(nodeInfo.url)
+                    const IndexerPluginClient = new IotaNext.IndexerPluginClient(client)
+                    const res = await IndexerPluginClient.outputs({ addressBech32 })
+                    const isHasClaim = !res?.items?.length
+                    if (isHasClaim) {
+                        Base.setLocalData(`claim.smr.${address}`, 1)
+                    }
+                    return isHasClaim
+                } catch (error) {
+                    return false
+                }
+            } else {
+                return false
+            }
+        }
+        return true
     },
     // gen 4218 ——> gen 4219 ——> 4218 to 4219
     async claimSMR(fromInfo) {

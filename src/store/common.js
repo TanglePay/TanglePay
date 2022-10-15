@@ -36,7 +36,9 @@ export const initState = {
     detailList: [], // wallet info
     detailTotalInfo: {},
     unlockConditions: [], // receive
-    unlockConditionsSend: [] // send
+    unlockConditionsSend: [], // send
+
+    checkClaim: false
 }
 
 export const reducer = (state, action) => {
@@ -745,7 +747,6 @@ export const useHandleUnlocalConditions = () => {
         })
     }
     const onAccept = async (item) => {
-        console.log(item)
         const res = await IotaSDK.SMRUNlock(item)
         return res
     }
@@ -758,7 +759,6 @@ const useUpdateUnlockConditions = () => {
             outputDatas = outputDatas.filter((e) => {
                 return (e.output?.unlockConditions || []).find((g) => g.type != 0)
             })
-            console.log(outputDatas, '+++++++++++++++++++++')
             let standard = ''
             let deposit = 0
             let depositStr = ''
@@ -913,6 +913,10 @@ export const useGetAssetsList = (curWallet) => {
                 type: 'staking.stakedRewards',
                 data: {}
             })
+            dispatch({
+                type: 'common.checkClaim',
+                data: false
+            })
             return
         }
         // if (!price || !price.hasOwnProperty('IOTA')) {
@@ -959,6 +963,30 @@ export const useGetAssetsList = (curWallet) => {
             } else {
                 updateUnlockConditions([], newCurWallet)
             }
+
+            // nfts
+            // if(IotaSDK.checkSMR(newCurWallet.nodeId)){
+            //     IotaSDK.IndexerPluginClient.nfts({
+            //         addressBech32:addressList[0]
+            //     }).then(res=>{
+            //         console.log(res,'_____________________');
+            //     })
+            // }
+
+            //checkClaim
+            IotaSDK.checkClaimSMR(newCurWallet)
+                .then((res) => {
+                    dispatch({
+                        type: 'common.checkClaim',
+                        data: res
+                    })
+                })
+                .catch((err) => {
+                    dispatch({
+                        type: 'common.checkClaim',
+                        data: false
+                    })
+                })
 
             // Sync transaction history
             setRequestHis(false, dispatch)

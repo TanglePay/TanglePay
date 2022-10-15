@@ -189,7 +189,11 @@ Locked SMR balance: {balance3}`,
         restakeSuccTips: 'Restaking succeeded.',
         tradingList: 'Trading List',
         tradingFrom: 'From',
-        tradingTitle: 'Transaction'
+        tradingTitle: 'Transaction',
+        acceptTitle: 'Accept The Transaction',
+        storageDeposit: 'Storage Deposit',
+        standard: 'Standard',
+        tokenID: 'Token ID'
     },
     user: {
         me: 'Profil',
