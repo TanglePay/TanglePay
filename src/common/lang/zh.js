@@ -172,13 +172,13 @@ const ZH = {
         evmGasNotSufficient: '地址中 {token} 余额不足以支付Gas Fee，请充值',
         sendSuccRestakeTips: '交易成功。恢復Staking中',
         restakeSuccTips: 'Restaking 成功',
-        tradingList: 'Trading List',
-        tradingFrom: 'From',
-        tradingTitle: 'Transaction',
-        acceptTitle: 'Accept The Transaction',
-        storageDeposit: 'Storage Deposit',
-        standard: 'Standard',
-        tokenID: 'Token ID'
+        tradingList: '交易列表',
+        tradingFrom: '從',
+        tradingTitle: '轉賬',
+        acceptTitle: '接受轉賬',
+        storageDeposit: '存儲押金',
+        standard: '標準',
+        tokenID: '代幣ID'
     },
     user: {
         me: '個人',
