@@ -178,7 +178,9 @@ const ZH = {
         acceptTitle: '接受轉賬',
         storageDeposit: '存儲押金',
         standard: '標準',
-        tokenID: '代幣ID'
+        tokenID: '代幣ID',
+        dismissTips: '請確認是否暫不接收，資產將在到期後退回發送賬戶。',
+        acceptSucc: '領取成功'
     },
     user: {
         me: '個人',

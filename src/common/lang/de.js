@@ -193,7 +193,10 @@ Locked SMR balance: {balance3}`,
         acceptTitle: 'Accept The Transaction',
         storageDeposit: 'Storage Deposit',
         standard: 'Standard',
-        tokenID: 'Token ID'
+        tokenID: 'Token ID',
+        dismissTips:
+            'Please confirm if you want to dismiss the transaction and fund will go back to the sending address after expiration.',
+        acceptSucc: 'Claimed successfully'
     },
     user: {
         me: 'Profil',
