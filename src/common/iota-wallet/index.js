@@ -299,7 +299,7 @@ const IotaSDK = {
                 // }
                 const selectNode = async (list) => {
                     list.sort((a, b) => a['dlt.green'].PoolRank - b['dlt.green'].PoolRank)
-                    list = list.slice(0, 5)
+                    list = list.slice(0, 10)
                     const index = parseInt(Math.random() * list.length)
                     let info = null
                     if (list[index]) {
