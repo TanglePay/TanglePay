@@ -299,7 +299,7 @@ const IotaSDK = {
                 // }
                 const selectNode = async (list) => {
                     list.sort((a, b) => a['dlt.green'].PoolRank - b['dlt.green'].PoolRank)
-                    list = list.slice(0, 5)
+                    list = list.slice(0, 10)
                     const index = parseInt(Math.random() * list.length)
                     let info = null
                     if (list[index]) {
@@ -646,7 +646,12 @@ const IotaSDK = {
         } else {
             list = (await Base.getSensitiveInfo(key)) || []
         }
-        list = list.filter((d) => this.nodes.find((e) => e.id == d.nodeId))
+        list = list.filter((d) => {
+            if (iotaTestnet.id == d.nodeId || shimmerTestnet.id == d.nodeId) {
+                return this.nodes.find((e) => e.id == d.nodeId)
+            }
+            return true
+        })
         return list
     },
     bytesToHex(bytes) {
