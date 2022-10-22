@@ -74,7 +74,7 @@ const ZH = {
         mnemonicOtherError: '助記詞錯誤，請重新輸入',
 
         dearFam: '親愛的##IOTA##支持者，',
-        betaReady: `歡迎使用TanlgePay，TanglePay 是一款 IOTA 代幣和NFT的錢包，同時支持其他EVM鏈，很快我們將可以支持 Shimmer 網絡以及 Shimmer EVM。請選擇您所使用的網絡。`,
+        betaReady: `歡迎使用TanlgePay，TanglePay 是一款 IOTA 代幣和NFT的錢包，同時支持Shimmer以及其它EVM鏈，很快我們將可以支持Shimmer EVM以及Assembly網絡。請選擇您所使用的網絡。`,
         changeTips: '請選擇您將要首先使用的網絡。您可以在登陸錢包後隨時添加其他網絡。',
         devnet: 'IOTA 測試網',
         mainnet: 'IOTA 主網',
@@ -171,7 +171,16 @@ const ZH = {
         sendBelow1Tips: '發送金額不能少於1 Mi，請重新輸入金額。',
         evmGasNotSufficient: '地址中 {token} 余额不足以支付Gas Fee，请充值',
         sendSuccRestakeTips: '交易成功。恢復Staking中',
-        restakeSuccTips: 'Restaking 成功'
+        restakeSuccTips: 'Restaking 成功',
+        tradingList: '交易列表',
+        tradingFrom: '從',
+        tradingTitle: '轉賬',
+        acceptTitle: '接受轉賬',
+        storageDeposit: '存儲押金',
+        standard: '標準',
+        tokenID: '代幣ID',
+        dismissTips: '請確認是否暫不接收，資產將在到期後退回發送賬戶。',
+        acceptSucc: '領取成功'
     },
     user: {
         me: '個人',
@@ -268,7 +277,7 @@ const ZH = {
         ConnectBtn: '連接'
     },
     nft: {
-        collectibles: '收藏品',
+        collectibles: 'NFTs',
         zeroTips: '您暫時還沒有{name}',
         clearCache: '清理緩存',
         goBuy: '去購買',

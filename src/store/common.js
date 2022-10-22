@@ -37,7 +37,11 @@ export const initState = {
     detailTotalInfo: {},
     biometrics: false, //for mobile open bio or not
     pwdInput: false, // Whether the password has been entered
-    bioPrompt: false
+    bioPrompt: false,
+    unlockConditions: [], // receive
+    unlockConditionsSend: [], // send
+
+    checkClaim: false
 }
 
 export const reducer = (state, action) => {
@@ -72,7 +76,8 @@ export const reducer = (state, action) => {
             Base[saveFunc]('common.activityData', data)
             break
         case 'walletsList': {
-            let list = (data || []).filter((e) => e?.bech32HRP !== 'atoi')
+            // let list = (data || []).filter((e) => e?.bech32HRP !== 'atoi')
+            let list = data || []
             list = list.map((e) => {
                 if (!e.nodeId) {
                     e.nodeId = IotaSDK.nodes.find((d) => d?.bech32HRP === e?.bech32HRP)?.id
@@ -146,10 +151,11 @@ export const useSelectWallet = () => {
     const { store, dispatch } = useContext(StoreContext)
     const changeNode = useChangeNode()
     const updateHisList = useUpdateHisList()
+    const updateUnlockConditions = useUpdateUnlockConditions()
     const selectWallet = async (id) => {
         let walletsList = _get(store, 'common.walletsList')
         const curWallet = walletsList.find((e) => e.id === id)
-        if (IotaSDK.curNode?.id !== curWallet?.nodeId) {
+        if (IotaSDK.curNode?.id != curWallet?.nodeId) {
             await changeNode(curWallet?.nodeId)
         }
         let address = curWallet?.address
@@ -168,6 +174,7 @@ export const useSelectWallet = () => {
             })
             // On address switch, read transaction history from local cache
             updateHisList([], curWallet)
+            updateUnlockConditions([], curWallet)
         }
     }
     return selectWallet
@@ -264,7 +271,11 @@ const getPrice = async (code) => {
             code: codeStr,
             isHandlerError: true
         })
-        IotaSDK.priceDic[code] = res
+        if (res?.status == 1000) {
+            IotaSDK.priceDic[code] = 0
+        } else {
+            IotaSDK.priceDic[code] = res
+        }
     } catch (error) {
         IotaSDK.priceDic[code] = 0
     }
@@ -299,23 +310,39 @@ export const useUpdateBalance = () => {
             })
         )
         let total = BigNumber(0)
-        const newList = list.map(({ realBalance, token, contract, balance, decimal, isSMRToken, tokenId }) => {
-            const price = IotaSDK.priceDic[token]
-            const assets = price && curNodeId != 2 ? BigNumber(balance).times(price || 0) : 0
-            total = total.plus(assets)
-            const isSMR = IotaSDK.checkSMR(curNodeId)
-            return {
-                decimal,
-                balance: Base.formatNum(balance),
-                realBalance: Number(realBalance),
-                unit: curNodeId == 1 ? 'Mi' : isSMR && !isSMRToken ? 'SMR' : '',
-                name: token,
+        const newList = list.map(
+            ({
+                available,
+                realAvailable,
+                realBalance,
+                token,
                 contract,
-                assets: Base.formatNum(assets),
+                balance,
+                decimal,
                 isSMRToken,
-                tokenId
+                tokenId,
+                logoUrl
+            }) => {
+                const price = IotaSDK.priceDic[token]
+                const assets = price && curNodeId != 2 ? BigNumber(balance).times(price || 0) : 0
+                total = total.plus(assets)
+                const isSMR = IotaSDK.checkSMR(curNodeId)
+                return {
+                    decimal,
+                    balance: Base.formatNum(balance),
+                    realBalance: Number(realBalance),
+                    unit: IotaSDK.checkIota(curNodeId) ? 'Mi' : isSMR && !isSMRToken ? 'SMR' : '',
+                    name: token,
+                    contract,
+                    assets: Base.formatNum(assets),
+                    isSMRToken,
+                    tokenId,
+                    available: Base.formatNum(available),
+                    realAvailable: Number(realAvailable),
+                    logoUrl
+                }
             }
-        })
+        )
 
         const totalAssets = {
             assets: Base.formatNum(total)
@@ -514,9 +541,10 @@ const useUpdateHisList = () => {
                 // }
             })
             hisList = Object.values(newHisList)
+            hisList = hisList.filter((e) => Number(e.amount) > 0)
             hisList.forEach((obj) => {
                 const num = new BigNumber(obj.amount || '').div(Math.pow(10, obj.decimal))
-                const iotaPrice = price ? IotaSDK.priceDic[token] : 0
+                const iotaPrice = price ? IotaSDK.priceDic[obj.token || obj.token.toLocaleUpperCase()] : 0
                 const assets = num.times(iotaPrice)
                 obj.num = Base.formatNum(num)
                 obj.assets = Base.formatNum(assets)
@@ -525,7 +553,7 @@ const useUpdateHisList = () => {
             hisList.sort((a, b) => b.timestamp - a.timestamp)
         } else {
             const token = IotaSDK.curNode?.token || ''
-            const iotaPrice = price && nodeId !== 2 ? IotaSDK.priceDic[token] : 0
+            const iotaPrice = price && nodeId != 2 ? IotaSDK.priceDic[token] : 0
             const nodeInfo = IotaSDK.nodes.find((e) => e.id == nodeId)
             activityList.forEach((e, i) => {
                 let { timestamp, outputs, messageId, payloadIndex, payloadData, decimal, unlockBlock } = e
@@ -638,7 +666,7 @@ const useUpdateHisList = () => {
         if (lastData?.timestamp && new Date().getTime() / 1000 - lastData?.timestamp <= 600) {
             let localTipsData = await Base.getLocalData('localTipsData')
             localTipsData = localTipsData || {}
-            if (!localTipsData?.[lastData.id]) {
+            if (!localTipsData?.[lastData.id] && lastData.num > 0) {
                 if (lastData?.type == 0 || lastData?.type === 5) {
                     const str = I18n.t('assets.receivedSucc')
                         .replace('{num}', lastData.num)
@@ -726,16 +754,166 @@ const useUpdateHisList = () => {
     return updateHisList
 }
 
+export const useHandleUnlocalConditions = () => {
+    const { store, dispatch } = useContext(StoreContext)
+    const onDismiss = async (blockId) => {
+        let unlockConditionsList = _get(store, 'common.unlockConditions')
+        const localDismissList = (await Base.getLocalData('common.unlockConditions.dismiss')) || []
+        localDismissList.push(blockId)
+        unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.blockId))
+        Base.setLocalData('common.unlockConditions.dismiss', localDismissList)
+        dispatch({
+            type: 'common.unlockConditions',
+            data: unlockConditionsList
+        })
+    }
+    const onAccept = async (item) => {
+        const res = await IotaSDK.SMRUNlock(item)
+        return res
+    }
+    return { onDismiss, onAccept }
+}
+const useUpdateUnlockConditions = () => {
+    const { store, dispatch } = useContext(StoreContext)
+    const updateUnlockConditions = async (outputDatas, { nodeId, address }) => {
+        if (IotaSDK.checkSMR(nodeId)) {
+            outputDatas = outputDatas.filter((e) => {
+                return (e.output?.unlockConditions || []).find((g) => g.type != 0)
+            })
+            let unlockConditionsList = []
+            const nowTime = parseInt(new Date().getTime() / 1000)
+            const transactionIds = {}
+            const tokenIds = []
+            outputDatas.forEach((e) => {
+                ;(e.output?.nativeTokens || []).forEach((d) => {
+                    if (!tokenIds.includes(d.id)) {
+                        tokenIds.push(d.id)
+                    }
+                })
+            })
+            const foundryList = await Promise.all(tokenIds.map((e) => IotaSDK.foundry(e)))
+            const foundryDataList = {}
+            tokenIds.forEach((e, i) => {
+                foundryDataList[e] = IotaSDK.handleFoundry(foundryList[i])
+            })
+            outputDatas.forEach(async (e) => {
+                let token = IotaSDK.curNode.token
+                let standard = ''
+                let deposit = 0
+                let depositStr = ''
+                let assetsId = ''
+                let logoUrl = Base.getIcon(token)
+                let decimal = IotaSDK.curNode.decimal
+                const { outputIndex, blockId, transactionId } = e.metadata
+                const output = e.output
+                if (transactionIds[transactionId]) {
+                    return
+                }
+                const nativeTokens = output.nativeTokens || []
+                const unlockConditions = output.unlockConditions || []
+                const timeConditions = unlockConditions.find((e) => e.type == 3)
+                const unixTime = timeConditions?.unixTime
+                if (!unixTime || unixTime > nowTime) {
+                    let amount = output.amount
+                    if (nativeTokens.length > 0) {
+                        const tokenData = nativeTokens[0]
+                        assetsId = tokenData.id
+                        const foundryData = foundryDataList[assetsId] || {}
+                        amount = Number(tokenData.amount)
+                        token = (foundryData.symbol || '').toLocaleUpperCase()
+                        deposit = output.amount
+                        depositStr = Number(BigNumber(deposit).div(Math.pow(10, decimal)))
+                        decimal = foundryData.decimals
+                        standard = foundryData.standard
+                        logoUrl = foundryData.logoUrl || ''
+                    }
+
+                    transactionIds[transactionId] = 1
+                    let unlockAddress = address
+                    // if (unlockBlock) {
+                    //     unlockAddress = IotaSDK.publicKeyToBech32(unlockBlock?.signature?.publicKey)
+                    // }
+                    unlockConditions.map((d) => {
+                        let pubKeyHash = d.address?.pubKeyHash || d.returnAddress?.pubKeyHash || ''
+                        if (pubKeyHash) {
+                            pubKeyHash = IotaSDK.hexToBech32(pubKeyHash)
+                        }
+                        if (pubKeyHash && pubKeyHash !== address) {
+                            unlockAddress = pubKeyHash
+                        }
+                        return {
+                            ...d,
+                            bech32Address: pubKeyHash
+                        }
+                    })
+                    let timeStr = ''
+                    if (unixTime) {
+                        const time = unixTime - nowTime
+                        const d = parseInt(time / 60 / 60 / 24)
+                        const h = parseInt((time % (3600 * 24)) / 3600)
+                        if (d == 0 && h == 0) {
+                            timeStr = `${parseInt((time % 3600) / 60)}min`
+                        } else {
+                            timeStr = `${d}D ${h}H`
+                        }
+                    }
+                    const amountStr = BigNumber(amount).div(Math.pow(10, decimal))
+                    unlockConditionsList.push({
+                        transactionId,
+                        transactionOutputIndex: outputIndex,
+                        token,
+                        blockId,
+                        timeStr,
+                        // unlockBlock,
+                        amount,
+                        amountStr: parseFloat(amountStr),
+                        unlockAddress,
+                        unlockConditions,
+                        output,
+                        assetsId,
+                        deposit,
+                        depositStr,
+                        standard,
+                        logoUrl
+                    })
+                }
+            })
+            const localDismissList = (await Base.getLocalData('common.unlockConditions.dismiss')) || []
+            unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.blockId))
+            // const unlockConditionsSendList = unlockConditionsList.filter((e) => e.unlockAddress == address)
+            dispatch({
+                type: 'common.unlockConditions',
+                data: unlockConditionsList.filter((e) => e.unlockAddress != address)
+            })
+            dispatch({
+                type: 'common.unlockConditionsSend',
+                data: []
+            })
+        } else {
+            dispatch({
+                type: 'common.unlockConditions',
+                data: []
+            })
+            dispatch({
+                type: 'common.unlockConditionsSend',
+                data: []
+            })
+        }
+    }
+    return updateUnlockConditions
+}
+
 // Asset list only supports IOTA，data structure includes balance, transaction history
 export const useGetAssetsList = (curWallet) => {
     const { store, dispatch } = useContext(StoreContext)
     const updateBalance = useUpdateBalance()
     const updateHisList = useUpdateHisList()
+    const updateUnlockConditions = useUpdateUnlockConditions()
     useEffect(async () => {
         setRequestAssets(false, dispatch)
         setRequestHis(false, dispatch)
         setRequestStakeHis(false, dispatch)
-        if (!curWallet.seed || curWallet.nodeId !== IotaSDK?.curNode?.id) {
+        if (!curWallet.seed || curWallet.nodeId != IotaSDK?.curNode?.id) {
             setRequestAssets(true, dispatch)
             setRequestHis(true, dispatch)
             setRequestStakeHis(true, dispatch)
@@ -755,6 +933,10 @@ export const useGetAssetsList = (curWallet) => {
             dispatch({
                 type: 'staking.stakedRewards',
                 data: {}
+            })
+            dispatch({
+                type: 'common.checkClaim',
+                data: false
             })
             return
         }
@@ -792,6 +974,39 @@ export const useGetAssetsList = (curWallet) => {
                 .catch(() => {
                     setRequestAssets(true, dispatch)
                     setAssetsData({}, [], dispatch)
+                })
+
+            // unlock
+            if (IotaSDK.checkSMR(newCurWallet.nodeId)) {
+                IotaSDK.getUnlockOutputData(addressList).then(({ outputDatas }) => {
+                    updateUnlockConditions(outputDatas, newCurWallet)
+                })
+            } else {
+                updateUnlockConditions([], newCurWallet)
+            }
+
+            // nfts
+            // if(IotaSDK.checkSMR(newCurWallet.nodeId)){
+            //     IotaSDK.IndexerPluginClient.nfts({
+            //         addressBech32:addressList[0]
+            //     }).then(res=>{
+            //         console.log(res,'_____________________');
+            //     })
+            // }
+
+            //checkClaim
+            IotaSDK.checkClaimSMR(newCurWallet)
+                .then((res) => {
+                    dispatch({
+                        type: 'common.checkClaim',
+                        data: res
+                    })
+                })
+                .catch((err) => {
+                    dispatch({
+                        type: 'common.checkClaim',
+                        data: false
+                    })
                 })
 
             // Sync transaction history
