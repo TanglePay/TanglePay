@@ -34,7 +34,10 @@ export const initState = {
     validAddresses: [],
 
     detailList: [], // wallet info
-    detailTotalInfo: {}
+    detailTotalInfo: {},
+    biometrics: false, //for mobile open bio or not
+    pwdInput: false, // Whether the password has been entered
+    bioPrompt: false
 }
 
 export const reducer = (state, action) => {
@@ -87,6 +90,23 @@ export const reducer = (state, action) => {
             Base.setLocalData('common.disTrace', data)
             return { ...state, [type]: data }
         }
+        case 'biometrics': {
+            Base.setLocalData('common.biometrics', !!data)
+            break
+        }
+        case 'pwdInput': {
+            Base.setLocalData('common.pwdInput', !!data)
+            break
+        }
+        case 'bioPrompt':
+            if (Base.isBrowser) {
+            } else {
+                if (!data) {
+                    data = false
+                }
+                Base.setLocalData('common.bioPrompt', data)
+            }
+            break
     }
     return { ...state, [type]: data }
 }
@@ -859,6 +879,7 @@ export const useGetWalletInfo = () => {
                 type: 'common.detailTotalInfo',
                 data: total
             })
+            
             setLoading(false)
         }
     }
@@ -866,7 +887,7 @@ export const useGetWalletInfo = () => {
         setLoading(true)
         getInfo()
     }, [JSON.stringify(validAddresses)])
-    return [detailList, detailTotalInfo, loading, getInfo]
+    return [detailList, detailTotalInfo, loading, getInfo, bioPromptList]
 }
 
 // collect
