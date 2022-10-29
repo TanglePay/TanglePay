@@ -112,6 +112,12 @@ export const reducer = (state, action) => {
                 Base.setLocalData('common.bioPrompt', data)
             }
             break
+        case 'curPwd': 
+            if (Base.isBrowser) {
+            } else {
+                Base.setLocalData('common.curPwd', !!data)
+            }
+            break
     }
     return { ...state, [type]: data }
 }
@@ -1102,7 +1108,7 @@ export const useGetWalletInfo = () => {
         setLoading(true)
         getInfo()
     }, [JSON.stringify(validAddresses)])
-    return [detailList, detailTotalInfo, loading, getInfo, bioPromptList]
+    return [detailList, detailTotalInfo, loading, getInfo]
 }
 
 // collect
