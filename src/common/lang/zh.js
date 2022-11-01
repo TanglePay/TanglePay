@@ -191,7 +191,13 @@ const ZH = {
         privacyTips: '參加TangleMetrics',
         aboutUs: '關於我們',
         language: '語言',
-
+        biometrics: '生物認證',
+        enableBiometrics: '支持生物辨識技術',
+        bioVerification: '生物辨識',
+        noPrompt: '不再提示',
+        biometricsSucc:'生物辨識成功',
+        biometricsFailed: '生物辨識失敗',
+        biometriceDialog: '生物辨識開啟後，每筆交易將不再需要手動輸入密碼。',
         manage: '管理',
         backupWallet: '備份錢包',
         backupWalletTips: `導出到Stronghold文件 - 
