@@ -65,7 +65,7 @@ const iotaTestnet = {
     explorerApiUrl: 'https://explorer-api.iota.org'
 }
 const shimmerEvmTestnet = {
-    id: 5,
+    id: 6,
     url: 'https://api.sc.testnet.shimmer.network/chain/rms1pzw5y4e4y6gzkytvjp0ukgjgs37vd33uvnju9tuf6rrztnnw4tj7crw72ar/evm/jsonrpc',
     explorer: 'https://explorer.shimmer.network/testnet',
     name: 'Shimmer EVM',
@@ -127,7 +127,7 @@ const initNodeList = [
         decimal: 6,
         explorerApiUrl: 'https://explorer-api.shimmer.network/stardust'
     },
-    ...shimmerEvmTestnet,
+    { ...shimmerEvmTestnet },
     {
         id: 5,
         url: 'https://evm.wasp.sc.iota.org/',
