@@ -85,15 +85,16 @@ export const useGetNftList = () => {
                 }
 
                 const res = await IotaSDK.getNfts(validAddresses)
-
                 // const bigAssets = JSON.parse(JSON.stringify(config.bigAssets || []));
                 const ipfsMediaObj = {}
                 res.forEach((e) => {
-                    let { space, media, ipfsMedia } = e
-                    if (!ipfsMediaObj[ipfsMedia]) {
-                        ipfsMediaObj[ipfsMedia] = {
-                            id: ipfsMedia,
-                            url: media
+                    let { space, media, ipfsMedia, isIpfs } = e
+                    if (!isIpfs) {
+                        if (!ipfsMediaObj[ipfsMedia]) {
+                            ipfsMediaObj[ipfsMedia] = {
+                                id: ipfsMedia,
+                                url: media
+                            }
                         }
                     }
                     let configItem = configList.find((e) => e.space == space)
