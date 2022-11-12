@@ -112,7 +112,8 @@ export const useGetNftList = () => {
                 let thumbnailList = await Promise.all(
                     ipfsMediaList.map((e) => {
                         return Http.POST('method=ntfImage.getImages', {
-                            data: e
+                            data: e,
+                            isHandlerError: true
                         })
                     })
                 )

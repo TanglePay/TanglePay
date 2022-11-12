@@ -684,6 +684,9 @@ const IotaSDK = {
     bytesToHex(bytes) {
         return IotaObj.Converter.bytesToHex(bytes)
     },
+    hexToUtf8(hex) {
+        return IotaObj.Converter.hexToUtf8(hex)
+    },
     async seedToPublicKey({ localSeed, password, nodeId }) {
         if (this.checkWeb3Node(nodeId)) {
             const privateKey = await this.getPrivateKey(localSeed, password)
@@ -2060,8 +2063,15 @@ const IotaSDK = {
                 }
             })
             shimmerRes.forEach((e) => {
-                if (/^ipfs/i.test(e.uri) || !e.uri.includes('://')) {
-                    e.uri = `https://infura-ipfs.io/ipfs/${e.uri.replace('ipfs://', '')}/${encodeURIComponent(e.name)}`
+                if (e.uri) {
+                    if (/^ipfs/i.test(e.uri) || !e.uri.includes('://')) {
+                        e.uri = `https://infura-ipfs.io/ipfs/${e.uri.replace('ipfs://', '')}/${encodeURIComponent(
+                            e.name
+                        )}`
+                        e.isIpfs = true
+                    }
+                } else if (e.ipfsMedia) {
+                    e.uri = `https://infura-ipfs.io/ipfs/${e.ipfsMedia}/${encodeURIComponent(e.name)}`
                     e.isIpfs = true
                 }
                 e.ipfsMedia = e.uri
