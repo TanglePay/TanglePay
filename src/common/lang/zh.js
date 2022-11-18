@@ -73,8 +73,9 @@ const ZH = {
         mnemonicWordError: '助記詞中包含無法識別的單詞{word}',
         mnemonicOtherError: '助記詞錯誤，請重新輸入',
 
-        dearFam: '親愛的##IOTA##支持者，',
-        betaReady: `歡迎使用TanlgePay，TanglePay 是一款 IOTA 代幣和NFT的錢包，同時支持Shimmer以及其它EVM鏈，很快我們將可以支持Shimmer EVM以及Assembly網絡。請選擇您所使用的網絡。`,
+        dearFam: '##TanglePay## Wallet',
+        betaReady: `IOTA Tangle Technology
+Going Beyond Blockchain`,
         changeTips: '請選擇您將要首先使用的網絡。您可以在登陸錢包後隨時添加其他網絡。',
         devnet: 'IOTA 測試網',
         mainnet: 'IOTA 主網',
@@ -180,7 +181,8 @@ const ZH = {
         standard: '標準',
         tokenID: '代幣ID',
         dismissTips: '請確認是否暫不接收，資產將在到期後退回發送賬戶。',
-        acceptSucc: '領取成功'
+        acceptSucc: '領取成功',
+        unlockError: '請確認地址中有足夠SMR用於領取代幣。'
     },
     user: {
         me: '個人',
@@ -191,7 +193,13 @@ const ZH = {
         privacyTips: '參加TangleMetrics',
         aboutUs: '關於我們',
         language: '語言',
-
+        biometrics: '生物認證',
+        enableBiometrics: '支持生物辨識技術',
+        bioVerification: '生物辨識',
+        noPrompt: '不再提示',
+        biometricsSucc: '生物辨識成功',
+        biometricsFailed: '生物辨識失敗',
+        biometriceDialog: '生物辨識開啟後，每筆交易將不再需要手動輸入密碼。',
         manage: '管理',
         backupWallet: '備份錢包',
         backupWalletTips: `導出到Stronghold文件 - 
