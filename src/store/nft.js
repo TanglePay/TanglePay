@@ -19,7 +19,7 @@ export const useGetNftList = () => {
     const [curWallet] = useGetNodeWallet()
     const { store, dispatch } = useContext(StoreContext)
     const validAddresses = _get(store, 'common.validAddresses')
-    const [config, setConfig] = useState({ list: [], bigAssets: [] })
+    const [config, setConfig] = useState({ list: [], bigAssets: [], ipfsOrigins: [] })
     const addressRef = useRef(curWallet.address)
     useEffect(() => {
         fetch(`${API_URL}/nft.json?v=${new Date().getTime()}`)
@@ -84,7 +84,7 @@ export const useGetNftList = () => {
                     })
                 }
 
-                const res = await IotaSDK.getNfts(validAddresses)
+                const res = await IotaSDK.getNfts(validAddresses, config?.ipfsOrigins)
                 // const bigAssets = JSON.parse(JSON.stringify(config.bigAssets || []));
                 const ipfsMediaObj = {}
                 res.forEach((e) => {
