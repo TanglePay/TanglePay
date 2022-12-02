@@ -38,6 +38,10 @@ Do not share or store mnemonic through network, such as screenshots, email, soci
         backupScreenshoptBtn: 'Understood',
 
         mnemonicTitle: 'Backup Mnemonic Phrase',
+
+        mnemonicAggre: 'I have stored my mnemonic in safe and isolated it from network.',
+        gotoWallet: 'Go to the wallet',
+
         mnemonicSubTitle:
             'These mnemonic words are for recovering your wallet. Please record them in the correct order. ',
         mnemonicPhraseTips1:
@@ -209,7 +213,8 @@ Locked SMR balance: {balance3}`,
         noPrompt: 'No longer prompt',
         biometricsSucc: 'Biometric authentication successfully',
         biometricsFailed: 'Biometric authentication failed',
-        biometriceDialog: 'To enable biometrics in Settings, there is no need to enter a password in subsequent transactions',
+        biometriceDialog:
+            'To enable biometrics in Settings, there is no need to enter a password in subsequent transactions',
         goSetting: 'Go Settings',
         manage: 'Manage',
         backupWallet: 'Backup Wallet',

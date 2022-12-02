@@ -38,6 +38,9 @@ Bitte schreib dir daher deine 24 Wörter auf und verstaue sie an einem sicheren 
         backupScreenshoptBtn: 'Verstanden',
 
         mnemonicTitle: 'Wiederherstellungsphrase',
+        mnemonicAggre: 'I have stored my mnemonic in safe and isolated it from network.',
+        gotoWallet: 'Go to the wallet',
+
         mnemonicSubTitle:
             'Diese 24 Wörter sind dein privater Schlüssel. Notiere sie dir unbedingt in der korrekten Reihenfolge.  ',
         mnemonicPhraseTips1: `Wenn du deine Wiederherstellungsphrase und deine .Stronghold Backup inklusive Passwort verloren hast kann dir niemand helfen.
@@ -212,9 +215,10 @@ Locked SMR balance: {balance3}`,
         enableBiometrics: 'Biometrischen Authentifizierung',
         bioVerification: 'Biometrische Überprüfung',
         noPrompt: 'No longer prompt',
-        biometricsSucc:'Biometric authentication successfully',
+        biometricsSucc: 'Biometric authentication successfully',
         biometricsFailed: 'Biometric authentication failed',
-        biometriceDialog: 'To enable biometrics in Settings, there is no need to enter a password in subsequent transactions.',
+        biometriceDialog:
+            'To enable biometrics in Settings, there is no need to enter a password in subsequent transactions.',
         goSetting: 'Go settings',
         manage: 'Bearbeite',
         backupWallet: 'Backup Wallet',
