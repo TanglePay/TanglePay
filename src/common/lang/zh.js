@@ -37,6 +37,9 @@ const ZH = {
         backupScreenshoptBtn: '我已理解',
 
         mnemonicTitle: '備份助記詞',
+        mnemonicAggre: '我已將我的助記詞安全存放並將其與網絡隔離。',
+        gotoWallet: '前往錢包',
+
         mnemonicSubTitle: '助記詞可用於找回錢包，請務必按順序妥善記錄並保管',
         mnemonicPhraseTips1: '助記詞一旦丟失則資產無法找回，請務必將記錄好的助記詞在線下妥善保管',
         mnemonicPhraseTips2: '請勿在線上存儲或分享助記詞，如截屏、郵件、社交媒體等',
@@ -182,7 +185,8 @@ Going Beyond Blockchain`,
         tokenID: '代幣ID',
         dismissTips: '請確認是否暫不接收，資產將在到期後退回發送賬戶。',
         acceptSucc: '領取成功',
-        unlockError: '請確認地址中有足夠SMR用於領取代幣。'
+        unlockError: '請確認地址中有足夠SMR用於領取代幣。',
+        locked: '已鎖定'
     },
     user: {
         me: '個人',
