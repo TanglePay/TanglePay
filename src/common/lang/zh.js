@@ -185,7 +185,8 @@ Going Beyond Blockchain`,
         tokenID: '代幣ID',
         dismissTips: '請確認是否暫不接收，資產將在到期後退回發送賬戶。',
         acceptSucc: '領取成功',
-        unlockError: '請確認地址中有足夠SMR用於領取代幣。'
+        unlockError: '請確認地址中有足夠SMR用於領取代幣。',
+        locked: '已鎖定'
     },
     user: {
         me: '個人',
