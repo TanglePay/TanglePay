@@ -23,13 +23,22 @@ export const useGetNftList = () => {
     const forceRequest = _get(store, 'nft.forceRequest')
     const [config, setConfig] = useState({ list: [], bigAssets: [], ipfsOrigins: [] })
     const addressRef = useRef(curWallet.address)
+    console.log(config, '--------')
     useEffect(() => {
         fetch(`${API_URL}/nft.json?v=${new Date().getTime()}`)
             .then((res) => res.json())
             .then((res) => {
+                Base.setLocalData('local.nft.json', res)
                 setConfig(res)
             })
-            .catch((err) => console.log(err))
+            .catch((err) => {
+                console.log(err)
+                Base.getLocalData('local.nft.json').then((localRes) => {
+                    if (localRes) {
+                        setConfig(localRes)
+                    }
+                })
+            })
     }, [])
     useEffect(async () => {
         addressRef.current = curWallet?.address
