@@ -16,6 +16,7 @@ import {
     sendAdvanced,
     TransactionHelper,
     checkOutput,
+    checkUnLock,
     calculateInputs
 } from '@iota/iota.js-next/dist/cjs/index-browser'
 import { MqttClient } from '@iota/mqtt.js-next/dist/cjs/index-browser'
@@ -41,5 +42,6 @@ export default {
     sendAdvanced,
     TransactionHelper,
     checkOutput,
+    checkUnLock,
     calculateInputs
 }

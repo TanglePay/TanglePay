@@ -400,6 +400,7 @@ const useUpdateHisList = () => {
         const stakeHisList = []
         const isWeb3 = IotaSDK.checkWeb3Node(nodeId)
         const isSMR = IotaSDK.checkSMR(nodeId)
+        const nowTime = parseInt(new Date().getTime() / 1000)
         if (isWeb3) {
             const nodeInfo = IotaSDK.nodes.find((e) => e.id == nodeId)
             activityList.forEach((e) => {
@@ -428,7 +429,13 @@ const useUpdateHisList = () => {
                 return !e.outputSpent && e.output.unlockConditions.find((d) => d.type == 2)
             })
             activityList = activityList.filter((e) => {
-                return !(!e.outputSpent && e.output.unlockConditions.find((d) => d.type != 0))
+                let unlock = e.output.unlockConditions.find((d) => d.type != 0)
+                //TIMELOCK_UNLOCK_CONDITION_TYPE
+                if (unlock && unlock.type == 2 && nowTime > unlock.unixTime) {
+                    e.timestamp = unlock.unixTime
+                    unlock = null
+                }
+                return !(!e.outputSpent && unlock)
             })
 
             const token = IotaSDK.curNode?.token || ''
@@ -623,7 +630,7 @@ const useUpdateHisList = () => {
             lockedList.forEach((e) => {
                 const { transactionId, transactionOutputIndex, blockId, output, decimal, unlockBlock, isSpent } = e
                 const unixTime = (output?.unlockConditions || []).find((d) => d.unixTime)?.unixTime
-                const nowTime = parseInt(new Date().getTime() / 1000)
+
                 if (unixTime && unixTime > nowTime) {
                     let timeStr = ''
                     const time = unixTime - nowTime
