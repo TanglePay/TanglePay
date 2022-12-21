@@ -89,7 +89,24 @@ const shimmerEvmTestnet = {
     decimal: 18,
     gasLimit: 0
 }
-
+const polyganTestnet = {
+    id: 8,
+    url: 'https://matic-testnet-archive-rpc.bwarelabs.com/',
+    explorer: 'https://mumbai.polygonscan.com',
+    name: 'Mumbai',
+    enName: 'Mumbai',
+    deName: 'Mumbai',
+    zhName: 'Mumbai',
+    type: 2,
+    network: 'mumbai',
+    bech32HRP: 'mumbai',
+    token: 'MATIC',
+    filterMenuList: ['apps', 'staking'],
+    filterAssetsList: ['stake'],
+    contractList: [],
+    decimal: 18,
+    gasLimit: 21000
+}
 const initNodeList = [
     {
         id: IOTA_NODE_ID,
@@ -177,6 +194,24 @@ const initNodeList = [
         ],
         decimal: 18,
         gasLimit: 21000
+    },
+    {
+        id: 7,
+        url: 'https://polygon-rpc.com/',
+        explorer: 'https://polygonscan.com',
+        name: 'MATIC',
+        enName: 'MATIC',
+        deName: 'MATIC',
+        zhName: 'MATIC',
+        type: 2,
+        network: 'matic',
+        bech32HRP: 'matic',
+        token: 'MATIC',
+        filterMenuList: ['apps', 'staking'],
+        filterAssetsList: ['stake'],
+        contractList: [],
+        decimal: 18,
+        gasLimit: 21000
     }
 ]
 const IotaSDK = {
@@ -253,11 +288,15 @@ const IotaSDK = {
             //advanced start
             const shimmerSupport = await Base.getLocalData('common.shimmerSupport')
             const iotaSupport = await Base.getLocalData('common.iotaSupport')
+            const polyganSupport = await Base.getLocalData('common.polyganSupport')
             if (shimmerSupport == 1 && !_nodes.find((e) => e.id == 101)) {
                 _nodes.push(shimmerTestnet)
             }
             if (iotaSupport == 1 && !_nodes.find((e) => e.id == 2)) {
                 _nodes.push(iotaTestnet)
+            }
+            if (polyganSupport == 1 && !_nodes.find((e) => e.id == 8)) {
+                _nodes.push(polyganTestnet)
             }
             //advanced end
 
@@ -674,7 +713,7 @@ const IotaSDK = {
             list = (await Base.getSensitiveInfo(key)) || []
         }
         list = list.filter((d) => {
-            if (iotaTestnet.id == d.nodeId || shimmerTestnet.id == d.nodeId) {
+            if (iotaTestnet.id == d.nodeId || shimmerTestnet.id == d.nodeId || polyganTestnet.id == d.nodeId) {
                 return this.nodes.find((e) => e.id == d.nodeId)
             }
             return true
@@ -1374,6 +1413,12 @@ const IotaSDK = {
             })
             actionTime = new Date().getTime() - actionTime
             Trace.actionLog(40, address, actionTime, Base.curLang, nodeId, traceToken)
+            Base.globalToast.success(I18n.t('assets.sendSucc'))
+            if (Base.isBrowser) {
+                setTimeout(() => {
+                    Base.globalToast.hideLoading()
+                }, 2000)
+            }
             return { ...res, messageId: logData.transactionHash }
         } else {
             let sendOut = null
@@ -2064,13 +2109,18 @@ const IotaSDK = {
             origins = origins || []
             shimmerRes.forEach((e) => {
                 const origin = origins[parseInt(Math.random() * origins.length)]
+                let afterStr = ''
+                // soon
+                if (e.soonaverseId) {
+                    afterStr = `/${encodeURIComponent(e.name)}`
+                }
                 if (e.uri) {
                     if (/^ipfs/i.test(e.uri) || !e.uri.includes('://')) {
-                        e.uri = `${origin}/ipfs/${e.uri.replace('ipfs://', '')}/${encodeURIComponent(e.name)}`
+                        e.uri = `${origin}/ipfs/${e.uri.replace('ipfs://', '')}${afterStr}`
                         e.isIpfs = true
                     }
                 } else if (e.ipfsMedia) {
-                    e.uri = `${origin}/ipfs/${e.ipfsMedia}/${encodeURIComponent(e.name)}`
+                    e.uri = `${origin}/ipfs/${e.ipfsMedia}${afterStr}`
                     e.isIpfs = true
                 }
                 e.ipfsMedia = e.uri
@@ -2565,18 +2615,9 @@ const IotaSDK = {
                                 zeroBalance++
                             } else {
                                 const outputType = addressOutput?.output?.type
-                                const addressUnlockCondition = addressOutput.output.unlockConditions.find(
-                                    (u) => u.type != 0 // ADDRESS_UNLOCK_CONDITION_TYPE
-                                )
-
-                                const features = addressOutput?.output?.features || []
-                                let featuresLock = false
-                                if (features.length > 0) {
-                                    const PARTICIPATE = `0x${IotaObj.Converter.utf8ToHex('PARTICIPATE')}`
-                                    featuresLock = !!features.find((e) => e.tag === PARTICIPATE)
-                                }
+                                const isUnlock = IotaObj.checkUnLock(addressOutput)
                                 //BASIC_OUTPUT_TYPE
-                                if (outputType == 3 && !addressUnlockCondition && !featuresLock) {
+                                if (outputType == 3 && isUnlock) {
                                     const nativeTokens = addressOutput?.output?.nativeTokens || []
                                     const curToken = nativeTokens.find((e) => e.id === tokenId)
                                     if (curToken) {

@@ -27,9 +27,17 @@ export const useGetNftList = () => {
         fetch(`${API_URL}/nft.json?v=${new Date().getTime()}`)
             .then((res) => res.json())
             .then((res) => {
+                Base.setLocalData('local.nft.json', res)
                 setConfig(res)
             })
-            .catch((err) => console.log(err))
+            .catch((err) => {
+                console.log(err)
+                Base.getLocalData('local.nft.json').then((localRes) => {
+                    if (localRes) {
+                        setConfig(localRes)
+                    }
+                })
+            })
     }, [])
     useEffect(async () => {
         addressRef.current = curWallet?.address
@@ -89,8 +97,20 @@ export const useGetNftList = () => {
                 const res = await IotaSDK.getNfts(validAddresses, config?.ipfsOrigins)
                 // const bigAssets = JSON.parse(JSON.stringify(config.bigAssets || []));
                 const ipfsMediaObj = {}
+                const iotaBeeCollectionId = configList.find((e) => e.isIotaBeeChristmas)?.space
+                const iotaBeeIpfs = configList.find((e) => e.isIotaBeeChristmas)?.ipfs || []
                 res.forEach((e) => {
-                    let { space, media, ipfsMedia, isIpfs } = e
+                    let { space, collectionId, media, ipfsMedia, isIpfs } = e
+                    if (iotaBeeCollectionId === collectionId) {
+                        const origin = iotaBeeIpfs[parseInt(Math.random() * iotaBeeIpfs.length)]
+                        let [http, str] = (e.uri || '').split('//')
+                        str = str.split('/')
+                        str[0] = origin.split('//')[1]
+                        const newUri = http + '//' + str.join('/')
+                        e.uri = newUri
+                        e.ipfsMedia = newUri
+                        e.media = e.ipfsMedia
+                    }
                     if (!isIpfs) {
                         if (!ipfsMediaObj[ipfsMedia]) {
                             ipfsMediaObj[ipfsMedia] = {
@@ -101,7 +121,11 @@ export const useGetNftList = () => {
                     }
                     let configItem = configList.find((e) => e.space == space)
                     if (!configItem) {
-                        configItem = configList.find((e) => e.space == '0')
+                        if (iotaBeeCollectionId && iotaBeeCollectionId === collectionId) {
+                            configItem = configList.find((e) => e.space == iotaBeeCollectionId)
+                        } else {
+                            configItem = configList.find((e) => e.space == '0')
+                        }
                     }
                     configItem.list.push({
                         ...e

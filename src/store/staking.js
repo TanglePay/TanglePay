@@ -74,8 +74,19 @@ export const useGetEventsConfig = () => {
                     type: 'staking.config',
                     data: { airdrops, filter, rewards }
                 })
+                Base.setLocalData('local.events.json', { airdrops, filter, rewards })
             })
-            .catch((err) => console.log(err))
+            .catch((err) => {
+                console.log(err)
+                Base.getLocalData('local.events.json').then((localRes) => {
+                    if (localRes) {
+                        dispatch({
+                            type: 'staking.config',
+                            data: localRes
+                        })
+                    }
+                })
+            })
     }, [])
 }
 
