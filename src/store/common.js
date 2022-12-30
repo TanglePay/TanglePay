@@ -949,7 +949,7 @@ const useUpdateUnlockConditions = () => {
                 }
                 const nativeTokens = output.nativeTokens || []
                 const unlockConditions = output.unlockConditions || []
-                const timeConditions = unlockConditions.find((e) => e.type == 3)
+                const timeConditions = unlockConditions.find((e) => e.type == 3 || e.type == 2)
                 const unixTime = timeConditions?.unixTime
                 if (!unixTime || unixTime > nowTime) {
                     let amount = output.amount
