@@ -424,14 +424,13 @@ const useUpdateHisList = () => {
                 hisList.push(obj)
             })
         } else if (isSMR) {
-            const lockedList = activityList.filter((e) => {
-                // TIMELOCK_UNLOCK_CONDITION_TYPE
-                return !e.outputSpent && e.output.unlockConditions.find((d) => d.type == 2)
-            })
             activityList = activityList.filter((e) => {
                 let unlock = e.output.unlockConditions.find((d) => d.type != 0)
-                //TIMELOCK_UNLOCK_CONDITION_TYPE
-                if (unlock && unlock.type == 2 && nowTime > unlock.unixTime) {
+                //TIMELOCK_UNLOCK_CONDITION_TYPE、EXPIRATION_UNLOCK_CONDITION_TYPE
+                if (
+                    unlock &&
+                    ((unlock.type == 2 && nowTime > unlock.unixTime) || (unlock.type == 3 && nowTime > unlock.unixTime))
+                ) {
                     e.timestamp = unlock.unixTime
                     unlock = null
                 }
@@ -624,71 +623,6 @@ const useUpdateHisList = () => {
             })
             // merge end
             hisList.sort((a, b) => b.timestamp - a.timestamp)
-
-            // locked start
-            const lockedListArr = []
-            lockedList.forEach((e) => {
-                const { transactionId, transactionOutputIndex, blockId, output, decimal, unlockBlock, isSpent } = e
-                const unixTime = (output?.unlockConditions || []).find((d) => d.unixTime)?.unixTime
-
-                if (unixTime && unixTime > nowTime) {
-                    let timeStr = ''
-                    const time = unixTime - nowTime
-                    const d = parseInt(time / 60 / 60 / 24)
-                    const h = parseInt((time % (3600 * 24)) / 3600)
-                    if (d == 0 && h == 0) {
-                        timeStr = `${parseInt((time % 3600) / 60)}min`
-                    } else {
-                        timeStr = `${d}D ${h}H`
-                    }
-                    const amount = output?.amount || 0
-                    const amountStr = BigNumber(amount).div(Math.pow(10, decimal))
-                    const senderPublicKey = unlockBlock?.signature?.publicKey
-                    const senderAddress = IotaSDK.publicKeyToBech32(senderPublicKey)
-
-                    if (!isSpent) {
-                        const lockedObj = {
-                            transactionId,
-                            transactionOutputIndex,
-                            token,
-                            blockId,
-                            timeStr,
-                            amount: output?.amount,
-                            amountStr: parseFloat(amountStr),
-                            unlockAddress: senderAddress,
-                            unlockConditions: output?.unlockConditions || [],
-                            output,
-                            logoUrl: Base.getIcon(token)
-                        }
-                        const isToken = e.output?.nativeTokens && e.output?.nativeTokens?.length
-                        if (isToken) {
-                            let num = BigNumber(output?.nativeTokens?.[0]?.amount || 0)
-                            num = Number(num)
-                            const id = output?.nativeTokens?.[0]?.id || ''
-                            const symbol = tokenDic[id]?.symbol || ''
-                            const decimals = tokenDic[id]?.decimals || 0
-                            const logoUrl = tokenDic[id]?.logoUrl || ''
-                            const standard = tokenDic[id]?.standard || ''
-                            Object.assign(lockedObj, {
-                                amount: num,
-                                amountStr: parseFloat(BigNumber(num).div(Math.pow(10, decimals))),
-                                token: symbol,
-                                logoUrl: logoUrl || Base.getIcon(symbol),
-                                assetsId: id,
-                                deposit: output.amount,
-                                depositStr: Number(BigNumber(output.amount).div(Math.pow(10, decimal))),
-                                standard
-                            })
-                        }
-                        lockedListArr.push(lockedObj)
-                    }
-                }
-            })
-            dispatch({
-                type: 'common.lockedList',
-                data: lockedListArr
-            })
-            // locked end
         } else {
             const token = IotaSDK.curNode?.token || ''
             const iotaPrice = price && nodeId != 2 ? IotaSDK.priceDic[token] : 0
@@ -919,6 +853,7 @@ const useUpdateUnlockConditions = () => {
                 return (e.output?.unlockConditions || []).find((g) => g.type != 0)
             })
             let unlockConditionsList = []
+            let lockedListArr = []
             const nowTime = parseInt(new Date().getTime() / 1000)
             const transactionIds = {}
             const tokenIds = []
@@ -996,7 +931,7 @@ const useUpdateUnlockConditions = () => {
                         }
                     }
                     const amountStr = BigNumber(amount).div(Math.pow(10, decimal))
-                    unlockConditionsList.push({
+                    const objData = {
                         transactionId,
                         transactionOutputIndex: outputIndex,
                         token,
@@ -1013,7 +948,12 @@ const useUpdateUnlockConditions = () => {
                         depositStr,
                         standard,
                         logoUrl
-                    })
+                    }
+                    if (timeConditions?.type == 2) {
+                        lockedListArr.push(objData)
+                    } else {
+                        unlockConditionsList.push(objData)
+                    }
                 }
             })
             const localDismissList = (await Base.getLocalData('common.unlockConditions.dismiss')) || []
@@ -1027,6 +967,10 @@ const useUpdateUnlockConditions = () => {
                 type: 'common.unlockConditionsSend',
                 data: []
             })
+            dispatch({
+                type: 'common.lockedList',
+                data: lockedListArr
+            })
         } else {
             dispatch({
                 type: 'common.unlockConditions',
@@ -1034,6 +978,10 @@ const useUpdateUnlockConditions = () => {
             })
             dispatch({
                 type: 'common.unlockConditionsSend',
+                data: []
+            })
+            dispatch({
+                type: 'common.lockedList',
                 data: []
             })
         }
