@@ -72,7 +72,7 @@ export const reducer = (state, action) => {
             break
         case 'activityData':
             if (data === undefined) {
-                return
+                return state
             }
             const saveFunc = Base.isBrowser ? 'setLocalData' : 'setSensitiveInfo'
             Base[saveFunc]('common.activityData', data)
@@ -768,6 +768,9 @@ const useUpdateHisList = () => {
             type: 'common.hisList',
             data: hisList
         })
+        if (hisList.length > 0) {
+            Base.setLocalData(`${nodeId}.${address}.common.hisList`, hisList)
+        }
 
         // stake history
         const eventids = []
@@ -817,6 +820,9 @@ const useUpdateHisList = () => {
                 type: 'staking.historyList',
                 data: stakeHisList
             })
+            if (stakeHisList.length > 0) {
+                Base.setLocalData(`${nodeId}.${address}.staking.historyList`, stakeHisList)
+            }
             setRequestStakeHis(true, dispatch)
         })
         // stake end
@@ -959,10 +965,14 @@ const useUpdateUnlockConditions = () => {
             const localDismissList = (await Base.getLocalData('common.unlockConditions.dismiss')) || []
             unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.blockId))
             // const unlockConditionsSendList = unlockConditionsList.filter((e) => e.unlockAddress == address)
+            const arr = unlockConditionsList.filter((e) => e.unlockAddress != address)
             dispatch({
                 type: 'common.unlockConditions',
-                data: unlockConditionsList.filter((e) => e.unlockAddress != address)
+                data: arr
             })
+            if (arr.length > 0) {
+                Base.setLocalData(`${nodeId}.${address}.common.unlockConditions`, arr)
+            }
             dispatch({
                 type: 'common.unlockConditionsSend',
                 data: []
@@ -971,6 +981,9 @@ const useUpdateUnlockConditions = () => {
                 type: 'common.lockedList',
                 data: lockedListArr
             })
+            if (lockedListArr.length > 0) {
+                Base.setLocalData(`${nodeId}.${address}.common.lockedList`, lockedListArr)
+            }
         } else {
             dispatch({
                 type: 'common.unlockConditions',
@@ -1028,14 +1041,38 @@ export const useGetAssetsList = (curWallet) => {
                 type: 'common.lockedList',
                 data: []
             })
+            dispatch({
+                type: 'common.unlockConditions',
+                data: []
+            })
             return
         }
+
+        // get cache data start
+        const dispatchCache = async (key, defaultData) => {
+            const curKey = `${curWallet.nodeId}.${curWallet.address}.${key}`
+            const localData = (await Base.getLocalData(curKey)) || defaultData
+            console.log(key, localData, '----------------------')
+            dispatch({
+                type: key,
+                data: localData
+            })
+        }
+        dispatchCache('common.validAddresses', [])
+        dispatchCache('common.hisList', [])
+        dispatchCache('staking.historyList', [])
+        dispatchCache('staking.stakedRewards', {})
+        dispatchCache('common.checkClaim', false)
+        dispatchCache('common.lockedList', [])
+        dispatchCache('common.unlockConditions', [])
+        // get cache dta end
+
         // if (!price || !price.hasOwnProperty('IOTA')) {
         //     return
         // }
         let newCurWallet = curWallet
         const curAddress = newCurWallet.address
-        const cacheValidList = await Base.getLocalData(`valid.addresses.${curAddress}`)
+        const cacheValidList = await Base.getLocalData(`${curWallet.nodeId}.${curWallet.address}.common.validAddresses`)
         if (!cacheValidList?.length || !newCurWallet.password) {
             newCurWallet = await IotaSDK.inputPassword(curWallet)
         }
@@ -1043,16 +1080,22 @@ export const useGetAssetsList = (curWallet) => {
             IotaSDK?.client?.eth && (IotaSDK.client.eth.defaultAccount = curAddress)
         }
         setRequestHis(false, dispatch)
-        IotaSDK.getValidAddresses(newCurWallet).then(({ addressList, outputIds, smrOutputIds }) => {
-            // if(requestAddress !== newCurWallet.address){
-            //     return;
-            // }
+        IotaSDK.getValidAddresses(newCurWallet).then(({ addressList, outputIds, smrOutputIds, requestAddress }) => {
+            if (requestAddress !== newCurWallet.address) {
+                return
+            }
             //validAddresses
             if (newCurWallet.nodeId == IotaSDK?.curNode?.id) {
                 dispatch({
                     type: 'common.validAddresses',
                     data: addressList
                 })
+                if (addressList.length > 0) {
+                    Base.setLocalData(
+                        `${newCurWallet.nodeId}.${newCurWallet.address}.common.validAddresses`,
+                        addressList
+                    )
+                }
             }
             // Sync balance
             IotaSDK.getBalance(newCurWallet, addressList)
@@ -1074,15 +1117,6 @@ export const useGetAssetsList = (curWallet) => {
             } else {
                 updateUnlockConditions([], newCurWallet)
             }
-
-            // nfts
-            // if(IotaSDK.checkSMR(newCurWallet.nodeId)){
-            //     IotaSDK.IndexerPluginClient.nfts({
-            //         addressBech32:addressList[0]
-            //     }).then(res=>{
-            //         console.log(res,'_____________________');
-            //     })
-            // }
 
             //checkClaim
             IotaSDK.checkClaimSMR(newCurWallet)

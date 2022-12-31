@@ -268,6 +268,11 @@ const IotaSDK = {
     },
     async getNodes() {
         try {
+            Base.getLocalData('tanglePayNodeList').then((res) => {
+                if (res?.list) {
+                    this._nodes = res.list
+                }
+            })
             let res = await fetch(`${API_URL}/evm.json?v=${new Date().getTime()}`)
             res = await res.json()
             const _nodes = [...initNodeList]
@@ -464,6 +469,7 @@ const IotaSDK = {
                         Base.globalToast.error(I18n.t('user.nodeError') + ':' + (curNode.curNodeKey || curNode.name))
                     })
                 }
+                Base.globalToast.hideLoading()
             } else {
                 if (this.checkIota(id)) {
                     this.client = new IotaObj.SingleNodeClient(curNode.url)
@@ -475,9 +481,23 @@ const IotaSDK = {
                     this.IndexerPluginClient = new IotaObj.IndexerPluginClient(this.client)
                 }
                 this.mqttClient = new IotaObj.MqttClient(curNode.mqtt)
-                this.info = await this.client.info()
+                const localInfo = Base.getLocalData(`nodeInfo.${id}`)
+                if (localInfo) {
+                    this.info = localInfo
+                    Base.globalToast.hideLoading()
+                }
+                this.client.info().then((res) => {
+                    const curNode = this.nodes.find((e) => e.id === id)
+                    if (
+                        curNode &&
+                        (curNode.bech32HRP == res?.bech32HRP || curNode.bech32HRP == res?.protocol?.bech32Hrp)
+                    ) {
+                        this.info = res
+                        Base.setLocalData(`nodeInfo.${id}`, this.info)
+                    }
+                    Base.globalToast.hideLoading()
+                })
             }
-            Base.globalToast.hideLoading()
         } catch (error) {
             console.log(error)
             Base.globalToast.hideLoading()
@@ -2368,7 +2388,7 @@ const IotaSDK = {
     },
     /**************** web3 end *******************/
     /**************** SMR start *******************/
-    SMR_NODE_ID: 101,
+    SMR_NODE_ID: 102,
     checkSMR(nodeId) {
         const nodeInfo = this.nodes.find((e) => e.id == nodeId)
         return nodeInfo?.type == 3
