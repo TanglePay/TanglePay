@@ -471,11 +471,14 @@ const useUpdateHisList = () => {
                     unlockBlock,
                     decimal,
                     outputs,
+                    outputSpent,
                     isSpent,
                     output
                 } = e
                 const obj = {
-                    viewUrl: `${nodeInfo.explorer}/block/${outputBlockId}`,
+                    viewUrl: outputSpent
+                        ? `${nodeInfo.explorer}/transaction/${blockId}`
+                        : `${nodeInfo.explorer}/block/${blockId}`,
                     id: blockId,
                     coin: 'SMR',
                     token,
@@ -483,6 +486,9 @@ const useUpdateHisList = () => {
                     decimal: decimal || IotaSDK.curNode?.decimal || 0,
                     mergeTransactionId,
                     unit: ''
+                }
+                if ((output?.unlockConditions || []).find((d) => d.type == 2 || d.type == 3)) {
+                    obj.mergeTransactionId = `${obj.mergeTransactionId}_time`
                 }
                 const senderPublicKey = unlockBlock?.signature?.publicKey
                 const senderAddress = IotaSDK.publicKeyToBech32(senderPublicKey)
@@ -536,7 +542,7 @@ const useUpdateHisList = () => {
                         coin: symbol,
                         token: symbol,
                         decimal: decimals,
-                        mergeTransactionId: `${mergeTransactionId}_token`
+                        mergeTransactionId: `${newObj.mergeTransactionId}_token`
                         // originalMergeTransactionId:mergeTransactionId,
                     })
                     tokenMergeTransactionIds.push(mergeTransactionId)
