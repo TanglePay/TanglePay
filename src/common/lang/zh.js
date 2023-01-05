@@ -275,13 +275,22 @@ Going Beyond Blockchain`,
 #content#`,
         execute: '確認',
         cancel: '取消',
+        reject: '拒絕',
         signLabel: 'TanglePay 簽名',
         connect: `#origin#
 連接
 #address#
 允許網站: 查看地址, 錢包余額
 `,
-        ConnectBtn: '連接'
+        ConnectBtn: '連接',
+        approve: `通過授予許可，您允許以下合約訪問您的資金。
+#address#
+權限: #amount# #unit#
+手續費: #fee#
+`,
+        contractFunc: `function: #abiFunc#,
+params: #abiParams#
+`
     },
     nft: {
         collectibles: 'NFTs',
