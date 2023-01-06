@@ -820,6 +820,7 @@ const IotaSDK = {
     },
     // get all outputids
     async getAllOutputIds(addressList) {
+        // addressList = ['smr1qpaz5gy9prm4z2ydvdz35hmknhajrxqzf3c5sngyqnnev7zjljujz93zx4x']
         if (!this.info || this.isWeb3Node) {
             return []
         }
