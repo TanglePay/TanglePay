@@ -433,6 +433,22 @@ const IotaSDK = {
             }
             // node router end
 
+            let localNodes = (await Base.getLocalData('tanglePayNodeList')) || {}
+            localNodes = localNodes?.list || []
+            _nodes.forEach((e) => {
+                const { id } = e
+                const localE = localNodes.find((d) => d.id == id)
+                if (localE && localE.contractList?.length > 0) {
+                    let eContractList = [...e.contractList]
+                    localE.contractList.forEach((c) => {
+                        if (!eContractList.find((g) => g.contract == c.contract)) {
+                            eContractList.push(c)
+                        }
+                    })
+                    e.contractList = eContractList
+                }
+            })
+
             this._nodes = _nodes
             const curNodeId = await Base.getLocalData('common.curNodeId')
             if (!_nodes.find((e) => e.id == curNodeId)) {
@@ -2365,6 +2381,26 @@ const IotaSDK = {
         }
         const buffer = ethereumjsUtils.toBuffer(`${privateKey}${passwordHex}`)
         return buffer
+    },
+    importContract(contract, token, gasLimit = 21000, maxPriorityFeePerGas = 0) {
+        const nodes = this.nodes
+        const item = nodes.find((e) => (e.contractList || []).find((c) => c.contract == contract))
+        if (!item && this.curNode) {
+            this._nodes.forEach((e) => {
+                if (e.id == this.curNode.id) {
+                    e.contractList.push({
+                        contract,
+                        token,
+                        gasLimit,
+                        maxPriorityFeePerGas
+                    })
+                }
+            })
+            this.curNode = this._nodes.find((e) => e.id == this.curNode.id)
+            Base.setLocalData('tanglePayNodeList', {
+                list: this._nodes
+            })
+        }
     },
     getContract(contract) {
         if (this.client.eth) {
