@@ -1391,7 +1391,7 @@ const IotaSDK = {
                     res = await eth.sendSignedTransaction(signed.rawTransaction)
                 } catch (error) {
                     console.log(error)
-                    if (/exceeds block gas limit/.test(error.toString())) {
+                    if (/gas limit/.test(error.toString())) {
                         return await this.send(fromInfo, toAddress, sendAmount, ext)
                     } else {
                         throw error
