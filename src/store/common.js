@@ -472,7 +472,8 @@ const useUpdateHisList = () => {
                     decimal,
                     outputs,
                     outputSpent,
-                    output
+                    output,
+                    payloadData
                 } = e
                 let isSpent = e.isSpent
                 const obj = {
@@ -486,18 +487,14 @@ const useUpdateHisList = () => {
                     decimal: decimal || IotaSDK.curNode?.decimal || 0,
                     mergeTransactionId,
                     unit: '',
-                    isSpent
+                    isSpent,
+                    payloadData
                 }
                 if ((output?.unlockConditions || []).find((d) => d.type == 2 || d.type == 3)) {
                     obj.mergeTransactionId = `${obj.mergeTransactionId}_time`
                 }
                 const senderPublicKey = unlockBlock?.signature?.publicKey
                 const senderAddress = IotaSDK.publicKeyToBech32(senderPublicKey)
-                // if (validAddressList.includes(senderAddress)) {
-                //     isSpent = true
-                // } else {
-                //     isSpent = false
-                // }
                 // type：0->receive, 1->send, 2->stake, 3->unstake, 4->sign, 5->receive smr token, 6->send smr token, 7->receive smr nft, 8->send smr nft,
                 if (isSpent) {
                     //  send
@@ -548,7 +545,7 @@ const useUpdateHisList = () => {
                         coin: symbol,
                         token: symbol,
                         decimal: decimals,
-                        mergeTransactionId: `${newObj.mergeTransactionId}_token`
+                        mergeTransactionId: `${newObj.mergeTransactionId}_${id}`
                         // originalMergeTransactionId:mergeTransactionId,
                     })
                     tokenMergeTransactionIds.push(mergeTransactionId)
@@ -611,30 +608,32 @@ const useUpdateHisList = () => {
                         if (e.type == type) {
                             newAmount = new BigNumber(amount).plus(e.amount)
                             newHisList[e.mergeTransactionId].amount = Number(newAmount)
+                            // newHisList[e.mergeTransactionId].payloadData = e.payloadData
                         } else {
                             newAmount = new BigNumber(amount).minus(e.amount)
                             newAmount = Number(newAmount)
                             newHisList[e.mergeTransactionId].type = newAmount > 0 ? type : e.type
                             newHisList[e.mergeTransactionId].amount = Math.abs(newAmount)
-                            // newHisList[e.mergeTransactionId].address = newAmount > 0 ? address : e.address
+                            newHisList[e.mergeTransactionId].address = newAmount > 0 ? address : e.address
+                            newHisList[e.mergeTransactionId].payloadData =
+                                newAmount > 0 ? hisData.payloadData : e.payloadData
                         }
                     } else {
-                        newHisList[e.mergeTransactionId] = { ...e, addressList: [] }
+                        newHisList[e.mergeTransactionId] = { ...e }
                     }
-                    newHisList[e.mergeTransactionId].addressList.push(e.address)
                 }
                 // }
             })
             hisList = Object.values(newHisList)
             hisList.forEach((e) => {
                 if (validAddressList.includes(e.address)) {
-                    const address = e.addressList.find((d) => d !== e.address)
-                    if (address) {
-                        e.address = address
-                        if ([0, 5, 7].includes(e.type)) {
-                            e.type = e.type + 1
-                        } else {
-                            e.type = e.type - 1
+                    if ([0, 5, 7].includes(e.type)) {
+                        if (e.payloadData?.to) {
+                            e.address = e.payloadData?.to
+                        }
+                    } else {
+                        if (e.payloadData?.from) {
+                            e.address = e.payloadData?.from
                         }
                     }
                 }
