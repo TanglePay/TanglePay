@@ -64,16 +64,16 @@ const iotaTestnet = {
 }
 const shimmerEvmTestnet = {
     id: 6,
-    url: 'https://api.sc.testnet.shimmer.network/chain/rms1pzw5y4e4y6gzkytvjp0ukgjgs37vd33uvnju9tuf6rrztnnw4tj7crw72ar/evm/jsonrpc',
+    url: 'https://api.sc.testnet.shimmer.network/evm/jsonrpc',
     explorer: 'https://explorer.shimmer.network/testnet',
-    name: 'RMS EVM',
-    enName: 'RMS EVM',
-    deName: 'RMS EVM',
-    zhName: 'RMS EVM',
+    name: 'Shimmer Beta',
+    enName: 'Shimmer Beta',
+    deName: 'Shimmer Beta',
+    zhName: 'Shimmer Beta',
     type: 2,
     network: 'shimmer-evm',
     bech32HRP: 'shimmer-evm',
-    token: 'TEST',
+    token: 'RMS',
     filterMenuList: ['staking'],
     filterAssetsList: ['stake'],
     contractList: [
@@ -144,31 +144,31 @@ const initNodeList = [
         sendTokenV2: true
     },
     { ...shimmerEvmTestnet },
-    {
-        id: 5,
-        url: 'https://evm.wasp.sc.iota.org/',
-        explorer: 'https://explorer.wasp.sc.iota.org',
-        name: 'IOTA EVM',
-        enName: 'IOTA EVM',
-        deName: 'IOTA EVM',
-        zhName: 'IOTA EVM',
-        type: 2,
-        network: 'iota-evm',
-        bech32HRP: 'iota-evm',
-        token: 'TEST',
-        filterMenuList: ['staking'],
-        filterAssetsList: ['stake'],
-        contractList: [
-            {
-                contract: '0x903fE58170A44CF0D0eb5900d26cDedEA802635C',
-                token: 'TPT',
-                gasLimit: 0,
-                maxPriorityFeePerGas: 0
-            }
-        ],
-        decimal: 18,
-        gasLimit: 0
-    },
+    // {
+    //     id: 5,
+    //     url: 'https://evm.wasp.sc.iota.org/',
+    //     explorer: 'https://explorer.wasp.sc.iota.org',
+    //     name: 'IOTA EVM',
+    //     enName: 'IOTA EVM',
+    //     deName: 'IOTA EVM',
+    //     zhName: 'IOTA EVM',
+    //     type: 2,
+    //     network: 'iota-evm',
+    //     bech32HRP: 'iota-evm',
+    //     token: 'TEST',
+    //     filterMenuList: ['staking'],
+    //     filterAssetsList: ['stake'],
+    //     contractList: [
+    //         {
+    //             contract: '0x903fE58170A44CF0D0eb5900d26cDedEA802635C',
+    //             token: 'TPT',
+    //             gasLimit: 0,
+    //             maxPriorityFeePerGas: 0
+    //         }
+    //     ],
+    //     decimal: 18,
+    //     gasLimit: 0
+    // },
     {
         id: 4,
         url: 'https://bsc-dataseed.binance.org/',
