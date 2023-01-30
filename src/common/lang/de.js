@@ -201,7 +201,9 @@ Locked SMR balance: {balance3}`,
             'Please confirm if you want to dismiss the transaction and fund will go back to the sending address after expiration.',
         acceptSucc: 'Claimed successfully',
         unlockError: 'There is not enough SMR in the address to claim this token.',
-        locked: 'locked'
+        locked: 'locked',
+        tokenName: 'Name',
+        tokenDetail: 'Token Detail'
     },
     user: {
         me: 'Profil',
