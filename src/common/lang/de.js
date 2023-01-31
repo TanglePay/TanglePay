@@ -203,7 +203,11 @@ Locked SMR balance: {balance3}`,
         unlockError: 'There is not enough SMR in the address to claim this token.',
         locked: 'locked',
         tokenName: 'Name',
-        tokenDetail: 'Token Detail'
+        tokenDetail: 'Token Detail',
+        nftInfo: 'NFT Info',
+        nftDetail: 'NFT Detail',
+        collectionID: 'Collection ID',
+        nftProperties: 'Properties'
     },
     user: {
         me: 'Profil',

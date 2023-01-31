@@ -2214,9 +2214,7 @@ const IotaSDK = {
                         info = IotaObj.Converter.hexToUtf8(info.data)
                         info = JSON.parse(info)
                         shimmerRes.push({ ...info, nftId: e?.output?.nftId, outputId: outputIds[i] })
-                    } catch (error) {
-                        console.log(error)
-                    }
+                    } catch (error) {}
                 }
             })
             origins = origins || []
