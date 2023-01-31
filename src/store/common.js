@@ -43,7 +43,7 @@ export const initState = {
 
     lockedList: [],
 
-    checkClaim: false
+    checkClaim: true
 }
 
 export const reducer = (state, action) => {
