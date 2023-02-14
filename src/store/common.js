@@ -363,6 +363,8 @@ export const useUpdateBalance = () => {
             })
             setRequestAssets(true, dispatch)
             setAssetsData(totalAssets, newList, dispatch)
+        } else {
+            setAssetsData({}, [], dispatch)
         }
     }
     return updateBalance
@@ -1128,6 +1130,9 @@ export const useGetAssetsList = (curWallet) => {
                 .then((list) => {
                     if (newCurWallet.nodeId == IotaSDK?.curNode?.id) {
                         updateBalance(curAddress, list, newCurWallet.nodeId)
+                    } else {
+                        setRequestAssets(true, dispatch)
+                        setAssetsData({}, [], dispatch)
                     }
                 })
                 .catch(() => {
