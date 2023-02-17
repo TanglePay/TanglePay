@@ -2267,7 +2267,9 @@ const IotaSDK = {
             })
         )
         res = _flatten(res)
-
+        res.forEach((e) => {
+            e.createTime = e?.createdOn?._seconds
+        })
         let shimmerRes = []
         if (this.IndexerPluginClient) {
             const outputs = await Promise.all(
@@ -2294,7 +2296,12 @@ const IotaSDK = {
                     try {
                         info = IotaObj.Converter.hexToUtf8(info.data)
                         info = JSON.parse(info)
-                        shimmerRes.push({ ...info, nftId: e?.output?.nftId, outputId: outputIds[i] })
+                        shimmerRes.push({
+                            ...info,
+                            nftId: e?.output?.nftId,
+                            outputId: outputIds[i],
+                            createTime: e?.metadata?.milestoneTimestampBooked
+                        })
                     } catch (error) {}
                 }
             })
