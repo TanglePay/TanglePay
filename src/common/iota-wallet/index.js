@@ -1813,32 +1813,44 @@ const IotaSDK = {
         return info
     },
     // handle block 404 ？
-    async blockData(messageId) {
-        const res = await this.requestQueue([
-            Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${messageId}`, {
-                isHandlerError: true
-            })
-        ])
+    async blockData(blockId) {
+        let res = await Base.getLocalData(`blockId.${blockId}`)
+        if (!res) {
+            res = await this.requestQueue([
+                Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${blockId}`, {
+                    isHandlerError: true
+                })
+            ])
+            await Base.setLocalData(`blockId.${blockId}`, res)
+        }
         return res
     },
     // handle output 404
     async outputData(outputId) {
-        const res = await this.requestQueue([
-            // this.client.output(outputId),
-            Http.GET(`${this.explorerApiUrl}/output/${this.curNode.network}/${outputId}`, {
-                isHandlerError: true
-            })
-        ])
+        let res = await Base.getLocalData(`outputId.${outputId}`)
+        if (!res) {
+            res = await this.requestQueue([
+                // this.client.output(outputId),
+                Http.GET(`${this.explorerApiUrl}/output/${this.curNode.network}/${outputId}`, {
+                    isHandlerError: true
+                })
+            ])
+            await Base.setLocalData(`outputId.${outputId}`, res)
+        }
         return res?.output ? res?.output : res
     },
     // handle message 404 ？
     async messageMetadata(messageId) {
-        const res = await this.requestQueue([
-            // this.client.messageMetadata(messageId),
-            Http.GET(`${this.explorerApiUrl}/message/${this.curNode.network}/${messageId}`, {
-                isHandlerError: true
-            })
-        ])
+        let res = await Base.getLocalData(`messageId.${messageId}`)
+        if (!res) {
+            res = await this.requestQueue([
+                // this.client.messageMetadata(messageId),
+                Http.GET(`${this.explorerApiUrl}/message/${this.curNode.network}/${messageId}`, {
+                    isHandlerError: true
+                })
+            ])
+            await Base.setLocalData(`messageId.${messageId}`, res)
+        }
         return res?.metadata ? res?.metadata : res
     },
     // handle milestone 404
@@ -1856,12 +1868,16 @@ const IotaSDK = {
     },
     // handle transactionId 404
     async transactionIncludedMessage(transactionId) {
-        const res = await this.requestQueue([
-            // this.client.transactionIncludedMessage(transactionId),
-            Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${transactionId}`, {
-                isHandlerError: true
-            })
-        ])
+        let res = await Base.getLocalData(`transactionId.${transactionId}`)
+        if (!res) {
+            res = await this.requestQueue([
+                // this.client.transactionIncludedMessage(transactionId),
+                Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${transactionId}`, {
+                    isHandlerError: true
+                })
+            ])
+            await Base.setLocalData(`transactionId.${transactionId}`, res)
+        }
         return res?.message?.payload ? res?.message : res
     },
     async getHisList(outputList, { address, nodeId }, smrOutputIds) {
