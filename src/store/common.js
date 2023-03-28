@@ -531,7 +531,6 @@ const useUpdateHisList = () => {
                         amount: output?.amount || 0
                     })
                 }
-
                 // shimmer token
                 const isToken = e.output?.nativeTokens && e.output?.nativeTokens?.length
                 let newObj = null
@@ -631,13 +630,16 @@ const useUpdateHisList = () => {
             hisList = Object.values(newHisList)
             hisList.forEach((e) => {
                 if (validAddressList.includes(e.address)) {
+                    const { to, from } = e.payloadData || {}
                     if ([0, 5, 7].includes(e.type)) {
-                        if (e.payloadData?.to) {
-                            e.address = e.payloadData?.to
+                        if (to && from) {
+                            e.type = e.type + 1
+                            e.address = from
                         }
                     } else {
-                        if (e.payloadData?.from) {
-                            e.address = e.payloadData?.from
+                        if (to && from) {
+                            e.type = e.type - 1
+                            e.address = to
                         }
                     }
                 }
