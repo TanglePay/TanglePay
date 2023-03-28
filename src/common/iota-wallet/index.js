@@ -85,7 +85,8 @@ const shimmerEvmTestnet = {
         // }
     ],
     decimal: 18,
-    gasLimit: 0
+    gasLimit: 0,
+    isTest: true
 }
 const polyganTestnet = {
     id: 8,
@@ -103,7 +104,9 @@ const polyganTestnet = {
     filterAssetsList: ['stake'],
     contractList: [],
     decimal: 18,
-    gasLimit: 21000
+    gasLimit: 21000,
+    isTest: true,
+    isHideInAdd: true
 }
 const initNodeList = [
     {

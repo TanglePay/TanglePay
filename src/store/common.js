@@ -793,13 +793,21 @@ const useUpdateHisList = () => {
             type: 'common.activityData',
             data: { ...activityData, [address]: [...activityList] }
         })
+        const curAddressHis = (await Base.getLocalData(`${nodeId}.${address}.common.hisList`)) || []
+        const localHis = [...curAddressHis]
+        if (hisList.length > 0) {
+            hisList.forEach((e) => {
+                if (!localHis.find((d) => d.id == e.id)) {
+                    localHis.push(e)
+                }
+            })
+            localHis.sort((a, b) => b.timestamp - a.timestamp)
+            Base.setLocalData(`${nodeId}.${address}.common.hisList`, localHis)
+        }
         dispatch({
             type: 'common.hisList',
-            data: hisList
+            data: localHis
         })
-        if (hisList.length > 0) {
-            Base.setLocalData(`${nodeId}.${address}.common.hisList`, hisList)
-        }
 
         // stake history
         const eventids = []
