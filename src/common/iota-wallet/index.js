@@ -3398,7 +3398,9 @@ const IotaSDK = {
         const { seed, password, address } = fromInfo
         const baseSeed = this.getSeed(seed, password)
         let { nftId, taggedData, tag } = ext
+        const nftIds = (nftId || '').split(',')
         tag = tag || 'TanglePay'
+        let finishedIndex = 0
         try {
             let outputs = []
             const inputsAndSignatureKeyPairs = []
@@ -3429,13 +3431,14 @@ const IotaSDK = {
                             isUnlock &&
                             !addressOutput.metadata.isSpent &&
                             addressOutput.output.nftId &&
-                            nftId === addressOutput.output.nftId
+                            // nftId === addressOutput.output.nftId
+                            nftIds.includes(addressOutput.output.nftId)
                         ) {
                             outputs.push(
                                 {
                                     ...addressOutput.output,
                                     address: `0x${this.bech32ToHex(toAddress)}`,
-                                    nftId,
+                                    nftId: addressOutput.output.nftId,
                                     addressType: 0, // NFT_ADDRESS_TYPE
                                     // amount: '',
                                     // type: 6,
@@ -3482,7 +3485,10 @@ const IotaSDK = {
                                 addressKeyPair,
                                 consumingOutput: addressOutput.output
                             })
-                            finished = true
+                            finishedIndex++
+                            if (nftIds.length == finishedIndex) {
+                                finished = true
+                            }
                         }
                     }
                 } else {
@@ -3506,7 +3512,6 @@ const IotaSDK = {
                     }
                 })
             }
-
             const res = await IotaObj.sendAdvanced(this.client, inputsAndSignatureKeyPairs, outputs, {
                 tag: IotaObj.Converter.utf8ToBytes(tag),
                 data: taggedData
