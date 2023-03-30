@@ -123,7 +123,10 @@ Secret Recovery Phrase or private key for this wallet before continuing.`,
         pendingNum: 'Output to proceed',
         processedNum: 'Proceeded output',
         collectTermination: 'Finish',
-        collectSuccTips: 'Output Concentration is done. Please remember to restake.'
+        collectSuccTips: 'Output Concentration is done. Please remember to restake.',
+        hardwareWallet: '️Connect Hardware Wallet',
+        connectLedger: 'Connect Ledger',
+        lederImport: 'Ledger Import'
     },
     assets: {
         myAssets: 'My Assets',

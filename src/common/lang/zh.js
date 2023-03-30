@@ -114,7 +114,10 @@ Going Beyond Blockchain`,
         pendingNum: '待處理output條數',
         processedNum: '已處理的條數',
         collectTermination: '終止',
-        collectSuccTips: 'Output歸集已完成，請重新stake'
+        collectSuccTips: 'Output歸集已完成，請重新stake',
+        hardwareWallet: '連接硬件錢包',
+        connectLedger: '連接Ledger',
+        lederImport: 'Ledger導入'
     },
     assets: {
         myAssets: '我的資產',

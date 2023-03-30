@@ -19,6 +19,12 @@ import Web3 from 'web3'
 import * as Web3Bip39 from 'bip39'
 import { hdkey as ethereumjsHdkey } from 'ethereumjs-wallet'
 import * as ethereumjsUtils from 'ethereumjs-util'
+import TransportWebBLE from '@ledgerhq/hw-transport-web-ble'
+import TransportWebUSB from '@ledgerhq/hw-transport-webusb'
+import TransportWebHID from '@ledgerhq/hw-transport-webhid'
+import AppEth from '@ledgerhq/hw-app-eth'
+import AppIota from './hw-app-iota'
+import { ethers } from 'ethers'
 const initTokenAbi = require('../abi/TokenERC20.json')
 
 let IotaObj = Iota
@@ -750,6 +756,151 @@ const IotaSDK = {
             }
         })
     },
+    // const path = "44'/60'/0'/0/0" // HD derivation path
+    async checkHardwareConnect() {
+        const transport = await this.getTransport()
+        const nodeId = this.curNode?.id
+        if (this.checkIota(nodeId)) {
+            const eth = new AppIota(transport)
+            await eth.getAppVersion()
+        } else if (this.checkWeb3Node(nodeId)) {
+            const eth = new AppEth(transport)
+            await eth.getAddress(`44'/60'/0'/0/0`)
+        }
+    },
+    //107a:iota,1:atoi,107b:shimmer,1:shimmer_testnet
+    getHardwareCoinParams(nodeId) {
+        let cointType = ''
+        let pathCoinType = ''
+        switch (nodeId) {
+            case IOTA_NODE_ID:
+                cointType = 'iota'
+                pathCoinType = '107a'
+                break
+            case iotaTestnet.id:
+                cointType = 'atoi'
+                pathCoinType = '1'
+                break
+            case shimmerTestnet.id:
+                cointType = 'shimmer_testnet'
+                pathCoinType = '1'
+                break
+            case this.SMR_NODE_ID:
+                cointType = 'shimmer'
+                pathCoinType = '107b'
+                break
+            default:
+                break
+        }
+        return [pathCoinType, cointType]
+    },
+    async getHardwareAddressInIota(nodeId, index, display = false, count = 1) {
+        const [pathCoinType, cointType] = this.getHardwareCoinParams(nodeId, index)
+        const getPath = (index) => {
+            const path = `2c'/${pathCoinType}'/0'/0'/${index}'`
+            return [AppIota._validatePath(path), path]
+        }
+        try {
+            const transport = await this.getTransport()
+            const appIota = new AppIota(transport)
+            const getAddress = async (index) => {
+                const [arr, path] = getPath(index)
+                await appIota._setAccount(arr[2], { id: cointType })
+                await appIota._generateAddress(arr[3], arr[4], 1, display)
+                const addressList = await appIota._getData()
+                await appIota._reset()
+                const address = this.hexToBech32(addressList.slice(1, 33))
+                return { address, path }
+            }
+            let countList = []
+            const list = []
+            for (let i = 0; i < count; i++) {
+                countList.push(i)
+            }
+            for (const i of countList) {
+                list.push(await getAddress(index + i))
+            }
+            return list
+        } catch (error) {
+            throw error
+        }
+    },
+    async getHardwareIotaSign(nodeId, essenceHash) {
+        const transport = await this.getTransport()
+        const appIota = new AppIota(transport)
+        const [pathCoinType, cointType] = this.getHardwareCoinParams(nodeId, 0)
+        const arr = AppIota._validatePath(`2c'/${pathCoinType}'/0'/0'/0'`)
+        await appIota._setAccount(arr[2], { id: cointType })
+        await appIota._writeDataBuffer(Buffer.from(essenceHash))
+        const res = await appIota._getDataBufferState()
+        // if (hasRemainder) {
+        // await appIota._prepareSigning(1, 1, 0x80000000, 0x80000000)
+        //   } else {
+        await appIota._prepareSigning(0, 0, 0x80000000, 0x80000000)
+        //   }
+        await appIota._showSigningFlow()
+        await appIota._userConfirmEssence()
+        await appIota._showSignedSuccessfullyFlow()
+        await new Promise((resolve) => setTimeout(resolve, 2000)) // wait 1 second
+        await appIota._showMainFlow()
+        const response = await appIota._signSingle(0)
+        return [appIota, AppIota, IotaSDK, IotaObj]
+    },
+    async getHardwareAddressList(current = 1, pageSize = 5) {
+        try {
+            const transport = await this.getTransport()
+            const eth = new AppEth(transport)
+            const getPath = (index) => {
+                return `44'/60'/${index}'/0/0`
+            }
+            const pathList = []
+            for (let i = (current - 1) * pageSize; i < current * pageSize; i++) {
+                pathList.push(getPath(i))
+            }
+            const addressList = []
+            for (const e of pathList) {
+                addressList.push(await eth.getAddress(e))
+            }
+            const balanceList = await Promise.all(addressList.map((e) => this.client.eth.getBalance(e.address)))
+            const walletList = await this.getWalletList()
+            const hardwareAddressList = addressList.map((e, i) => {
+                return {
+                    ...e,
+                    index: (current - 1) * pageSize + i + 1,
+                    path: pathList[i],
+                    type: 'ledger',
+                    balance: balanceList[i],
+                    hasImport: !!walletList.find((d) => d.address == e.address)
+                }
+            })
+            return hardwareAddressList
+        } catch (error) {
+            throw error
+        }
+    },
+    async importHardware({ address, name, publicKey, path, type }) {
+        return new Promise(async (resolve, reject) => {
+            const isDuplicate = await this.checkImport(address)
+            if (isDuplicate) {
+                reject(I18n.t('account.importDuplicate'))
+                return
+            } else {
+                resolve({
+                    address,
+                    name,
+                    isSelected: true,
+                    password: publicKey || address,
+                    id: Base.guid(),
+                    nodeId: this.curNode?.id,
+                    seed: this.getLocalSeed(IotaObj.Converter.utf8ToBytes(type), publicKey), //ledger
+                    bech32HRP: this.curNode?.bech32HRP,
+                    publicKey,
+                    type,
+                    path
+                })
+            }
+        })
+    },
     async checkImport(address) {
         const list = await this.getWalletList()
         return !!list.find((e) => e.address === address)
@@ -1391,6 +1542,36 @@ const IotaSDK = {
             }, 500)
         })
     },
+    async getTransport() {
+        if (!window.transport) {
+            const [hasHID, hasUSB, hasBLE] = await Promise.all([
+                TransportWebHID.isSupported(),
+                TransportWebUSB.isSupported(),
+                TransportWebBLE.isSupported()
+            ])
+            if (Base.isBrowser) {
+                if (hasHID) {
+                    window.transport = await TransportWebHID.create()
+                } else if (hasUSB) {
+                    window.transport = await TransportWebUSB.create()
+                } else if (hasBLE) {
+                    window.transport = await TransportWebBLE.create()
+                }
+            } else {
+                if (hasBLE) {
+                    window.transport = await TransportWebBLE.create()
+                } else if (hasHID) {
+                    window.transport = await TransportWebHID.create()
+                } else if (hasUSB) {
+                    window.transport = await TransportWebUSB.create()
+                }
+            }
+            window.transport.on('disconnect', () => {
+                window.transport = null
+            })
+        }
+        return window.transport
+    },
     async send(fromInfo, toAddress, sendAmount, ext) {
         if (!this.client) {
             return Base.globalToast.error(
@@ -1398,7 +1579,11 @@ const IotaSDK = {
             )
         }
         const { seed, address, password, nodeId } = fromInfo
-        const baseSeed = this.getSeed(seed, password)
+        const isLedger = fromInfo.type == 'ledger'
+        let baseSeed = null
+        if (!isLedger) {
+            baseSeed = this.getSeed(seed, password)
+        }
         const nodeInfo = this.nodes.find((e) => e.id == nodeId) || {}
         let actionTime = new Date().getTime()
         let traceToken = ''
@@ -1413,7 +1598,10 @@ const IotaSDK = {
             const nonce = await eth.getTransactionCount(address)
             const { contract, token, taggedData } = ext || {}
             let res = null
-            const privateKey = await this.getPrivateKey(seed, password)
+            let privateKey = null
+            if (!isLedger) {
+                privateKey = await this.getPrivateKey(seed, password)
+            }
             if (contract || taggedData) {
                 const contractInfo = (nodeInfo.contractList || []).find((e) => e.token === token)
                 // if (!contractInfo) {
@@ -1458,7 +1646,24 @@ const IotaSDK = {
                     signData.maxPriorityFeePerGas = contractInfo?.maxPriorityFeePerGas
                 }
                 try {
-                    const signed = await eth.accounts.signTransaction(signData, privateKey)
+                    let signed = null
+                    if (isLedger) {
+                        const chainId = await eth.getChainId()
+                        delete signData.from
+                        signData.chainId = chainId
+                        const transport = await this.getTransport()
+                        const appEth = new AppEth(transport)
+                        let unsignedTx = ethers.utils.serializeTransaction(signData).substring(2)
+                        const signature = await appEth.signTransaction(fromInfo.path, unsignedTx)
+                        signature.r = '0x' + signature.r
+                        signature.s = '0x' + signature.s
+                        signature.v = parseInt('0x' + signature.v)
+                        signature.from = address
+                        const rawTransaction = ethers.utils.serializeTransaction(signData, signature)
+                        signed = { rawTransaction }
+                    } else {
+                        signed = await eth.accounts.signTransaction(signData, privateKey)
+                    }
                     res = await eth.sendSignedTransaction(signed.rawTransaction)
                     // this._ethReSend = 0
                 } catch (error) {
@@ -1512,18 +1717,31 @@ const IotaSDK = {
                     throw str
                 }
                 try {
-                    const signed = await eth.accounts.signTransaction(
-                        {
-                            to: toAddress,
-                            value: sendAmountHex,
-                            from: address,
-                            chainId,
-                            nonce,
-                            gasLimit,
-                            gasPrice
-                        },
-                        privateKey
-                    )
+                    let transactionObj = {
+                        to: toAddress,
+                        value: sendAmountHex,
+                        chainId,
+                        nonce,
+                        gasLimit,
+                        gasPrice
+                    }
+                    let signed = null
+                    if (isLedger) {
+                        transactionObj = { ...transactionObj, data: '0x00' }
+                        const transport = await this.getTransport()
+                        const appEth = new AppEth(transport)
+                        let unsignedTx = ethers.utils.serializeTransaction(transactionObj).substring(2)
+                        const signature = await appEth.signTransaction(fromInfo.path, unsignedTx)
+                        signature.r = '0x' + signature.r
+                        signature.s = '0x' + signature.s
+                        signature.v = parseInt('0x' + signature.v)
+                        signature.from = address
+                        const rawTransaction = ethers.utils.serializeTransaction(transactionObj, signature)
+                        signed = { rawTransaction }
+                    } else {
+                        transactionObj.from = address
+                        signed = await eth.accounts.signTransaction(transactionObj, privateKey)
+                    }
                     res = await eth.sendSignedTransaction(signed.rawTransaction)
                     // this._ethReSend = 0
                 } catch (error) {
@@ -1615,6 +1833,21 @@ const IotaSDK = {
                 }
             } else {
                 amount = Base.formatNum(BigNumber(sendAmount).div(Math.pow(10, this.curNode.decimal || 6)))
+                let genAddressFunc = null
+                let signatureFunc = null
+                let getHardwareBip32Path = null
+                if (isLedger) {
+                    genAddressFunc = async (index) => {
+                        const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
+                        return { address, path }
+                    }
+                    signatureFunc = async (essenceHash) => {
+                        return await this.getHardwareIotaSign(nodeId, essenceHash)
+                    }
+                    getHardwareBip32Path = (path) => {
+                        return AppIota._validatePath(path)
+                    }
+                }
                 try {
                     sendOut = await IotaObj.sendMultiple(
                         this.client,
@@ -1630,7 +1863,9 @@ const IotaSDK = {
                         {
                             key: IotaObj.Converter.utf8ToBytes(tag), //v1
                             tag: IotaObj.Converter.utf8ToBytes(tag), //v2
-                            data: taggedData
+                            data: isLedger
+                                ? undefined
+                                : taggedData
                                 ? IotaObj.Converter.utf8ToBytes(taggedData)
                                 : IotaObj.Converter.utf8ToBytes(
                                       JSON.stringify({
@@ -1644,7 +1879,10 @@ const IotaSDK = {
                         {
                             startIndex: 0,
                             zeroCount: 20
-                        }
+                        },
+                        genAddressFunc,
+                        signatureFunc,
+                        getHardwareBip32Path
                     )
                 } catch (error) {
                     throw error
