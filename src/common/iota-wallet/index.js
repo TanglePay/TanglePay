@@ -448,7 +448,11 @@ const IotaSDK = {
                 if (localE && localE.contractList?.length > 0) {
                     let eContractList = [...e.contractList]
                     localE.contractList.forEach((c) => {
-                        if (!eContractList.find((g) => g.contract == c.contract)) {
+                        if (
+                            !eContractList.find(
+                                (g) => String(g.contract).toLocaleLowerCase() == String(c.contract).toLocaleLowerCase()
+                            )
+                        ) {
                             eContractList.push(c)
                         }
                     })
@@ -1317,12 +1321,15 @@ const IotaSDK = {
 
         return this.getLocalSeed(seed, password)
     },
-    async getDefaultGasLimit(to, contract) {
+    async getDefaultGasLimit(to, contract, value) {
         const eth = this.client.eth
         let blockGasLimitBn = 21000
         try {
-            blockGasLimitBn = await eth.estimateGas({ to })
+            blockGasLimitBn = await eth.estimateGas({ to, value: value || 0 })
             blockGasLimitBn = BigNumber(blockGasLimitBn)
+            if (Number(value) > 0) {
+                blockGasLimitBn = blockGasLimitBn.plus(1)
+            }
             let limit = ''
             if (contract) {
                 const block = await eth.getBlock('latest')
