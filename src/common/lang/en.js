@@ -13,8 +13,8 @@ const EN = {
         intoPassword: 'Set Password',
         intoPasswordTips: '8 to 20 numbers & letters',
         intoRePasswordTips: 'Please repeat the password',
-        intoAgree: 'I have read and agree ##Term of Service## and ##Privacy Policy##',
-        term: 'Term of Service',
+        intoAgree: 'I have read and agree ##Terms of Service## and ##Privacy Policy##',
+        term: 'Terms of Service',
         policy: 'Privacy Policy',
         intoBtn: 'Import Wallet',
         intoFilePassword: 'Password',
@@ -243,7 +243,7 @@ Locked SMR balance: {balance3}`,
         biometricsSucc: 'Biometric authentication successfully',
         biometricsFailed: 'Biometric authentication failed',
         biometriceDialog:
-            'To enable biometrics in Settings, there is no need to enter a password in subsequent transactions',
+            'When the biometrics authentication is enabled, the password will no longer be required for the subsequent transactions',
         goSetting: 'Go Settings',
         manage: 'Manage',
         backupWallet: 'Backup Wallet',
@@ -338,7 +338,11 @@ params: #abiParams#
         clearCache: 'Clear your cache',
         goBuy: 'Get one',
         permissions: 'Please allow TanglePay to save NFT picture on your phone.',
-        saved: 'Saved.'
+        saved: 'Saved.',
+        continueCombine: 'Continue to combine',
+        nftAdd: 'Add',
+        totalNum: 'Total {num}',
+        selectHero: 'Select the Hero Tier'
     },
     discover: {
         title: 'Discover',
@@ -369,7 +373,7 @@ params: #abiParams#
         dismiss: 'Dismiss',
         sendFailTips: 'The transaction is loading. The Shimmer node synchronization is currently slow.',
         sendCancel: 'Cancel',
-        sendTips: 'We will support sending features on Shimmer Beta soon.'
+        sendTips: 'We will support sending features on Shimmer Testnet soon.'
     }
 }
 
