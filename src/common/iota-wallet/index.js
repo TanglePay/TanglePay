@@ -3761,6 +3761,9 @@ const IotaSDK = {
                     zeroBalance++
                 }
             } while (!finished && zeroBalance <= 20)
+            if (outputs.length < nftIds.length) {
+                throw I18n.t('assets.balanceError')
+            }
             if (this.mqttClient && this.mqttClient.nft) {
                 Base.globalDispatch({
                     type: 'nft.isRequestNft',
@@ -3774,7 +3777,7 @@ const IotaSDK = {
                         })
                     }
                 }, 10000)
-                this.mqttClient.nft(nftId, (topic) => {
+                this.mqttClient.nft(nftIds[0], (topic) => {
                     if (Base.globalDispatch) {
                         Base.globalDispatch({
                             type: 'nft.forceRequest',
