@@ -19,12 +19,12 @@ import Web3 from 'web3'
 import * as Web3Bip39 from 'bip39'
 import { hdkey as ethereumjsHdkey } from 'ethereumjs-wallet'
 import * as ethereumjsUtils from 'ethereumjs-util'
-import TransportWebBLE from '@ledgerhq/hw-transport-web-ble'
-import TransportWebUSB from '@ledgerhq/hw-transport-webusb'
-import TransportWebHID from '@ledgerhq/hw-transport-webhid'
 import AppEth from '@ledgerhq/hw-app-eth'
 import AppIota from './hw-app-iota'
 import { ethers } from 'ethers'
+import TransportLedger from './ledger'
+const { TransportWebBLE, TransportWebUSB, TransportWebHID } = TransportLedger
+
 const initTokenAbi = require('../abi/TokenERC20.json')
 
 let IotaObj = Iota
@@ -1556,8 +1556,13 @@ const IotaSDK = {
             }, 500)
         })
     },
+    // async getAppTransport(){
+    //     return new Promise(async (resolve,reject)=>{
+
+    //     })
+    // },
     async getTransport() {
-        if (!window.transport) {
+        if (!Base.transport) {
             const [hasHID, hasUSB, hasBLE] = await Promise.all([
                 TransportWebHID.isSupported(),
                 TransportWebUSB.isSupported(),
@@ -1565,26 +1570,26 @@ const IotaSDK = {
             ])
             if (Base.isBrowser) {
                 if (hasHID) {
-                    window.transport = await TransportWebHID.create()
+                    Base.transport = await TransportWebHID.create()
                 } else if (hasUSB) {
-                    window.transport = await TransportWebUSB.create()
+                    Base.transport = await TransportWebUSB.create()
                 } else if (hasBLE) {
-                    window.transport = await TransportWebBLE.create()
+                    Base.transport = await TransportWebBLE.create()
                 }
             } else {
                 if (hasBLE) {
-                    window.transport = await TransportWebBLE.create()
+                    Base.transport = await TransportWebBLE.create()
                 } else if (hasHID) {
-                    window.transport = await TransportWebHID.create()
+                    Base.transport = await TransportWebHID.create()
                 } else if (hasUSB) {
-                    window.transport = await TransportWebUSB.create()
+                    Base.transport = await TransportWebUSB.create()
                 }
             }
-            window.transport.on('disconnect', () => {
-                window.transport = null
+            Base.transport.on('disconnect', () => {
+                Base.transport = null
             })
         }
-        return window.transport
+        return Base.transport
     },
     async send(fromInfo, toAddress, sendAmount, ext) {
         if (!this.client) {
