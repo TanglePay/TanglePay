@@ -12,7 +12,11 @@ const Utils = {
     },
     handlerParams(url) {
         const obj = {}
-        url.replace(/([^?&=]+)=([^&]+)/g, (_, k, v) => (obj[k] = decodeURIComponent(v)))
+        try {
+            url.replace(/([^?&=]+)=([^&]+)/g, (_, k, v) => (obj[k] = decodeURIComponent(v)))
+        } catch (error) {
+            url.replace(/([^?&=]+)=([^&]+)/g, (_, k, v) => (obj[k] = unescape(v)))
+        }
         return obj
     },
     checkMobi(mobi) {
