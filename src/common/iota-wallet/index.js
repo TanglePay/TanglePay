@@ -814,7 +814,6 @@ const IotaSDK = {
         const arr = AppIota._validatePath(`2c'/${pathCoinType}'/0'/0'/0'`)
         await appIota._setAccount(arr[2], { id: cointType })
         await appIota._writeDataBuffer(Buffer.from(essenceHash))
-        const res = await appIota._getDataBufferState()
         if (hasRemainder) {
             await appIota._prepareSigning(1, 1, 0x80000000, 0x80000000)
         } else {
@@ -855,6 +854,7 @@ const IotaSDK = {
                 // parse device response to a hexadecimal string
                 const publicKey = deviceResponseToUint8Array(response.fields.ed25519_public_key, ED25519_PUBLIC_KEY_LENGTH)
                 const signature = deviceResponseToUint8Array(response.fields.ed25519_signature, ED25519_SIGNATURE_LENGTH)
+                console.log(publicKey,signature);
                 unlocks.push({
                     type: 0, // SIGNATURE_UNLOCK_TYPE
                     signature: {
@@ -1850,8 +1850,16 @@ const IotaSDK = {
                         const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
                         return { address, path }
                     }
-                    signatureFunc = async (essenceHash, inputs) => {
-                        return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, ext.residue != 0)
+                    signatureFunc = async (essenceHash, inputs,outputs) => {
+                        let hasRemainder = false;
+                        let consumedBalance = new BigNumber(0)
+                        for (const output of outputs) {
+                            consumedBalance = consumedBalance.plus(output.amount);
+                        }
+                        if (consumedBalance.isGreaterThan(sendAmount)) {
+                          hasRemainder = true;
+                        }
+                        return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, hasRemainder)
                     }
                     getHardwareBip32Path = (path) => {
                         return AppIota._validatePath(path)
