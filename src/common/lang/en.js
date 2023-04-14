@@ -11,6 +11,7 @@ const EN = {
         intoName: 'Set wallet name ',
         intoNameTips: 'Please enter a name ',
         intoPassword: 'Set Password',
+        intoPin: 'Set PIN Code',
         intoPasswordTips: '8 to 20 numbers & letters',
         intoRePasswordTips: 'Please repeat the password',
         intoAgree: 'I have read and agree ##Terms of Service## and ##Privacy Policy##',

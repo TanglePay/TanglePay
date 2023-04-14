@@ -11,6 +11,7 @@ const DE = {
         intoName: 'Gib der Wallet einen Namen ',
         intoNameTips: 'Bitte gib einen Namen ein ',
         intoPassword: 'Passwort deiner Wallet',
+        intoPin: 'PIN-Code festlegen',
         intoPasswordTips: '8 - 20 Buchstaben und Zahlen',
         intoRePasswordTips: 'Bitte wiederhole dein Passwort',
         intoAgree: 'Ich habe die ##Terms of Service## and ##Privacy Policy## gelesen und akzeptiere diese',

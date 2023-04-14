@@ -1229,6 +1229,64 @@ const IotaSDK = {
         const addressKeyPair = addressSeed.keyPair()
         return addressKeyPair
     },
+    // pin related
+    async checkPin(pin){
+        const tasks = [
+            Base.getSensitiveInfo('pin.secret'),
+            Base.getSensitiveInfo('pin.hash')
+        ]
+        try {
+            const [encrptedSecret,hashStored] = await Promise.all(tasks);
+            const secret = this.decryptSeed(encrptedSecret,pin);
+            const hash = CryptoJS.SHA256(secret);
+            return hash == hashStored;
+        } catch (e) {
+            console.log(e);
+            throw e;
+        }
+    },
+    getKeyAndValueOfPasswordSwitch(address){
+        const key = CryptoJS.MD5(address, 16).toString()
+        const value = CryptoJS.MD5(''+Math.random()*100000, 16).toString()
+        return [key, value]
+    }, 
+    getKeyOfPin(pin,salt){ // salt is usually account address
+        const pinmd5 = CryptoJS.MD5(pin, 16).toString()
+        const saltmd5 = CryptoJS.MD5(salt, 16).toString()
+        const key = CryptoJS.PBKDF2(pinmd5, saltmd5, { keySize: 16, iterations: 1000 })
+        return key;
+    },
+    async setPin(pin){
+        const secret = this.generateRandomString(16);
+        const encrptedSecret = this.encryptSeed(secret, pin);
+        const secretHash = CryptoJS.SHA256(secret);
+        const tasks = [
+            Base.setSensitiveInfo('pin.secret',encrptedSecret),
+            Base.setSensitiveInfo('pin.hash',secretHash)
+        ]
+        try {
+            await Promise.all(tasks);
+        } catch (e) {
+            console.log(e);
+            throw e;
+        }
+    },
+    generateRandomString(length) {
+    // Define the character set
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?!@#$%^&*()';
+    
+    let result = '';
+    
+    for (let i = 0; i < length; i++) {
+        // Choose a random index from the character set
+        const randomIndex = Math.floor(Math.random() * characters.length);
+    
+        // Add the character at the random index to the result string
+        result += characters[randomIndex];
+    }
+    
+    return result;
+    },
     // check isV2
     checkKeyAndIvIsV2(localSeed) {
         const reg = new RegExp(`${V2_FLAG}$`)

@@ -11,6 +11,7 @@ const ZH = {
         intoName: '設置錢包名稱',
         intoNameTips: '請填入名稱',
         intoPassword: '設置密碼',
+        intoPin: '設定PIN碼',
         intoPasswordTips: '8到20位數字和字母的組合',
         intoRePasswordTips: '請再次輸入密碼',
         intoAgree: '我已閱讀並理解 ##Terms of Service## 和 ##Privacy Policy##',
