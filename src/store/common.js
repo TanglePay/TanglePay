@@ -3,6 +3,7 @@ import { Base, IotaSDK, I18n, Http, Trace } from '../common'
 import _get from 'lodash/get'
 import { StoreContext } from './context'
 import BigNumber from 'bignumber.js'
+import { init } from '../domain'
 export const initState = {
     curMainActive: 'assets', //current tab (for browser)
     registerInfo: {}, // for browser
@@ -89,6 +90,7 @@ export const reducer = (state, action) => {
             let localList = list.map((e) => {
                 return { ...e, password: e.password ? `password_${e.address}` : undefined }
             })
+            init(localList.length).catch(e=>console.log(e))
             const saveFunc = Base.isBrowser ? 'setLocalData' : 'setSensitiveInfo'
             Base[saveFunc]('common.walletsList', localList)
             return { ...state, [type]: localList }
