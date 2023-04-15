@@ -3,7 +3,7 @@ import { Base, IotaSDK, I18n, Http, Trace } from '../common'
 import _get from 'lodash/get'
 import { StoreContext } from './context'
 import BigNumber from 'bignumber.js'
-import { initPinNewUserState } from './data'
+import { init } from '../domain'
 export const initState = {
     curMainActive: 'assets', //current tab (for browser)
     registerInfo: {}, // for browser
@@ -93,7 +93,7 @@ export const reducer = (state, action) => {
             let localList = list.map((e) => {
                 return { ...e, password: e.password ? `password_${e.address}` : undefined }
             })
-            initPinNewUserState(localList).then(()=>console.log('pin inited'))
+            init(localList.length).catch(e=>console.log(e))
             const saveFunc = Base.isBrowser ? 'setLocalData' : 'setSensitiveInfo'
             Base[saveFunc]('common.walletsList', localList)
             return { ...state, [type]: localList }
@@ -432,7 +432,8 @@ const useUpdateHisList = () => {
                 hisList.push(obj)
             })
         } else if (isSMR) {
-            const validAddressList = (await Base.getLocalData(`valid.addresses.${address}`)) || [address]
+            let validAddressList = (await Base.getLocalData(`valid.addresses.${address}`)) || [address]
+            validAddressList = validAddressList?.length > 0 ? validAddressList : [address]
             activityList = activityList.filter((e) => {
                 let unlock = e.output.unlockConditions.find((d) => d.type != 0)
                 //TIMELOCK_UNLOCK_CONDITION_TYPE、EXPIRATION_UNLOCK_CONDITION_TYPE
@@ -485,6 +486,10 @@ const useUpdateHisList = () => {
                     payloadData
                 } = e
                 let isSpent = e.isSpent
+                let unlockConditions = []
+                outputs.forEach((e) => {
+                    unlockConditions = [...unlockConditions, ...(e.unlockConditions || [])]
+                })
                 const obj = {
                     viewUrl: outputSpent
                         ? `${nodeInfo.explorer}/transaction/${blockId}`
@@ -497,7 +502,8 @@ const useUpdateHisList = () => {
                     mergeTransactionId,
                     unit: '',
                     isSpent,
-                    payloadData
+                    payloadData,
+                    unlockConditions
                 }
                 if ((output?.unlockConditions || []).find((d) => d.type == 2 || d.type == 3)) {
                     obj.mergeTransactionId = `${obj.mergeTransactionId}_time`
@@ -507,28 +513,41 @@ const useUpdateHisList = () => {
                 // type：0->receive, 1->send, 2->stake, 3->unstake, 4->sign, 5->receive smr token, 6->send smr token, 7->receive smr nft, 8->send smr nft,
                 if (isSpent) {
                     //  send
-                    let otherAddress = ''
-                    outputs.forEach((e) => {
-                        e.unlockConditions.forEach((d) => {
-                            let pubKeyHash = d?.address?.pubKeyHash || d?.returnAddress?.pubKeyHash
-                            pubKeyHash = pubKeyHash ? IotaSDK.hexToBech32(pubKeyHash) : ''
-                            if (pubKeyHash && pubKeyHash !== senderAddress && !otherAddress) {
-                                otherAddress = pubKeyHash
-                            }
-                        })
-                    })
-                    if (!otherAddress) {
-                        otherAddress = senderAddress
-                    }
+                    // let otherAddress = ''
+                    // outputs.forEach((e) => {
+                    //     e.unlockConditions.forEach((d) => {
+                    //         let pubKeyHash = d?.address?.pubKeyHash || d?.returnAddress?.pubKeyHash
+                    //         pubKeyHash = pubKeyHash ? IotaSDK.hexToBech32(pubKeyHash) : ''
+                    //         if (pubKeyHash && pubKeyHash !== senderAddress && !otherAddress) {
+                    //             otherAddress = pubKeyHash
+                    //         }
+                    //     })
+                    // })
+                    // if (!otherAddress) {
+                    //     otherAddress = senderAddress
+                    // }
 
                     Object.assign(obj, {
                         type: 1,
                         num: output?.amount || 0,
-                        address: otherAddress,
+                        address: senderAddress,
                         amount: output?.amount || 0
                     })
                 } else {
                     // receive
+                    // let otherAddress = senderAddress
+                    // if (validAddressList.includes(senderAddress)) {
+                    //     outputs.forEach((e) => {
+                    //         e.unlockConditions.forEach((d) => {
+                    //             let pubKeyHash = d?.address?.pubKeyHash || d?.returnAddress?.pubKeyHash
+                    //             pubKeyHash = pubKeyHash ? IotaSDK.hexToBech32(pubKeyHash) : ''
+                    //             if (pubKeyHash && pubKeyHash !== senderAddress && !otherAddress) {
+                    //                 otherAddress = pubKeyHash
+                    //             }
+                    //         })
+                    //     })
+                    // }
+
                     Object.assign(obj, {
                         type: 0,
                         num: output?.amount || 0,
@@ -536,7 +555,6 @@ const useUpdateHisList = () => {
                         amount: output?.amount || 0
                     })
                 }
-
                 // shimmer token
                 const isToken = e.output?.nativeTokens && e.output?.nativeTokens?.length
                 let newObj = null
@@ -612,7 +630,8 @@ const useUpdateHisList = () => {
                 if (!tokenMergeTransactionIds.includes(e.mergeTransactionId)) {
                     const hisData = newHisList[e.mergeTransactionId]
                     if (hisData) {
-                        const { amount, type, address } = hisData
+                        let { amount, type, unlockConditions } = hisData
+                        unlockConditions = unlockConditions || []
                         let newAmount = 0
                         if (e.type == type) {
                             newAmount = new BigNumber(amount).plus(e.amount)
@@ -623,10 +642,13 @@ const useUpdateHisList = () => {
                             newAmount = Number(newAmount)
                             newHisList[e.mergeTransactionId].type = newAmount > 0 ? type : e.type
                             newHisList[e.mergeTransactionId].amount = Math.abs(newAmount)
-                            newHisList[e.mergeTransactionId].address = newAmount > 0 ? address : e.address
                             newHisList[e.mergeTransactionId].payloadData =
                                 newAmount > 0 ? hisData.payloadData : e.payloadData
                         }
+                        newHisList[e.mergeTransactionId].unlockConditions = [
+                            ...(newHisList[e.mergeTransactionId].unlockConditions || []),
+                            ...unlockConditions
+                        ]
                     } else {
                         newHisList[e.mergeTransactionId] = { ...e }
                     }
@@ -635,14 +657,33 @@ const useUpdateHisList = () => {
             })
             hisList = Object.values(newHisList)
             hisList.forEach((e) => {
+                const { unlockConditions } = e
+                let otherAddress = ''
+                unlockConditions.forEach((d) => {
+                    let pubKeyHash = d?.address?.pubKeyHash || d?.returnAddress?.pubKeyHash
+                    pubKeyHash = pubKeyHash ? IotaSDK.hexToBech32(pubKeyHash) : ''
+                    if (pubKeyHash && !validAddressList.includes(pubKeyHash) && !otherAddress) {
+                        otherAddress = pubKeyHash
+                    }
+                })
+                if (otherAddress) {
+                    e.address = otherAddress
+                } else {
+                    console.log(e, '------')
+                }
+            })
+            hisList.forEach((e) => {
                 if (validAddressList.includes(e.address)) {
+                    const { to, from } = e.payloadData || {}
                     if ([0, 5, 7].includes(e.type)) {
-                        if (e.payloadData?.to) {
-                            e.address = e.payloadData?.to
+                        if (to && from) {
+                            e.type = e.type + 1
+                            e.address = from
                         }
                     } else {
-                        if (e.payloadData?.from) {
-                            e.address = e.payloadData?.from
+                        if (to && from) {
+                            e.type = e.type - 1
+                            e.address = to
                         }
                     }
                 }
@@ -655,6 +696,7 @@ const useUpdateHisList = () => {
                 obj.num = Base.formatNum(num)
                 obj.assets = Base.formatNum(assets)
             })
+            console.log(hisList)
             // merge end
             hisList.sort((a, b) => b.timestamp - a.timestamp)
         } else {
@@ -798,13 +840,21 @@ const useUpdateHisList = () => {
             type: 'common.activityData',
             data: { ...activityData, [address]: [...activityList] }
         })
+        const curAddressHis = (await Base.getLocalData(`${nodeId}.${address}.common.hisList`)) || []
+        const localHis = [...curAddressHis]
+        if (hisList.length > 0) {
+            hisList.forEach((e) => {
+                if (!localHis.find((d) => d.id == e.id)) {
+                    localHis.push(e)
+                }
+            })
+            localHis.sort((a, b) => b.timestamp - a.timestamp)
+            Base.setLocalData(`${nodeId}.${address}.common.hisList`, localHis)
+        }
         dispatch({
             type: 'common.hisList',
-            data: hisList
+            data: localHis
         })
-        if (hisList.length > 0) {
-            Base.setLocalData(`${nodeId}.${address}.common.hisList`, hisList)
-        }
 
         // stake history
         const eventids = []
