@@ -14,6 +14,7 @@ const EN = {
         intoPin: 'Set PIN Code',
         intoPasswordTips: '8 to 20 numbers & letters',
         intoPinTips: '6 numbers',
+        pinTryLeft:'${left} times lefted',
         intoRePasswordTips: 'Please repeat the password',
         intoRePin: 'Please repeat the pin',
         intoAgree: 'I have read and agree ##Terms of Service## and ##Privacy Policy##',

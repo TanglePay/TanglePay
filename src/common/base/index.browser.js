@@ -72,7 +72,7 @@ export const Base = {
         }
     },
     async getSensitiveInfo(key) {
-        return await getLocalData(key)
+        return await this.getLocalData(key)
     },
     async setSensitiveInfo(key, data) {
         this.setLocalData(key, data)
