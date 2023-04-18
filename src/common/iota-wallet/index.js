@@ -807,19 +807,22 @@ const IotaSDK = {
             throw error
         }
     },
-    async getHardwareIotaSign(nodeId, essenceHash, inputs, hasRemainder) {
+    async getHardwareIotaSign(nodeId, essenceHash, inputs, hasRemainder, isSMRToken = false) {
         const transport = await this.getTransport()
         const appIota = new AppIota(transport)
         const [pathCoinType, cointType] = this.getHardwareCoinParams(nodeId, 0)
         const arr = AppIota._validatePath(`2c'/${pathCoinType}'/0'/0'/0'`)
         await appIota._setAccount(arr[2], { id: cointType })
         console.log(essenceHash)
-        await appIota._writeDataBuffer(Buffer.from(essenceHash))
         console.log(hasRemainder)
-        if (hasRemainder) {
-            await appIota._prepareSigning(1, 1, 0x80000000, 0x80000000)
+        if (!isSMRToken) {
+            await appIota._writeDataBuffer(Buffer.from(essenceHash))
+            if (hasRemainder) {
+                await appIota._prepareSigning(1, 1, 0x80000000, 0x80000000)
+            } else {
+                await appIota._prepareSigning(0, 0, 0x80000000, 0x80000000)
+            }
         } else {
-            await appIota._prepareSigning(0, 0, 0x80000000, 0x80000000)
         }
         await appIota._showSigningFlow()
         await appIota._userConfirmEssence()
@@ -2612,10 +2615,26 @@ const IotaSDK = {
                         if (nftId == 0) {
                             nftId = IotaObj.TransactionHelper.resolveIdFromOutputId(outputIds[i])
                         }
+                        const unlockConditions = e?.output?.unlockConditions || []
+                        const isUnlock = IotaObj.checkUnLock(e)
+                        const lockData = unlockConditions.find((d) => d.type == 2) //TIMELOCK_UNLOCK_CONDITION_TYPE
+                        const expirationData = unlockConditions.find((d) => d.type == 3) // EXPIRATION_UNLOCK_CONDITION_TYPE
+                        const lockTime = lockData?.unixTime
+                        const expirationTime = expirationData?.unixTime
+                        const isExpiration = expirationTime && expirationTime <= new Date().getTime() / 1000
+                        let unlockAddress = expirationData?.returnAddress?.pubKeyHash || lockData?.returnAddress?.pubKeyHash
+                        unlockAddress = this.hexToBech32(unlockAddress)
                         shimmerRes.push({
                             ...info,
                             nftId: nftId,
                             outputId: outputIds[i],
+                            isUnlock,
+                            lockType: expirationData?.type || lockData?.type || 0,
+                            lockTime,
+                            isExpiration,
+                            expirationTime,
+                            unlockAddress,
+                            outputData: e,
                             createTime: e?.metadata?.milestoneTimestampBooked
                         })
                     } catch (error) {}
@@ -3657,7 +3676,9 @@ const IotaSDK = {
                 outputs,
                 {
                     tag: IotaObj.Converter.utf8ToBytes(tag),
-                    data: taggedData
+                    data: isLedger
+                        ? undefined
+                        : taggedData
                         ? IotaObj.Converter.utf8ToBytes(taggedData)
                         : IotaObj.Converter.utf8ToBytes(
                               JSON.stringify({
@@ -3677,7 +3698,7 @@ const IotaSDK = {
         }
     },
     async SMRNFTSend(fromInfo, toAddress, sendAmount, ext) {
-        const { seed, password, address } = fromInfo
+        const { seed, password, address, nodeId } = fromInfo
 
         const isLedger = fromInfo.type === 'ledger'
         let baseSeed = null
@@ -3685,7 +3706,7 @@ const IotaSDK = {
             baseSeed = this.getSeed(seed, password)
         }
 
-        let { nftId, taggedData, tag } = ext
+        let { nftId, taggedData, tag, isNftUnlock } = ext
         const nftIds = (nftId || '').split(',')
         tag = tag || 'TanglePay'
         let finishedIndex = 0
@@ -3699,6 +3720,8 @@ const IotaSDK = {
             }
             let zeroBalance = 0
             let finished = false
+            // let SMRFinished = false
+            // let outputSMRBalance = BigNumber(0) //
 
             const genAddressFunc = async (index) => {
                 const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
@@ -3717,7 +3740,7 @@ const IotaSDK = {
                     if (consumedBalance.isGreaterThan(sendAmount)) {
                         hasRemainder = true
                     }
-                    return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, hasRemainder)
+                    return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, false)
                 }
                 getHardwareBip32Path = (path) => {
                     return AppIota._validatePath(path)
@@ -3731,7 +3754,7 @@ const IotaSDK = {
                 const path = IotaObj.generateBip44Address(initialAddressState)
                 if (!isLedger) {
                     const addressSeed = baseSeed.generateSeedFromPath(new IotaObj.Bip32Path(path))
-                    const addressKeyPair = addressSeed.keyPair()
+                    addressKeyPair = addressSeed.keyPair()
                     const ed25519Address = new IotaObj.Ed25519Address(addressKeyPair.publicKey)
                     const addressBytes = ed25519Address.toAddress()
                     bech32Address = this.hexToBech32(addressBytes)
@@ -3745,14 +3768,19 @@ const IotaSDK = {
             }
             do {
                 const { addressOutputIds, addressKeyPair, bech32Address, hardwarePath } = await getAddressOutputIds()
+                console.log(addressOutputIds, addressKeyPair, '------')
                 if (addressOutputIds.items.length > 0) {
                     for (const outputId of addressOutputIds.items) {
                         const addressOutput = await this.client.output(outputId)
-                        const isUnlock = IotaObj.checkUnLock(addressOutput)
+                        console.log(addressOutput)
+                        let isUnlock = IotaObj.checkUnLock(addressOutput)
                         let outputNftId = addressOutput.output.nftId
                         if (outputNftId == 0) {
                             outputNftId = IotaObj.TransactionHelper.resolveIdFromOutputId(outputId)
                         }
+                        // if (isNftUnlock && nftIds.includes(outputNftId)) {
+                        //     isUnlock = true
+                        // }
                         if (
                             isUnlock &&
                             !addressOutput.metadata.isSpent &&
@@ -3856,7 +3884,9 @@ const IotaSDK = {
                 outputs,
                 {
                     tag: IotaObj.Converter.utf8ToBytes(tag),
-                    data: taggedData
+                    data: isLedger
+                        ? undefined
+                        : taggedData
                         ? IotaObj.Converter.utf8ToBytes(taggedData)
                         : IotaObj.Converter.utf8ToBytes(
                               JSON.stringify({
@@ -3867,7 +3897,8 @@ const IotaSDK = {
                               })
                           )
                 },
-                signatureFunc
+                signatureFunc,
+                getHardwareBip32Path
             )
             return res
         } catch (error) {
@@ -3955,6 +3986,17 @@ const IotaSDK = {
             )
         })
         return res
+    },
+    async SMRUNlockNft({ curWallet, nftId }) {
+        return await this.SMRNFTSend(curWallet, curWallet.address, 1, {
+            residue: 0,
+            realBalance: 0,
+            awaitStake: true,
+            decimal: 0,
+            mainBalance: 0,
+            nftId,
+            isNftUnlock: true
+        })
     }
     /**************** SMR end *******************/
 }
