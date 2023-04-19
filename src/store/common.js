@@ -889,7 +889,7 @@ export const useHandleUnlocalConditions = () => {
         const localDismissList = (await Base.getLocalData('nft.unlockList.dismiss')) || []
         localDismissList.push(nftId)
         unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.nftId))
-        // Base.setLocalData('nft.unlockList.dismiss', localDismissList)
+        Base.setLocalData('nft.unlockList.dismiss', localDismissList)
         dispatch({
             type: 'nft.unlockList',
             data: unlockConditionsList
