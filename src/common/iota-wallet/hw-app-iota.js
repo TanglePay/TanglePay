@@ -44,13 +44,7 @@ function s(e, r, t) {
         n && n(e)
     }
 }
-;(a.Empty = new a(0)),
-    (a.GeneratedAddress = new a(1)),
-    (a.ValidatedEssence = new a(2)),
-    (a.UserConfirmedEssence = new a(3)),
-    (a.Signatures = new a(4)),
-    (a.Locked = new a(5)),
-    (a.Unknown = new a(255))
+;(a.Empty = new a(0)), (a.GeneratedAddress = new a(1)), (a.ValidatedEssence = new a(2)), (a.UserConfirmedEssence = new a(3)), (a.Signatures = new a(4)), (a.Locked = new a(5)), (a.Unknown = new a(255))
 var c = (function () {
         function e(e) {
             e.decorateAppAPIMethods(this, ['getAppVersion', 'getAddress'], 'IOTA'), (this.transport = e)
@@ -111,8 +105,7 @@ var c = (function () {
                     throw new Error('"path" invalid: ' + e.message)
                 }
                 for (var o = 0; o < n.length; o++) 0 == n[o] && (n[o] = 2147483648)
-                if ((3 == n.length && (n = this._validatePath(e + "/0'/0'")), !n || 5 != n.length))
-                    throw new Error('"path" invalid: Invalid path length: ' + n.length)
+                if ((3 == n.length && (n = this._validatePath(e + "/0'/0'")), !n || 5 != n.length)) throw new Error('"path" invalid: Invalid path length: ' + n.length)
                 return t.log('validatePath end'), n
             }),
             (o._setAccount = function (e, r) {
@@ -136,7 +129,6 @@ var c = (function () {
                         default:
                             throw new Error('packable error: IncorrectP1P2')
                     }
-                    console.log('App mode=' + n, o)
                     return Promise.resolve(this._sendCommand(17, n, 0, o.buffer(), 1e4)).then(function () {
                         t.log('setting account done...')
                     })
@@ -147,12 +139,7 @@ var c = (function () {
             (o._getDataBufferState = function () {
                 try {
                     return Promise.resolve(this._sendCommand(128, 0, 0, void 0, 1e4)).then(function (e) {
-                        var r = i
-                            .default()
-                            .word16Ule('dataLength')
-                            .word8('dataType')
-                            .word8('dataBlockSize')
-                            .word8('dataBlockCount')
+                        var r = i.default().word16Ule('dataLength').word8('dataType').word8('dataBlockSize').word8('dataBlockCount')
                         r.setBuffer(e)
                         var t = r.fields
                         return {
@@ -198,12 +185,10 @@ var c = (function () {
                     var r = this
                     return Promise.resolve(r._clearDataBuffer()).then(function () {
                         return Promise.resolve(r._getDataBufferState()).then(function (t) {
-                            if (t.dataType != a.Empty.type)
-                                throw new Error("Command not Allowed: Ledger state is not 'Empty'")
+                            if (t.dataType != a.Empty.type) throw new Error("Command not Allowed: Ledger state is not 'Empty'")
                             var n = t.dataBlockSize,
                                 o = e.length / n
-                            if ((e.length % n != 0 && (o += 1), o > t.dataBlockCount))
-                                throw new Error('Invalid data passed to Ledger device')
+                            if ((e.length % n != 0 && (o += 1), o > t.dataBlockCount)) throw new Error('Invalid data passed to Ledger device')
                             var i = 0,
                                 s = h(
                                     function () {
@@ -230,10 +215,7 @@ var c = (function () {
             }),
             (o._writeDataBlock = function (e, r) {
                 try {
-                    return (
-                        t.log('writing data block...'),
-                        Promise.resolve(this._sendCommand(129, e, 0, r, 15e4)).then(function () {})
-                    )
+                    return t.log('writing data block...'), Promise.resolve(this._sendCommand(129, e, 0, r, 15e4)).then(function () {})
                 } catch (e) {
                     return Promise.reject(e)
                 }
@@ -257,11 +239,9 @@ var c = (function () {
                                     return a++
                                 },
                                 function () {
-                                    return Promise.resolve(e._readDataBlock({ block: a, size: r.dataBlockSize })).then(
-                                        function (e) {
-                                            o.set(e, i), (i += e.length)
-                                        }
-                                    )
+                                    return Promise.resolve(e._readDataBlock({ block: a, size: r.dataBlockSize })).then(function (e) {
+                                        o.set(e, i), (i += e.length)
+                                    })
                                 }
                             )
                         return s && s.then ? s.then(t) : t()
@@ -314,11 +294,7 @@ var c = (function () {
             }),
             (o._prepareSigning = function (e, r, t, n) {
                 try {
-                    var o = i
-                        .default()
-                        .word16Ule('remainder_index')
-                        .word32Ule('remainder_bip32_index')
-                        .word32Ule('remainder_bip32_change')
+                    var o = i.default().word16Ule('remainder_index').word32Ule('remainder_bip32_index').word32Ule('remainder_bip32_change')
                     return (
                         o.allocate(),
                         (o.fields.remainder_index = r),
@@ -326,6 +302,13 @@ var c = (function () {
                         (o.fields.remainder_bip32_change = n),
                         Promise.resolve(this._sendCommand(160, 1, e, o.buffer(), 15e4)).then(function () {})
                     )
+                } catch (e) {
+                    return Promise.reject(e)
+                }
+            }),
+            (o._prepareBlindSigning = function () {
+                try {
+                    return Promise.resolve(this._sendCommand(0x91, 0, 0, undefined, 15e4)).then(function () {})
                 } catch (e) {
                     return Promise.reject(e)
                 }
@@ -359,16 +342,11 @@ var c = (function () {
                             t = i.default()
                         switch (r) {
                             case 0:
-                                    t
-                                        .word8('signature_type')
-                                        .word8('unknown')
-                                        .array('ed25519_public_key', 32, 'word8')
-                                        .array('ed25519_signature', 64, 'word8'),
-                                    void t.setBuffer(e)
-                                break;
+                                t.word8('signature_type').word8('unknown').array('ed25519_public_key', 32, 'word8').array('ed25519_signature', 64, 'word8'), void t.setBuffer(e)
+                                break
                             case 1:
                                 t.word8('signature_type').array('reference', 2, 'word8'), void t.setBuffer(e)
-                                break;
+                                break
                             default:
                                 throw new Error('packable error: Invalid variant')
                         }
@@ -381,14 +359,7 @@ var c = (function () {
             (o._getAppConfig = function () {
                 try {
                     return Promise.resolve(this._sendCommand(16, 0, 0, void 0, 1e4)).then(function (e) {
-                        var r = i
-                            .default()
-                            .word8('app_version_major')
-                            .word8('app_version_minor')
-                            .word8('app_version_patch')
-                            .word8('app_flags')
-                            .word8('device')
-                            .word8('debug')
+                        var r = i.default().word8('app_version_major').word8('app_version_minor').word8('app_version_patch').word8('app_flags').word8('device').word8('debug')
                         r.setBuffer(e)
                         var t = r.fields
                         return {
