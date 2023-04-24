@@ -239,6 +239,7 @@ const IotaSDK = {
         } else {
             IotaObj = Iota
         }
+        IotaSDK.IotaObj = IotaObj;
         this.explorerApiUrl = this.nodes.find((e) => e.id == nodeId)?.explorerApiUrl || 'https://explorer-api.iota.org'
     },
     // type:1.iota, 2.web3, 3.shimmer
@@ -3819,7 +3820,7 @@ const IotaSDK = {
                                 // ...addressOutput.output,
                                 immutableFeatures: addressOutput.output.immutableFeatures,
                                 address: `0x${this.bech32ToHex(toAddress)}`,
-                                nftId: addressOutput.output.nftId,
+                                nftId: outputNftId,
                                 addressType: 0, // NFT_ADDRESS_TYPE
                                 amount: outputAmount,
                                 type: 6,
