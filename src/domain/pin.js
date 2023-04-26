@@ -1,6 +1,8 @@
 import { Base } from "../common";
 import { createReadOnlyProxy } from "./util";
 import { IotaSDK } from "../common";
+import { updateState as updateState_, getStorage } from "./util";
+const domainName = 'pin';
 const initState = {
     inited:false,
     walletCount:0,
@@ -20,20 +22,24 @@ const _context = {
 }  
 export const context = createReadOnlyProxy(_context);
 
-const updateState = (delta) => {
-    console.log('state before update', _context.state);
-    _context.state = createReadOnlyProxy(Object.assign({}, _context.state, delta));
-    console.log('state after update', _context.state);
+const updateState = (delta, isPersist = true) => {
+    updateState_(domainName, _context,delta,isPersist);
 }
 
 export const init = async (walletCount) => {
-    const pinHash = await Base.getSensitiveInfo('pin.hash')
-    const isPinSet = pinHash ? true : false;
-    updateState({
-        inited:true,
-        isPinSet,
-        walletCount,
-    });
+    const storage = await getStorage(domainName);
+    let delta = undefined;
+    if (storage) delta = JSON.parse(storage);
+    if (!delta) {
+        const pinHash = await Base.getSensitiveInfo('pin.hash')
+        const isPinSet = pinHash ? true : false;
+        delta = {
+            inited:true,
+            isPinSet,
+        }
+    }
+    delta.walletCount = walletCount;
+    updateState(delta);
     if (initWaits.length > 0) {
         initWaits.forEach((resolve) => {
             resolve();
@@ -156,7 +162,6 @@ export const markWalletPasswordEnabled = (id) => {
 export const markWalletPasswordDisabled = (id) => {
     const [k,v] = IotaSDK.getKeyAndValueOfPasswordSwitch(id)
     const storageKey = `pin.walletenable.${k}`
-    console.log('mark wallet password disabled', storageKey, v)
     Base.setLocalData(storageKey, 'deleted')
 }
 

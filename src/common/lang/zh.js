@@ -102,7 +102,7 @@ const ZH = {
 
         unopen: '暫未開放',
         testBackup: '助記詞驗證',
-
+        checkPin: "您輸入的PIN碼不符，請再試一次。",
         checkPasswrod: '兩次輸入的密碼不一致，請重新輸入',
         mnemonicWordError: '助記詞中包含無法識別的單詞{word}',
         mnemonicOtherError: '助記詞錯誤，請重新輸入',
