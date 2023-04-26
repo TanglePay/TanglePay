@@ -104,6 +104,7 @@ This data has been aggregated to meet the requirements of EU Regulation 2016/679
         unopen: 'Not yet available',
 
         testBackup: 'Test your backup',
+        checkPin: 'The PIN you entered do not match, please try again.',
         checkPasswrod: 'The passwords you entered do not match, please try again.',
         mnemonicWordError: 'The mnemonic contains a word not in the wordlist {word}',
         mnemonicOtherError: 'Invalid mnemonic. Please enter the correct mnemonic phrase.',
