@@ -15,12 +15,16 @@ paths.forEach((e) => {
     const toPath = e.path.replace('src', `lib/${env}`).replace(`.${env}`, '')
     fs.copy(e.path, toPath, () => {})
 })
-// paths.forEach((e) => {
-//     const toPath = e.path.replace('src', `../TanglePay-Mobile/node_modules/tanglepay/lib/${env}`).replace(`.${env}`, '')
-//     fs.copy(e.path, toPath, () => {})
-// })
 
 paths.forEach((e) => {
     const toPath = e.path.replace('src', `../TanglePay-Extension/node_modules/tanglepay/lib/${env}`).replace(`.${env}`, '')
     fs.copy(e.path, toPath, () => {})
 })
+/*
+paths.forEach((e) => {
+     const toPath = e.path
+         .replace('src', `../TanglePay-Extension/node_modules/tanglepay/lib/${env}`)
+         .replace(`.${env}`, '')
+     fs.copy(e.path, toPath, () => {})
+ })
+ */
