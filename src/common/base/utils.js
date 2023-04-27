@@ -51,6 +51,10 @@ const Utils = {
         }
         return true
     },
+    checkPin(pin) {
+        const regex = /^\d{6}$/;
+        return regex.test(pin);
+    },
     getIcon(token) {
         return `${API_URL}/icon/${token}.png`
     },
@@ -64,6 +68,20 @@ const Utils = {
     },
     removeEvt(key) {
         PubSub.unsubscribe(key)
+    },
+    getTimeStr(unixTime, nowTime) {
+        let timeStr = ''
+        if (unixTime) {
+            const time = unixTime - nowTime
+            const d = parseInt(time / 60 / 60 / 24)
+            const h = parseInt((time % (3600 * 24)) / 3600)
+            if (d == 0 && h == 0) {
+                timeStr = `${parseInt((time % 3600) / 60)}min`
+            } else {
+                timeStr = `${d}D ${h}H`
+            }
+        }
+        return timeStr
     }
 }
 
