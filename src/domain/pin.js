@@ -1,7 +1,8 @@
 import { Base } from "../common";
 import { createReadOnlyProxy } from "./util";
 import { IotaSDK } from "../common";
-import { updateState as updateState_, getStorage } from "./util";
+import { updateState as updateState_, getStorage, setStorageFacade as setStorageFacade_ } from "./util";
+export const setStorageFacade = setStorageFacade_;
 const domainName = 'pin';
 const initState = {
     inited:false,
@@ -31,7 +32,7 @@ export const init = async (walletCount) => {
     let delta = undefined;
     if (storage) {
         delta = JSON.parse(storage);
-        delete delta.unlocked
+        delete delta.unlocked;
     }
     if (!delta) {
         const pinHash = await Base.getSensitiveInfo('pin.hash')
@@ -43,6 +44,7 @@ export const init = async (walletCount) => {
     }
     delta.walletCount = walletCount;
     updateState(delta);
+    getIsUnlocked(); // handle timeout case
     if (initWaits.length > 0) {
         initWaits.forEach((resolve) => {
             resolve();
