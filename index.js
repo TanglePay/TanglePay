@@ -16,7 +16,7 @@ paths.forEach((e) => {
     fs.copy(e.path, toPath, () => {})
 })
 
-/*
+
 
 paths.forEach((e) => {
     const toPath = e.path.replace('src', `../TanglePay-Mobile/node_modules/tanglepay/lib/${env}`).replace(`.${env}`, '')
@@ -29,4 +29,4 @@ paths.forEach((e) => {
          .replace(`.${env}`, '')
      fs.copy(e.path, toPath, () => {})
  })
-*/
+
