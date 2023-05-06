@@ -32,7 +32,6 @@ export const init = async (walletCount) => {
     let delta = undefined;
     if (storage) {
         delta = JSON.parse(storage);
-        delete delta.unlocked;
     }
     if (!delta) {
         const pinHash = await Base.getSensitiveInfo('pin.hash')
