@@ -338,7 +338,7 @@ var c = (function () {
             (o._signSingle = function (e) {
                 try {
                     return Promise.resolve(this._sendCommand(164, e, 0, void 0, 1e4)).then(function (e) {
-                        var r = e.at(0),
+                        var r = e.toJSON().data[0],
                             t = i.default()
                         switch (r) {
                             case 0:
