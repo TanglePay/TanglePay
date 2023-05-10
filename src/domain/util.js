@@ -39,7 +39,7 @@ export const updateState = (name, _context,delta, isPersist = false) => {
         const storageKey = `state.${name}`;
         const json = JSON.stringify(_context.state);
         const encrypted = IotaSDK.encryptSeed(json, storageFacade.salt);
-        console.log('storage set',key,json)
+        console.log('storage set',storageKey,json)
         storageFacade.set(storageKey, encrypted);
       }, 0);
     }
