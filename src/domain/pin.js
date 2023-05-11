@@ -133,7 +133,16 @@ export const ensureInited = async () => {
 export const checkPin = async (pin) => {
     return await IotaSDK.checkPin(pin);
 }
-
+export const resetPin = async (oldPin, newPin, editWallet) => {
+    let walletList = await IotaSDK.getWalletList()
+    walletList = walletList.filter(o=>o.type != 'ledger')
+    const isPasswordEnabledList = await Promise.all(walletList.map(o=>checkWalletIsPasswordEnabled(o.id)))
+    walletList = walletList.filter((o,i)=>!isPasswordEnabledList[i])
+    for (const data of walletList) {
+        editWallet(data.id, {...data, password: newPin, oldPassword: oldPin}, true)
+    }
+    await setPin(newPin)
+}
 export const setPin = async (pin) => {
     await IotaSDK.setPin(pin)
     updateState({
