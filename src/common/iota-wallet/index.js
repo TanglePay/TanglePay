@@ -1680,6 +1680,13 @@ const IotaSDK = {
         }
         return Base.transport
     },
+    handleError(error) {
+        let errStr = error.toString()
+        if (/this\.init is not a function\./.test(errStr)) {
+            errStr = 'out of gas'
+        }
+        return errStr
+    },
     async send(fromInfo, toAddress, sendAmount, ext) {
         if (!this.client) {
             return Base.globalToast.error(I18n.t('user.nodeError') + ':' + (this?.curNode?.curNodeKey || this?.curNode?.name))
@@ -1781,7 +1788,7 @@ const IotaSDK = {
                     //     })
                     // } else {
                     //     this._ethReSend = 0
-                    throw error
+                    throw this.handleError(error)
                     // }
                 }
                 traceToken = token
@@ -1849,7 +1856,7 @@ const IotaSDK = {
                     //     })
                     // } else {
                     //     this._ethReSend = 0
-                    throw error
+                    throw this.handleError(error)
                     // }
                 }
                 traceToken = nodeInfo.token
@@ -1976,6 +1983,7 @@ const IotaSDK = {
                         getHardwareBip32Path
                     )
                 } catch (error) {
+                    let errStr
                     throw error
                 }
             }
