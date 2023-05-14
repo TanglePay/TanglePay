@@ -94,9 +94,9 @@ export const reducer = (state, action) => {
             let localList = list.map((e) => {
                 return { ...e, password: e.password ? `password_${e.address}` : undefined }
             })
-            setTimeout(()=>{
+            setTimeout(() => {
                 init(localList.length).catch((e) => console.log(e))
-            },100)
+            }, 100)
             const saveFunc = Base.isBrowser ? 'setLocalData' : 'setSensitiveInfo'
             Base[saveFunc]('common.walletsList', localList)
             return { ...state, [type]: localList }
@@ -125,7 +125,7 @@ export const reducer = (state, action) => {
         case 'curPwd':
             if (Base.isBrowser) {
             } else {
-                Base.setLocalData('common.curPwd', !!data)
+                // Base.setLocalData('common.curPwd', !!data)
             }
             break
     }
