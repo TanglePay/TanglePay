@@ -1,4 +1,4 @@
-import { Converter } from '@iota/util.js-next'
+import { Converter, WriteStream } from '@iota/util.js-next'
 import { Bip32Path, Bip39, Ed25519 } from '@iota/crypto.js-next'
 import {
     Bech32Helper,
@@ -17,7 +17,9 @@ import {
     TransactionHelper,
     checkOutput,
     checkUnLock,
-    calculateInputs
+    calculateInputs,
+    serializeTransactionEssence,
+    buildTransactionPayload
 } from '@iota/iota.js-next/dist/cjs/index-node'
 import { MqttClient } from '@iota/mqtt.js-next/dist/cjs/index-node'
 
@@ -43,5 +45,8 @@ export default {
     TransactionHelper,
     checkOutput,
     checkUnLock,
-    calculateInputs
+    calculateInputs,
+    WriteStream,
+    serializeTransactionEssence,
+    buildTransactionPayload
 }
