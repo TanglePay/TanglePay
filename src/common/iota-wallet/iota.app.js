@@ -8,7 +8,8 @@ import {
     generateBip44Address,
     SingleNodeClient,
     sendMultiple,
-    addressBalance
+    addressBalance,
+    buildTransactionPayload
 } from '@iota/iota.js/dist/cjs/index-node'
 
 import { MqttClient } from '@iota/mqtt.js/dist/cjs/index-node'
@@ -26,5 +27,6 @@ export default {
     sendMultiple,
     Ed25519,
     addressBalance,
-    MqttClient
+    MqttClient,
+    buildTransactionPayload
 }
