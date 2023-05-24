@@ -25,9 +25,10 @@ export const createReadOnlyProxy = (target) => {
   }
 let persistHandle = null;
 let storageFacade = undefined
-export const setStorageFacade = (storageFacade_) => {
+export const setStorageFacade = (storageFacade_, uuid='') => {
   storageFacade = storageFacade_;
-  storageFacade.salt = getCurrentDateString()
+  storageFacade.salt = uuid + '-' + getCurrentDateString()
+  console.log('setStorageFacade salt',storageFacade.salt)
 }
 export const updateState = (name, _context,delta, isPersist = false) => {
     console.log('state before update', _context.state);
