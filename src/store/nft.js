@@ -48,16 +48,14 @@ export const useGetNftList = () => {
     useEffect(async () => {
         addressRef.current = curWallet?.address
         const localList = (await Base.getLocalData(`${curWallet?.address}.nft.list`)) || []
-        if (localList?.length) {
-            dispatch({
-                type: 'nft.isRequestNft',
-                data: true
-            })
-            dispatch({
-                type: 'nft.list',
-                data: localList
-            })
-        }
+        dispatch({
+            type: 'nft.isRequestNft',
+            data: !!localList?.length
+        })
+        dispatch({
+            type: 'nft.list',
+            data: localList || []
+        })
     }, [curWallet?.address])
     useEffect(() => {
         const request = async (address) => {
@@ -76,10 +74,10 @@ export const useGetNftList = () => {
                     data: (await Base.getLocalData(`${address}.nft.lockList`)) || []
                 })
                 if (!config?.list?.length) {
-                    dispatch({
-                        type: 'nft.list',
-                        data: []
-                    })
+                    // dispatch({
+                    //     type: 'nft.list',
+                    //     data: []
+                    // })
                     return
                 }
                 const heroLevelDic = config?.heroLevel
@@ -268,7 +266,7 @@ export const useGetNftList = () => {
                     obj.list = list.filter((e) => e.lockType != 3 && !(e.lockType == 2 && !e.isUnlock))
                 })
                 configList = configList.filter((e) => e.link || e.list.length > 0)
-                const localDismissList = await Base.getLocalData('nft.unlockList.dismiss') || []
+                const localDismissList = (await Base.getLocalData('nft.unlockList.dismiss')) || []
                 expirationList = expirationList.filter((e) => !localDismissList.includes(e.nftId))
                 dispatch({
                     type: 'nft.unlockList',
