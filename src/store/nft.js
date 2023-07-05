@@ -190,12 +190,19 @@ export const useGetNftList = () => {
                 })
                 // const bigAssets = JSON.parse(JSON.stringify(config.bigAssets || []));
                 const ipfsMediaObj = {}
-                const iotaBeeCollectionId = configList.find((e) => e.isIotaBeeChristmas)?.space
-                const iotaBeeIpfs = configList.find((e) => e.isIotaBeeChristmas)?.ipfs || []
+                // const iotaBeeCollectionId = configList.find((e) => e.isIotaBeeChristmas)?.space
+                // const iotaBeeIpfs = configList.find((e) => e.isIotaBeeChristmas)?.ipfs || []
+                // const ipfs =
                 res.forEach((e) => {
                     let { space, collectionId, media, ipfsMedia, isIpfs } = e
-                    if (iotaBeeCollectionId === collectionId) {
-                        const origin = iotaBeeIpfs[parseInt(Math.random() * iotaBeeIpfs.length)]
+                    // get item
+                    let configItem = configList.find((e) => e.space == space || (e.collectionIds || []).includes(collectionId))
+                    if (!configItem) {
+                        configItem = configList.find((e) => e.space == '0')
+                    }
+                    const ifps = configItem?.ipfs || []
+                    if (ifps.length > 0) {
+                        const origin = ifps[parseInt(Math.random() * ifps.length)]
                         let [http, str] = (e.uri || '').split('//')
                         str = str.split('/')
                         str[0] = origin.split('//')[1]
@@ -204,6 +211,17 @@ export const useGetNftList = () => {
                         e.ipfsMedia = newUri
                         e.media = e.ipfsMedia
                     }
+
+                    // if (iotaBeeCollectionId === collectionId) {
+                    //     const origin = iotaBeeIpfs[parseInt(Math.random() * iotaBeeIpfs.length)]
+                    //     let [http, str] = (e.uri || '').split('//')
+                    //     str = str.split('/')
+                    //     str[0] = origin.split('//')[1]
+                    //     const newUri = http + '//' + str.join('/')
+                    //     e.uri = newUri
+                    //     e.ipfsMedia = newUri
+                    //     e.media = e.ipfsMedia
+                    // }
                     if (!isIpfs) {
                         if (!ipfsMediaObj[ipfsMedia]) {
                             ipfsMediaObj[ipfsMedia] = {
@@ -212,14 +230,14 @@ export const useGetNftList = () => {
                             }
                         }
                     }
-                    let configItem = configList.find((e) => e.space == space || (e.collectionIds || []).includes(collectionId))
-                    if (!configItem) {
-                        if (iotaBeeCollectionId && iotaBeeCollectionId === collectionId) {
-                            configItem = configList.find((e) => e.space == iotaBeeCollectionId)
-                        } else {
-                            configItem = configList.find((e) => e.space == '0')
-                        }
-                    }
+                    // let configItem = configList.find((e) => e.space == space || (e.collectionIds || []).includes(collectionId))
+                    // if (!configItem) {
+                    //     if (iotaBeeCollectionId && iotaBeeCollectionId === collectionId) {
+                    //         configItem = configList.find((e) => e.space == iotaBeeCollectionId)
+                    //     } else {
+                    //         configItem = configList.find((e) => e.space == '0')
+                    //     }
+                    // }
                     configItem.list.push({
                         ...e,
                         heroLevel: heroLevelDic[e.collectionId] || ''
