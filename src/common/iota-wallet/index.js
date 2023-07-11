@@ -1953,6 +1953,9 @@ const IotaSDK = {
                     Base.globalToast.hideLoading()
                 }, 2000)
             }
+            setTimeout(() => {
+                this.refreshAssets()
+            }, 2000)
             return { ...res, messageId: logData.transactionHash }
         } else {
             if (this.curNode?.bech32HRP) {
