@@ -1852,7 +1852,7 @@ const IotaSDK = {
                     // }
                 }
                 traceToken = token
-                Trace.transaction('pay', res.transactionHash, address, toAddress, this.getNumberStr(sendAmount), nodeId, token)
+                Trace.transaction('pay', res.transactionHash, address, toAddress, this.getNumberStr(sendAmount), nodeId, token, ext.domain)
             } else {
                 const chainId = await eth.getChainId()
 
@@ -1920,7 +1920,7 @@ const IotaSDK = {
                     // }
                 }
                 traceToken = nodeInfo.token
-                Trace.transaction('pay', res.transactionHash, address, toAddress, this.getNumberStr(sendAmount), nodeId, nodeInfo.token)
+                Trace.transaction('pay', res.transactionHash, address, toAddress, this.getNumberStr(sendAmount), nodeId, nodeInfo.token, ext.domain)
             }
             const logInfo = res?.logs?.[0]
             const topics = logInfo?.topics || []
@@ -2067,7 +2067,7 @@ const IotaSDK = {
             const traceToken = tokenId ? token : nftId ? nftId : nodeInfo.token
             actionTime = new Date().getTime() - actionTime
             try {
-                Trace.transaction('pay', messageId, address, toAddress, sendAmount, nodeId, traceToken)
+                Trace.transaction('pay', messageId, address, toAddress, sendAmount, nodeId, traceToken, ext.domain)
                 Trace.actionLog(40, address, actionTime, Base.curLang, nodeId, traceToken)
             } catch (error) {}
             // restake start
