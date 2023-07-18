@@ -1,5 +1,6 @@
 import { Base } from "../common";
 import { createReadOnlyProxy } from "./util";
+import { DAY } from './misc'
 import { IotaSDK } from "../common";
 import { updateState as updateState_, getStorage, setStorageFacade as setStorageFacade_ } from "./util";
 export const setStorageFacade = setStorageFacade_;
@@ -84,7 +85,7 @@ export const canTryUnlock = () => {
 
 
 const calculateNewUnlockValidUntil = () => {
-    return Date.now() + 30 * 60 * 1000;
+    return Date.now() + DAY;
 }
 
 
