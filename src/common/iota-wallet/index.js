@@ -1955,7 +1955,7 @@ const IotaSDK = {
             }
             setTimeout(() => {
                 this.refreshAssets()
-            }, 2000)
+            }, 5000)
             return { ...res, messageId: logData.transactionHash }
         } else {
             if (this.curNode?.bech32HRP) {
@@ -2221,12 +2221,16 @@ const IotaSDK = {
     async blockData(blockId) {
         let res = await Base.getLocalData(`search.${blockId}`)
         if (!res) {
-            res = await this.requestQueue([
-                Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${blockId}`, {
-                    isHandlerError: true
-                })
-            ])
-            await Base.setLocalData(`search.${blockId}`, res)
+            try {
+                res = await this.requestQueue([
+                    Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${blockId}`, {
+                        isHandlerError: true
+                    })
+                ])
+                await Base.setLocalData(`search.${blockId}`, res)
+            } catch (error) {
+                return null
+            }
         }
         return res
     },
@@ -2234,13 +2238,17 @@ const IotaSDK = {
     async outputData(outputId) {
         let res = await Base.getLocalData(`outputId.${outputId}`)
         if (!res) {
-            res = await this.requestQueue([
-                // this.client.output(outputId),
-                Http.GET(`${this.explorerApiUrl}/output/${this.curNode.network}/${outputId}`, {
-                    isHandlerError: true
-                })
-            ])
-            await Base.setLocalData(`outputId.${outputId}`, res)
+            try {
+                res = await this.requestQueue([
+                    // this.client.output(outputId),
+                    Http.GET(`${this.explorerApiUrl}/output/${this.curNode.network}/${outputId}`, {
+                        isHandlerError: true
+                    })
+                ])
+                await Base.setLocalData(`outputId.${outputId}`, res)
+            } catch (error) {
+                return null
+            }
         }
         return res?.output ? res?.output : res
     },
@@ -2275,13 +2283,17 @@ const IotaSDK = {
     async transactionIncludedMessage(transactionId) {
         let res = await Base.getLocalData(`search.${transactionId}`)
         if (!res) {
-            res = await this.requestQueue([
-                // this.client.transactionIncludedMessage(transactionId),
-                Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${transactionId}`, {
-                    isHandlerError: true
-                })
-            ])
-            await Base.setLocalData(`search.${transactionId}`, res)
+            try {
+                res = await this.requestQueue([
+                    // this.client.transactionIncludedMessage(transactionId),
+                    Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${transactionId}`, {
+                        isHandlerError: true
+                    })
+                ])
+                await Base.setLocalData(`search.${transactionId}`, res)
+            } catch (error) {
+                return null
+            }
         }
         return res?.message?.payload ? res?.message : res
     },
@@ -2293,7 +2305,9 @@ const IotaSDK = {
                 const res = await Promise.all(a.map((e) => request(e)))
                 datas = [...datas, ...res]
             }
-        } catch (error) {}
+        } catch (error) {
+            console.log('batchRequest---error---', error)
+        }
         return datas
     },
     async getHisList(outputList, { address, nodeId }, smrOutputIds) {
@@ -2317,6 +2331,7 @@ const IotaSDK = {
                     smrOutputIds.map((e) => e.outputId),
                     (arg) => this.outputData(arg)
                 )
+                outputDatas = outputDatas.filter((e) => !!e)
                 let blockDatas = await this.batchRequest(
                     outputDatas.map((e) => (!e.metadata?.isSpent ? e.metadata.blockId : e.metadata?.transactionId)),
                     (arg) => this.blockData(arg)
@@ -2361,7 +2376,8 @@ const IotaSDK = {
                 })
                 allList = allList.filter((e) => !!e)
             } else {
-                const outputDatas = await this.batchRequest(outputList, (arg) => this.outputData(arg))
+                let outputDatas = await this.batchRequest(outputList, (arg) => this.outputData(arg))
+                outputDatas = outputDatas.filter((e) => !!e)
                 let metadataList = await this.batchRequest(
                     outputDatas.map((e) => e.messageId),
                     (arg) => this.messageMetadata(arg)
