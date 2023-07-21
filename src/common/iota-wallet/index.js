@@ -153,6 +153,7 @@ const initNodeList = [
         sendTokenV2: true
     },
     { ...shimmerEvmTestnet },
+    { ...iotaTestnet },
     // {
     //     id: 5,
     //     url: 'https://evm.wasp.sc.iota.org/',
