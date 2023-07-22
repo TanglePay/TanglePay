@@ -70,8 +70,8 @@ const iotaTestnet = {
 }
 const shimmerEvmTestnet = {
     id: 6,
-    url: 'https://api.sc.testnet.shimmer.network/evm/jsonrpc',
-    explorer: 'https://explorer.shimmer.network/testnet',
+    url: 'https://json-rpc.evm.testnet.shimmer.network',
+    explorer: 'https://explorer.evm.testnet.shimmer.network/',
     name: 'Shimmer Beta',
     enName: 'Shimmer Beta',
     deName: 'Shimmer Beta',
@@ -153,6 +153,7 @@ const initNodeList = [
         sendTokenV2: true
     },
     { ...shimmerEvmTestnet },
+    { ...iotaTestnet },
     // {
     //     id: 5,
     //     url: 'https://evm.wasp.sc.iota.org/',
@@ -220,6 +221,24 @@ const initNodeList = [
         contractList: [],
         decimal: 18,
         gasLimit: 21000
+    },
+    {
+        id: 9,
+        url: 'https://mainnet.infura.io/v3/0964612cb7274741bd196b21444a49ea',
+        explorer: 'https://etherscan.io',
+        name: 'ETH',
+        enName: 'ETH',
+        deName: 'ETH',
+        zhName: 'ETH',
+        type: 2,
+        network: 'eth',
+        bech32HRP: 'eth',
+        token: 'ETH',
+        filterMenuList: ['staking'],
+        filterAssetsList: ['stake'],
+        contractList: [],
+        decimal: 18,
+        gasLimit: 21000
     }
 ]
 const IotaSDK = {
@@ -239,7 +258,7 @@ const IotaSDK = {
         } else {
             IotaObj = Iota
         }
-        IotaSDK.IotaObj = IotaObj;
+        IotaSDK.IotaObj = IotaObj
         this.explorerApiUrl = this.nodes.find((e) => e.id == nodeId)?.explorerApiUrl || 'https://explorer-api.iota.org'
     },
     // type:1.iota, 2.web3, 3.shimmer
@@ -296,9 +315,8 @@ const IotaSDK = {
                     _nodes.push(e)
                 }
                 ;(e.contractList || []).forEach((d) => {
-                    if (d.isShowZero) {
-                        this._contracAssetsShowDic[d.contract] = true
-                    }
+                    d.isSystem = true
+                    this._contracAssetsShowDic[d.contract] = d.isShowZero
                 })
             })
 
@@ -309,7 +327,7 @@ const IotaSDK = {
             if (shimmerSupport == 1 && !_nodes.find((e) => e.id == 101)) {
                 _nodes.push(shimmerTestnet)
             }
-            if (iotaSupport == 1 && !_nodes.find((e) => e.id == 2)) {
+            if (parseInt(iotaSupport) !== 0 && !_nodes.find((e) => e.id == 2)) {
                 _nodes.push(iotaTestnet)
             }
             if (polyganSupport == 1 && !_nodes.find((e) => e.id == 8)) {
@@ -447,7 +465,7 @@ const IotaSDK = {
                             eContractList.push(c)
                         }
                     })
-                    e.contractList = eContractList
+                    e.contractList = eContractList.filter((c) => !c.isDel)
                 }
             })
 
@@ -489,7 +507,6 @@ const IotaSDK = {
             }
             if (this.isWeb3Node) {
                 this.client = new Web3(curNode.url)
-                window.client = this.client
                 this.info = this.client
                 if (this.client?.eth) {
                     this.client.eth.getChainId().catch(() => {
@@ -808,16 +825,15 @@ const IotaSDK = {
             throw error
         }
     },
-    async getHardwareIotaSign(nodeId, essenceHash, inputs, hasRemainder, isSMRToken = false) {
+    async getHardwareIotaSign(nodeId, essenceHash, inputs, hasRemainder, isBinaryEssence = false) {
         const transport = await this.getTransport()
         const appIota = new AppIota(transport)
         const [pathCoinType, cointType] = this.getHardwareCoinParams(nodeId, 0)
         const arr = AppIota._validatePath(`2c'/${pathCoinType}'/0'/0'/0'`)
-        console.log(nodeId, essenceHash, inputs, hasRemainder, isSMRToken)
         await appIota._setAccount(arr[2], { id: cointType })
-        if (!isSMRToken) {
+        if (!isBinaryEssence) {
             await appIota._writeDataBuffer(Buffer.from(essenceHash))
-            await appIota._prepareSigning(1, hasRemainder ? 1 : 0, 0x80000000, 0x80000000)
+            await appIota._prepareSigning(hasRemainder ? 1 : 0, hasRemainder ? 1 : 0, 0x80000000, 0x80000000)
         } else {
             await appIota._writeDataBuffer(Buffer.from(essenceHash))
             await appIota._prepareBlindSigning()
@@ -849,29 +865,44 @@ const IotaSDK = {
         const addressToUnlock = {}
         for (let i = 0; i < inputs.length; i++) {
             const response = await appIota._signSingle(i)
-            const publicKey = deviceResponseToUint8Array(response.fields.ed25519_public_key, ED25519_PUBLIC_KEY_LENGTH)
-            let hexInputAddressPublic = arrayToHex(publicKey)
-            if (addressToUnlock[hexInputAddressPublic]) {
+            console.log(response, '-----')
+            if (!response.fields.ed25519_public_key) {
                 unlocks.push({
                     type: 1, //REFERENCE_UNLOCK_TYPE
-                    reference: addressToUnlock[hexInputAddressPublic].unlockIndex
+                    reference: i
                 })
             } else {
-                // parse device response to a hexadecimal string
-                const signature = deviceResponseToUint8Array(response.fields.ed25519_signature, ED25519_SIGNATURE_LENGTH)
-                unlocks.push({
-                    type: 0, // SIGNATURE_UNLOCK_TYPE
-                    signature: {
-                        type: 0, // ED25519_SIGNATURE_TYPE
-                        publicKey: hexInputAddressPublic,
-                        signature: arrayToHex(signature)
+                const publicKey = deviceResponseToUint8Array(response.fields.ed25519_public_key, ED25519_PUBLIC_KEY_LENGTH)
+                let hexInputAddressPublic = arrayToHex(publicKey)
+                if (addressToUnlock[hexInputAddressPublic]) {
+                    unlocks.push({
+                        type: 1, //REFERENCE_UNLOCK_TYPE
+                        reference: addressToUnlock[hexInputAddressPublic].unlockIndex
+                    })
+                } else {
+                    // parse device response to a hexadecimal string
+                    const signature = deviceResponseToUint8Array(response.fields.ed25519_signature, ED25519_SIGNATURE_LENGTH)
+                    unlocks.push({
+                        type: 0, // SIGNATURE_UNLOCK_TYPE
+                        signature: {
+                            type: 0, // ED25519_SIGNATURE_TYPE
+                            publicKey: hexInputAddressPublic,
+                            signature: arrayToHex(signature)
+                        }
+                    })
+                    addressToUnlock[hexInputAddressPublic] = {
+                        unlockIndex: unlocks.length - 1
                     }
-                })
-                addressToUnlock[hexInputAddressPublic] = {
-                    unlockIndex: unlocks.length - 1
                 }
             }
         }
+        unlocks.forEach((e) => {
+            if (!e.signature) {
+                if (!unlocks[e.reference]?.signature) {
+                    e.reference = unlocks.findIndex((d) => !!d.signature)
+                }
+            }
+        })
         return unlocks
     },
     async getHardwareAddressList(current = 1, pageSize = 5) {
@@ -943,11 +974,15 @@ const IotaSDK = {
         } else {
             list = (await Base.getSensitiveInfo(key)) || []
         }
-        list = list.filter((d) => {
+        list = list.map((d) => {
+            let isHideTest = false
             if (iotaTestnet.id == d.nodeId || shimmerTestnet.id == d.nodeId || polyganTestnet.id == d.nodeId) {
-                return this.nodes.find((e) => e.id == d.nodeId)
+                isHideTest = !this.nodes.find((e) => e.id == d.nodeId)
             }
-            return true
+            return {
+                ...d,
+                isHideTest
+            }
         })
         return list
     },
@@ -1250,80 +1285,76 @@ const IotaSDK = {
         return addressKeyPair
     },
     // pin related
-    async checkPin(pin){
-        const tasks = [
-            Base.getSensitiveInfo('pin.secret'),
-            Base.getSensitiveInfo('pin.hash')
-        ]
+    async checkPin(pin) {
+        const tasks = [Base.getSensitiveInfo('pin.secret'), Base.getSensitiveInfo('pin.hash')]
         try {
-            const [encrptedSecret,hashStored] = await Promise.all(tasks);
-            const secret = this.decryptSeed(encrptedSecret,pin, true);
-            const hash = CryptoJS.SHA256(secret).toString(CryptoJS.enc.Hex);
-            return hash == hashStored;
+            const [encrptedSecret, hashStored] = await Promise.all(tasks)
+            const secret = this.decryptSeed(encrptedSecret, pin, true)
+            const hash = CryptoJS.SHA256(secret).toString(CryptoJS.enc.Hex)
+            return hash == hashStored
         } catch (e) {
-            console.log(e);
-            throw e;
+            console.log(e)
+            return false
         }
     },
-    getKeyAndValueOfPasswordSwitch(address){
+    getKeyAndValueOfPasswordSwitch(address) {
         const key = CryptoJS.MD5(address, 16).toString()
-        const value = CryptoJS.MD5(''+Math.random()*100000, 16).toString()
+        const value = CryptoJS.MD5('' + Math.random() * 100000, 16).toString()
         return [key, value]
-    }, 
-    getKeyOfPin(pin,salt){ // salt is usually account address
+    },
+    getKeyOfPin(pin, salt) {
+        // salt is usually account address
         const pinmd5 = CryptoJS.MD5(pin, 16).toString()
         const saltmd5 = CryptoJS.MD5(salt, 16).toString()
         const key = CryptoJS.PBKDF2(pinmd5, saltmd5, { keySize: 16, iterations: 1000 })
-        return key;
+        return key
     },
-    async setPin(pin){
-        const secret = this.generateRandomString(16);
-        const encrptedSecret = this.encryptSeed(secret, pin, true);
-        const secretHash = CryptoJS.SHA256(secret).toString(CryptoJS.enc.Hex);
-        const tasks = [
-            Base.setSensitiveInfo('pin.secret',encrptedSecret),
-            Base.setSensitiveInfo('pin.hash',secretHash)
-        ]
+    async setPin(pin) {
+        const secret = this.generateRandomString(16)
+        const encrptedSecret = this.encryptSeed(secret, pin, true)
+        const secretHash = CryptoJS.SHA256(secret).toString(CryptoJS.enc.Hex)
+        const tasks = [Base.setSensitiveInfo('pin.secret', encrptedSecret), Base.setSensitiveInfo('pin.hash', secretHash)]
         try {
-            await Promise.all(tasks);
+            await Promise.all(tasks)
         } catch (e) {
-            console.log(e);
-            throw e;
+            console.log(e)
+            throw e
         }
     },
     generateRandomString(length) {
-    // Define the character set
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?!@#$%^&*()';
-    
-    let result = '';
-    
-    for (let i = 0; i < length; i++) {
-        // Choose a random index from the character set
-        const randomIndex = Math.floor(Math.random() * characters.length);
-    
-        // Add the character at the random index to the result string
-        result += characters[randomIndex];
-    }
-    
-    return result;
+        // Define the character set
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789?!@#$%^&*()'
+
+        let result = ''
+
+        for (let i = 0; i < length; i++) {
+            // Choose a random index from the character set
+            const randomIndex = Math.floor(Math.random() * characters.length)
+
+            // Add the character at the random index to the result string
+            result += characters[randomIndex]
+        }
+
+        return result
     },
     // check isV2
     checkKeyAndIvIsV2(localSeed) {
         const reg = new RegExp(`${V2_FLAG}$`)
         return reg.test(localSeed)
     },
-    getKeyAndValueOfPasswordEnable(address){
+    getKeyAndValueOfPasswordEnable(address) {
         const key = CryptoJS.MD5(address, 16).toString()
-        const value = CryptoJS.MD5(''+Math.random()*100000, 16).toString()
+        const value = CryptoJS.MD5('' + Math.random() * 100000, 16).toString()
         return [key, value]
-    }, 
-    getKeyOfPin(pin,salt){ // salt is usually account address
+    },
+    getKeyOfPin(pin, salt) {
+        // salt is usually account address
         const pinmd5 = CryptoJS.MD5(pin, 16).toString()
         const saltmd5 = CryptoJS.MD5(salt, 16).toString()
         const key = CryptoJS.PBKDF2(pinmd5, saltmd5, { keySize: 16, iterations: 1000 })
-        return key;
+        return key
     },
-    // end of pin logic    
+    // end of pin logic
 
     getKeyAndIvV2(password) {
         const md5 = CryptoJS.MD5(password, 16).toString()
@@ -1368,7 +1399,7 @@ const IotaSDK = {
         return new Promise((resolve, reject) => {
             let baseSeed = null
             try {
-                baseSeed = this.getSeed(seed, password,isV2)
+                baseSeed = this.getSeed(seed, password, isV2)
                 if (!baseSeed._secretKey.length) {
                     baseSeed = null
                 }
@@ -1415,7 +1446,31 @@ const IotaSDK = {
         return this.getLocalSeed(seed, password)
     },
     async getDefaultGasLimit(to, contract, value, taggedData) {
+        if (contract && taggedData) {
+            try {
+                const { params, inputs } = await this.getAbiParams(contract, taggedData)
+                const index = (inputs || []).findIndex((e) => e.type == 'bytes[]')
+                if (index > -1) {
+                    const list = params?.[index]
+                    if (list.length > 0) {
+                        const limits = await Promise.all(
+                            list.map((c) => {
+                                return this.getDefaultGasLimit(to, contract, value, c)
+                            })
+                        )
+                        let total = new BigNumber(0)
+                        limits.forEach((a) => {
+                            total = total.plus(a)
+                        })
+                        return total.valueOf()
+                    }
+                }
+            } catch (error) {
+                console.log(error)
+            }
+        }
         const eth = this.client.eth
+        window.web3 = this.client
         let blockGasLimitBn = 21000
         try {
             blockGasLimitBn = await eth.estimateGas({ to, value: value || 0 })
@@ -1603,6 +1658,7 @@ const IotaSDK = {
                 const ids = await getIds()
                 collect(ids)
             } catch (error) {
+                console.log(error, '============')
                 this._collectingList = []
                 this._isSend = false
                 const ids = await getIds()
@@ -1683,6 +1739,13 @@ const IotaSDK = {
             })
         }
         return Base.transport
+    },
+    handleError(error) {
+        let errStr = error.toString()
+        if (/this\.init is not a function\./.test(errStr)) {
+            errStr = 'out of gas'
+        }
+        return errStr
     },
     async send(fromInfo, toAddress, sendAmount, ext) {
         if (!this.client) {
@@ -1785,11 +1848,11 @@ const IotaSDK = {
                     //     })
                     // } else {
                     //     this._ethReSend = 0
-                    throw error
+                    throw this.handleError(error)
                     // }
                 }
                 traceToken = token
-                Trace.transaction('pay', res.transactionHash, address, toAddress, this.getNumberStr(sendAmount), nodeId, token)
+                Trace.transaction('pay', res.transactionHash, address, toAddress, this.getNumberStr(sendAmount), nodeId, token, ext.domain)
             } else {
                 const chainId = await eth.getChainId()
 
@@ -1853,11 +1916,11 @@ const IotaSDK = {
                     //     })
                     // } else {
                     //     this._ethReSend = 0
-                    throw error
+                    throw this.handleError(error)
                     // }
                 }
                 traceToken = nodeInfo.token
-                Trace.transaction('pay', res.transactionHash, address, toAddress, this.getNumberStr(sendAmount), nodeId, nodeInfo.token)
+                Trace.transaction('pay', res.transactionHash, address, toAddress, this.getNumberStr(sendAmount), nodeId, nodeInfo.token, ext.domain)
             }
             const logInfo = res?.logs?.[0]
             const topics = logInfo?.topics || []
@@ -1890,6 +1953,9 @@ const IotaSDK = {
                     Base.globalToast.hideLoading()
                 }, 2000)
             }
+            setTimeout(() => {
+                this.refreshAssets()
+            }, 5000)
             return { ...res, messageId: logData.transactionHash }
         } else {
             if (this.curNode?.bech32HRP) {
@@ -1928,7 +1994,7 @@ const IotaSDK = {
                         const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
                         return { address, path }
                     }
-                    signatureFunc = async (essenceHash, inputs, outputs) => {
+                    signatureFunc = async (essenceHash, inputs, outputs, isBinaryEssence) => {
                         let hasRemainder = false
                         let consumedBalance = new BigNumber(0)
                         for (const output of outputs) {
@@ -1937,7 +2003,7 @@ const IotaSDK = {
                         if (consumedBalance.isGreaterThan(sendAmount)) {
                             hasRemainder = true
                         }
-                        return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, hasRemainder)
+                        return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, hasRemainder, isBinaryEssence)
                     }
                     getHardwareBip32Path = (path) => {
                         return AppIota._validatePath(path)
@@ -2004,7 +2070,7 @@ const IotaSDK = {
             const traceToken = tokenId ? token : nftId ? nftId : nodeInfo.token
             actionTime = new Date().getTime() - actionTime
             try {
-                Trace.transaction('pay', messageId, address, toAddress, sendAmount, nodeId, traceToken)
+                Trace.transaction('pay', messageId, address, toAddress, sendAmount, nodeId, traceToken, ext.domain)
                 Trace.actionLog(40, address, actionTime, Base.curLang, nodeId, traceToken)
             } catch (error) {}
             // restake start
@@ -2076,6 +2142,12 @@ const IotaSDK = {
                 }
             }
             // restake end
+            setTimeout(() => {
+                this.refreshAssets()
+            }, 10000)
+            setTimeout(() => {
+                this.refreshAssets()
+            }, 60000)
             return { ...sendOut, messageId }
         }
     },
@@ -2149,12 +2221,16 @@ const IotaSDK = {
     async blockData(blockId) {
         let res = await Base.getLocalData(`search.${blockId}`)
         if (!res) {
-            res = await this.requestQueue([
-                Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${blockId}`, {
-                    isHandlerError: true
-                })
-            ])
-            await Base.setLocalData(`search.${blockId}`, res)
+            try {
+                res = await this.requestQueue([
+                    Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${blockId}`, {
+                        isHandlerError: true
+                    })
+                ])
+                await Base.setLocalData(`search.${blockId}`, res)
+            } catch (error) {
+                return null
+            }
         }
         return res
     },
@@ -2162,13 +2238,17 @@ const IotaSDK = {
     async outputData(outputId) {
         let res = await Base.getLocalData(`outputId.${outputId}`)
         if (!res) {
-            res = await this.requestQueue([
-                // this.client.output(outputId),
-                Http.GET(`${this.explorerApiUrl}/output/${this.curNode.network}/${outputId}`, {
-                    isHandlerError: true
-                })
-            ])
-            await Base.setLocalData(`outputId.${outputId}`, res)
+            try {
+                res = await this.requestQueue([
+                    // this.client.output(outputId),
+                    Http.GET(`${this.explorerApiUrl}/output/${this.curNode.network}/${outputId}`, {
+                        isHandlerError: true
+                    })
+                ])
+                await Base.setLocalData(`outputId.${outputId}`, res)
+            } catch (error) {
+                return null
+            }
         }
         return res?.output ? res?.output : res
     },
@@ -2203,13 +2283,17 @@ const IotaSDK = {
     async transactionIncludedMessage(transactionId) {
         let res = await Base.getLocalData(`search.${transactionId}`)
         if (!res) {
-            res = await this.requestQueue([
-                // this.client.transactionIncludedMessage(transactionId),
-                Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${transactionId}`, {
-                    isHandlerError: true
-                })
-            ])
-            await Base.setLocalData(`search.${transactionId}`, res)
+            try {
+                res = await this.requestQueue([
+                    // this.client.transactionIncludedMessage(transactionId),
+                    Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${transactionId}`, {
+                        isHandlerError: true
+                    })
+                ])
+                await Base.setLocalData(`search.${transactionId}`, res)
+            } catch (error) {
+                return null
+            }
         }
         return res?.message?.payload ? res?.message : res
     },
@@ -2221,7 +2305,9 @@ const IotaSDK = {
                 const res = await Promise.all(a.map((e) => request(e)))
                 datas = [...datas, ...res]
             }
-        } catch (error) {}
+        } catch (error) {
+            console.log('batchRequest---error---', error)
+        }
         return datas
     },
     async getHisList(outputList, { address, nodeId }, smrOutputIds) {
@@ -2245,6 +2331,7 @@ const IotaSDK = {
                     smrOutputIds.map((e) => e.outputId),
                     (arg) => this.outputData(arg)
                 )
+                outputDatas = outputDatas.filter((e) => !!e)
                 let blockDatas = await this.batchRequest(
                     outputDatas.map((e) => (!e.metadata?.isSpent ? e.metadata.blockId : e.metadata?.transactionId)),
                     (arg) => this.blockData(arg)
@@ -2289,7 +2376,8 @@ const IotaSDK = {
                 })
                 allList = allList.filter((e) => !!e)
             } else {
-                const outputDatas = await this.batchRequest(outputList, (arg) => this.outputData(arg))
+                let outputDatas = await this.batchRequest(outputList, (arg) => this.outputData(arg))
+                outputDatas = outputDatas.filter((e) => !!e)
                 let metadataList = await this.batchRequest(
                     outputDatas.map((e) => e.messageId),
                     (arg) => this.messageMetadata(arg)
@@ -2572,7 +2660,7 @@ const IotaSDK = {
                 const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
                 return { address, path }
             }
-            signatureFunc = async (essenceHash, inputs, outputs) => {
+            signatureFunc = async (essenceHash, inputs, outputs, isBinaryEssence) => {
                 let hasRemainder = false
                 let consumedBalance = new BigNumber(0)
                 for (const output of outputs) {
@@ -2581,7 +2669,7 @@ const IotaSDK = {
                 if (consumedBalance.isGreaterThan(amount)) {
                     hasRemainder = true
                 }
-                return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, hasRemainder)
+                return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, hasRemainder, isBinaryEssence)
             }
             getHardwareBip32Path = (path) => {
                 return AppIota._validatePath(path)
@@ -2622,14 +2710,118 @@ const IotaSDK = {
         let signRes = null
         if (isLedger) {
             const transport = await this.getTransport()
-            const appEth = new AppEth(transport)
-            const result = await appEth.signPersonalMessage(wallet.path, Buffer.from(content).toString('hex'))
-            var v = result['v'] - 27
-            v = v.toString(16)
-            if (v.length < 2) {
-                v = '0' + v
+            if (this.checkWeb3Node(wallet.nodeId)) {
+                let appEth = new AppEth(transport)
+                const result = await appEth.signPersonalMessage(wallet.path, Buffer.from(content).toString('hex'))
+                var v = result['v'] - 27
+                v = v.toString(16)
+                if (v.length < 2) {
+                    v = '0' + v
+                }
+                return `0x${result['r']}${result['s']}${v}`
+            } else {
+                const isSMR = this.checkSMR(wallet.nodeId)
+                let appIota = new AppIota(transport)
+                const [pathCoinType, cointType] = this.getHardwareCoinParams(wallet.nodeId, 0)
+                const arr = AppIota._validatePath(`2c'/${pathCoinType}'/0'/0'/0'`)
+                await appIota._setAccount(arr[2], { id: cointType })
+                if (isSMR) {
+                    const addressOutputIds = await this.IndexerPluginClient.outputs({
+                        addressBech32: wallet.address
+                    })
+                    if (addressOutputIds.items.length == 0) {
+                        return ''
+                    }
+                    const addressOutput = await this.client.output(addressOutputIds.items[0])
+                    const protocolInfo = await this.client.protocolInfo()
+                    // networkId, inputsAndSignatureKeyPairs, outputs, taggedData, signatureFunc, getHardwareBip32Path
+                    const signatureFunc = async (essenceHash, inputs, outputs, isBinaryEssence) => {
+                        return await this.getHardwareIotaSign(wallet.nodeId, essenceHash, inputs, true, isBinaryEssence)
+                    }
+                    const getHardwareBip32Path = (path) => {
+                        return AppIota._validatePath(path)
+                    }
+                    const info = await IotaObj.buildTransactionPayload(
+                        protocolInfo.networkId,
+                        [
+                            {
+                                input: {
+                                    type: 0,
+                                    transactionId: addressOutput.metadata.transactionId,
+                                    transactionOutputIndex: addressOutput.metadata.outputIndex,
+                                    hardwarePath: wallet.path
+                                },
+                                consumingOutput: addressOutput.output
+                            }
+                        ],
+                        [
+                            {
+                                amount: '1000000',
+                                address: this.bech32ToHex(wallet.address),
+                                addressType: 0
+                            }
+                        ],
+                        {
+                            tag: IotaObj.Converter.utf8ToBytes('TanglePay-Sign'),
+                            data: IotaObj.Converter.utf8ToBytes(content)
+                        },
+                        signatureFunc,
+                        getHardwareBip32Path
+                    )
+                    return info?.unlocks?.[0]?.signature?.signature
+                } else {
+                    const res = await Http.GET(`${this.explorerApiUrl}/search/${this.curNode.network}/${wallet.address}`, {
+                        isHandlerError: true
+                    })
+                    const addressOutputIds = res?.addressOutputIds || []
+                    console.log(addressOutputIds)
+                    if (addressOutputIds.length == 0) {
+                        return ''
+                    }
+
+                    const addressOutput = await this.client.output(addressOutputIds[0])
+                    console.log(addressOutput)
+                    // inputsAndSignatureKeyPairs, outputs, indexation, signatureFunc, getHardwareBip32Path
+                    // const signatureFunc = async (essenceHash, inputs, outputs, isBinaryEssence) => {
+                    //     return await this.getHardwareIotaSign(wallet.nodeId, essenceHash, inputs, true, isBinaryEssence)
+                    // }
+                    const getHardwareBip32Path = (path) => {
+                        return AppIota._validatePath(path)
+                    }
+                    const signatureFunc = async (essenceHash, inputs, outputs, isBinaryEssence) => {
+                        return await this.getHardwareIotaSign(wallet.nodeId, essenceHash, inputs, false, isBinaryEssence)
+                    }
+
+                    const info = await IotaObj.buildTransactionPayload(
+                        [
+                            {
+                                input: {
+                                    type: 0,
+                                    transactionId: addressOutput.transactionId,
+                                    transactionOutputIndex: addressOutput.outputIndex,
+                                    hardwarePath: wallet.path
+                                }
+                            }
+                        ],
+                        [
+                            {
+                                addressType: 0,
+                                address: this.bech32ToHex(wallet.address),
+                                amount: '1000000'
+                            }
+                        ],
+                        {
+                            key: IotaObj.Converter.utf8ToBytes('TanglePay-Sign'),
+                            data: IotaObj.Converter.utf8ToBytes(content)
+                        },
+                        signatureFunc,
+                        getHardwareBip32Path
+                    )
+                    let sign = info?.unlockBlocks?.[0]?.signature?.signature
+                    sign = sign ? `0x${sign}` : ''
+                    return sign
+                }
             }
-            return `0x${result['r']}${result['s']}${v}`
         } else {
             const { seed, password } = wallet
             if (this.checkWeb3Node(wallet.nodeId)) {
@@ -3030,7 +3222,30 @@ const IotaSDK = {
         }
         return [item, curContract]
     },
-    getAbiParams(contract, hex) {
+    async getAbiConfig() {
+        try {
+            const abiRes = await fetch(`${API_URL}/abi/abi.json?v=${new Date().getTime()}`).then((d) => d.json())
+            const { list } = abiRes
+            const abiList = await Promise.all(
+                list.map((e) => {
+                    return fetch(`${API_URL}/abi/${e}.json?v=${new Date().getTime()}`).then((d) => d.json())
+                })
+            )
+            Base.setLocalData('abiList', abiList)
+            return abiList
+        } catch (error) {
+            let list = await Base.getLocalData('abiList')
+            if (!list || !list.length) {
+                const LpRouterAbi = require('../abi/LpRouter.json')
+                const PoolAbi = require('../abi/Pool.json')
+                const SwapRouterAbi = require('../abi/SwapRouter.json')
+                const FactoryAbi = require('../abi/Factory.json')
+                list = [LpRouterAbi, PoolAbi, SwapRouterAbi, FactoryAbi]
+            }
+            return list
+        }
+    },
+    async getAbiParams(contract, hex) {
         if (!/^0x/.test(hex)) {
             hex = `0x${hex}`
         }
@@ -3047,11 +3262,8 @@ const IotaSDK = {
             functionSign = this.client.utils.bytesToHex(functionSign)
             let item = web3Contract._jsonInterface.find((e) => e.signature === functionSign)
             if (!item) {
-                const LpRouterAbi = require('../abi/LpRouter.json')
-                const PoolAbi = require('../abi/Pool.json')
-                const SwapRouterAbi = require('../abi/SwapRouter.json')
-                const FactoryAbi = require('../abi/Factory.json')
-                const [abiItem, abiContract] = this.getOtherContract([LpRouterAbi, PoolAbi, SwapRouterAbi, FactoryAbi], contract, functionSign)
+                const abiList = await this.getAbiConfig()
+                const [abiItem, abiContract] = this.getOtherContract(abiList, contract, functionSign)
                 if (abiItem) {
                     item = abiItem
                     obj.web3Contract = abiContract
@@ -3063,11 +3275,13 @@ const IotaSDK = {
                 const paramsHex = this.client.utils.bytesToHex(bytes.slice(4))
                 obj.functionName = item.name
                 obj.params = abi.decodeParameters(item.inputs, paramsHex)
+                obj.inputs = item.inputs
             } else {
                 obj.functionName = functionSign
                 obj.params = {
                     0: hex
                 }
+                obj.inputs = []
             }
         }
         return obj
@@ -3564,8 +3778,8 @@ const IotaSDK = {
         let getHardwareBip32Path = null
         let signatureFunc = null
         if (isLedger) {
-            signatureFunc = async (essenceHash, inputs, outputs) => {
-                return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, true, true)
+            signatureFunc = async (essenceHash, inputs, outputs, isBinaryEssence) => {
+                return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, true, isBinaryEssence)
             }
             getHardwareBip32Path = (path) => {
                 return AppIota._validatePath(path)
@@ -3838,8 +4052,8 @@ const IotaSDK = {
             let getHardwareBip32Path = null
             let signatureFunc = null
             if (isLedger) {
-                signatureFunc = async (essenceHash, inputs, outputs) => {
-                    return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, true, true)
+                signatureFunc = async (essenceHash, inputs, outputs, isBinaryEssence) => {
+                    return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, true, isBinaryEssence)
                 }
                 getHardwareBip32Path = (path) => {
                     return AppIota._validatePath(path)
@@ -4027,7 +4241,7 @@ const IotaSDK = {
                 const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
                 return { address, path }
             }
-            signatureFunc = async (essenceHash, inputs, outputs) => {
+            signatureFunc = async (essenceHash, inputs, outputs, isBinaryEssence) => {
                 let hasRemainder = false
                 let consumedBalance = new BigNumber(0)
                 for (const output of outputs) {
@@ -4036,7 +4250,7 @@ const IotaSDK = {
                 if (consumedBalance.isGreaterThan(sendAmount)) {
                     hasRemainder = true
                 }
-                return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, hasRemainder, output?.nativeTokens?.length > 0)
+                return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, hasRemainder, isBinaryEssence)
             }
             getHardwareBip32Path = (path) => {
                 return AppIota._validatePath(path)
@@ -4145,8 +4359,8 @@ const IotaSDK = {
                 const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
                 return { address, path }
             }
-            signatureFunc = async (essenceHash, inputs, outputs) => {
-                return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, true, true)
+            signatureFunc = async (essenceHash, inputs, outputs, isBinaryEssence) => {
+                return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, true, isBinaryEssence)
             }
             getHardwareBip32Path = (path) => {
                 return AppIota._validatePath(path)

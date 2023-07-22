@@ -1,8 +1,10 @@
 import { Base } from "../common";
 import { createReadOnlyProxy } from "./util";
+import { DAY } from './misc'
 import { IotaSDK } from "../common";
-import { updateState as updateState_, getStorage } from "./util";
-const domainName = 'pin';
+import { updateState as updateState_, getStorage, setStorageFacade as setStorageFacade_ } from "./util";
+export const setStorageFacade = setStorageFacade_;
+const domainName = 'pin-domain';
 const initState = {
     inited:false,
     walletCount:0,
@@ -27,9 +29,18 @@ const updateState = (delta, isPersist = true) => {
 }
 
 export const init = async (walletCount) => {
+    if (_context.state.inited) {
+        // update wallet count
+        updateState({
+            walletCount,
+        });
+        return;
+    }
     const storage = await getStorage(domainName);
     let delta = undefined;
-    if (storage) delta = JSON.parse(storage);
+    if (storage) {
+        delta = JSON.parse(storage);
+    }
     if (!delta) {
         const pinHash = await Base.getSensitiveInfo('pin.hash')
         const isPinSet = pinHash ? true : false;
@@ -40,6 +51,7 @@ export const init = async (walletCount) => {
     }
     delta.walletCount = walletCount;
     updateState(delta);
+    getIsUnlocked(); // handle timeout case
     if (initWaits.length > 0) {
         initWaits.forEach((resolve) => {
             resolve();
@@ -47,10 +59,18 @@ export const init = async (walletCount) => {
         initWaits.length = 0;
     }
 }
-
-export const isNewWalletFlow = () => {
+export const isExistingUser = () => {
     const isExistingUser = _context.state.walletCount > 0 && !_context.state.isPinSet;
-    return !isExistingUser;
+    return isExistingUser;
+}
+export const isNewWalletFlow = () => {
+    return !isExistingUser();
+}
+export const shouldShowSetPassword = () => {
+    return isExistingUser();
+}
+export const shouldShowSetPin = () => {
+    return !isExistingUser() && !_context.state.isPinSet;
 }
 export const canTryUnlock = () => {
     const now = Date.now();
@@ -65,7 +85,7 @@ export const canTryUnlock = () => {
 
 
 const calculateNewUnlockValidUntil = () => {
-    return Date.now() + 30 * 60 * 1000;
+    return Date.now() + DAY;
 }
 
 
@@ -129,7 +149,16 @@ export const ensureInited = async () => {
 export const checkPin = async (pin) => {
     return await IotaSDK.checkPin(pin);
 }
-
+export const resetPin = async (oldPin, newPin, editWallet) => {
+    let walletList = await IotaSDK.getWalletList()
+    walletList = walletList.filter(o=>o.type != 'ledger')
+    const isPasswordEnabledList = await Promise.all(walletList.map(o=>checkWalletIsPasswordEnabled(o.id)))
+    walletList = walletList.filter((o,i)=>!isPasswordEnabledList[i])
+    for (const data of walletList) {
+        editWallet(data.id, {...data, password: newPin, oldPassword: oldPin}, true)
+    }
+    await setPin(newPin)
+}
 export const setPin = async (pin) => {
     await IotaSDK.setPin(pin)
     updateState({
