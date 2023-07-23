@@ -45,17 +45,20 @@ export const useGetNftList = () => {
                 })
             })
     }, [])
-    useEffect(async () => {
-        addressRef.current = curWallet?.address
-        const localList = (await Base.getLocalData(`${curWallet?.address}.nft.list`)) || []
-        dispatch({
-            type: 'nft.isRequestNft',
-            data: !!localList?.length
-        })
-        dispatch({
-            type: 'nft.list',
-            data: localList || []
-        })
+    useEffect(() => {
+        const asyncFunc = async ()=>{
+            addressRef.current = curWallet?.address
+            const localList = (await Base.getLocalData(`${curWallet?.address}.nft.list`)) || []
+            dispatch({
+                type: 'nft.isRequestNft',
+                data: !!localList?.length
+            })
+            dispatch({
+                type: 'nft.list',
+                data: localList || []
+            })
+        }
+        asyncFunc();
     }, [curWallet?.address])
     useEffect(() => {
         const request = async (address) => {
