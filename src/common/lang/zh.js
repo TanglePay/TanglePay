@@ -351,9 +351,7 @@ Going Beyond Blockchain`,
 權限: #contractAmount# #unit#
 手續費: #fee#
 `,
-        contractFunc: `function: #abiFunc#,
-params: #abiParams#
-`
+        contractFunc: `function: #abiFunc#`
     },
     nft: {
         collectibles: 'NFTs',

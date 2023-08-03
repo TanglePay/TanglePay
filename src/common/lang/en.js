@@ -355,9 +355,7 @@ Allow the site to: See address, account balance
 Permission: #contractAmount# #unit#
 Transaction fee: #fee#
 `,
-        contractFunc: `function: #abiFunc#,
-params: #abiParams#
-`
+        contractFunc: `function: #abiFunc#`
     },
     nft: {
         collectibles: 'NFTs',
