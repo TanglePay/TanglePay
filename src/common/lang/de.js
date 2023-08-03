@@ -357,9 +357,7 @@ Erlaube der Seite: Adressen und Kontostände einsehen
 Permission: #contractAmount# #unit#
 Transaction fee: #fee#
 `,
-        contractFunc: `function: #abiFunc#,
-params: #abiParams#
-`
+        contractFunc: `function: #abiFunc#`
     },
     nft: {
         collectibles: 'NFTs',
