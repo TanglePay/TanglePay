@@ -344,6 +344,7 @@ Sie unterschreiben:
 #content#`,
         execute: 'Bestätigen',
         cancel: 'Abbrechen',
+        refresh: 'Refresh',
         reject: 'Reject',
         signLabel: 'TanglePay.Sign',
         connect: `#origin#
