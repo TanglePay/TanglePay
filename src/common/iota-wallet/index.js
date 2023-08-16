@@ -26,6 +26,7 @@ import TransportLedger from './ledger'
 const { TransportWebBLE, TransportWebUSB, TransportWebHID } = TransportLedger
 
 const initTokenAbi = require('../abi/TokenERC20.json')
+const nonfungiblePositionManager = require('../abi/NonfungiblePositionManager.json')
 
 let IotaObj = Iota
 
@@ -3205,6 +3206,13 @@ const IotaSDK = {
         if (this.client.eth) {
             const tokenAbi = JSON.parse(JSON.stringify(initTokenAbi))
             return new this.client.eth.Contract(tokenAbi, contract)
+        }
+        return null
+    },
+    getNFTContract(contract) {
+        if(this.client.eth) {
+            const nonfungiblePositionManagerAbi = JSON.parse(JSON.stringify(nonfungiblePositionManager))
+            return new this.client.eth.Contract(nonfungiblePositionManagerAbi, contract)
         }
         return null
     },
