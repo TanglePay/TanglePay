@@ -155,8 +155,8 @@ Secret Recovery Phrase or private key for this account before continuing.`,
         hardwareWallet: '️Connect Hardware Wallet',
         connectLedger: 'Connect Ledger',
         lederImport: 'Ledger Import'
-},
-assets: {
+    },
+    assets: {
         sentTo: 'You will pay',
         myAssets: 'My Assets',
         send: 'Send',
@@ -253,9 +253,11 @@ Locked SMR balance: {balance3}`,
         maxFee: 'Max Fee',
         edit: 'Edit',
         getAssetsFail: 'Asset synchronization failed, please scroll down to refresh',
-        getActivityFail: 'Transaction record synchronization failed, please scroll down to refresh'
-},
-user: {
+        getActivityFail: 'Transaction record synchronization failed, please scroll down to refresh',
+        sendConfirmation: 'Send Confirmation',
+        sendConfirmationTips: 'Please confirm the sending of this transaction'
+    },
+    user: {
         me: 'Me',
         manageWallets: 'Manage Account',
         setting: 'Settings',
@@ -298,8 +300,8 @@ encrypleted backup of your account and latest transaction history`,
         groupEmail: 'Email',
 
         latestVersion: 'Latest Version already installed.'
-},
-staking: {
+    },
+    staking: {
         title: 'Staking',
         preStake: 'Pre-stake',
         his: 'Staking History',
@@ -328,8 +330,8 @@ staking: {
         soon: 'soon',
         limitAmount: 'You need at least {num} MIOTA to join the {token} staking.',
         restake: 'Automatic Restake'
-},
-apps: {
+    },
+    apps: {
         title: 'Dapps',
         sendFrom: 'from ',
         sendFor: 'for ',
@@ -357,8 +359,8 @@ Permission: #contractAmount# #unit#
 Transaction fee: #fee#
 `,
         contractFunc: `function: #abiFunc#`
-},
-nft: {
+    },
+    nft: {
         collectibles: 'NFTs',
         zeroTips: 'You have no {name} ',
         clearCache: 'Clear your cache',
@@ -369,13 +371,13 @@ nft: {
         nftAdd: 'Add',
         totalNum: 'Total {num}',
         selectHero: 'Select the Hero Tier'
-},
-discover: {
+    },
+    discover: {
         title: 'Discover',
         buyIota: 'Buy IOTA',
         addressCopy: 'Address copied'
-},
-shimmer: {
+    },
+    shimmer: {
         network: 'Shimmer Mainnet',
         claimStakingReward: 'Claim Staking Reward',
         chooseAWallet: 'Choose a Account to Claim ##SMR Staking Rewards##',

@@ -256,7 +256,9 @@ Gesperrtes SMR-Guthaben: {Guthaben3}Send {token} amount: {amount}`,
         maxFee: 'Maximale Gebühr',
         edit: 'Bearbeiten',
         getAssetsFail: 'Die Synchronisation des Vermögenswerts ist fehlgeschlagen. Bitte scrollen Sie nach unten, um zu aktualisieren.',
-        getActivityFail: 'Die Synchronisation des Transaktionsverlaufs ist fehlgeschlagen. Bitte scrollen Sie nach unten, um zu aktualisieren.'
+        getActivityFail: 'Die Synchronisation des Transaktionsverlaufs ist fehlgeschlagen. Bitte scrollen Sie nach unten, um zu aktualisieren.',
+        sendConfirmation: 'Send Confirmation',
+        sendConfirmationTips: 'Please confirm the sending of this transaction'
     },
     user: {
         me: 'Profil',
