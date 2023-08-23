@@ -49,6 +49,7 @@ export const useGetNftList = () => {
         const asyncFunc = async ()=>{
             addressRef.current = curWallet?.address
             const localList = (await Base.getLocalData(`${curWallet?.address}.nft.list`)) || []
+            const importedList = (await Base.getLocalData(`${curWallet?.address}.nft.importedList`)) || {}
             dispatch({
                 type: 'nft.isRequestNft',
                 data: !!localList?.length
@@ -56,6 +57,10 @@ export const useGetNftList = () => {
             dispatch({
                 type: 'nft.list',
                 data: localList || []
+            })
+            dispatch({
+                type: 'nft.importedList',
+                data: importedList
             })
         }
         asyncFunc();
