@@ -1755,29 +1755,21 @@ const IotaSDK = {
         const { utf8ToHex } = IotaObj.Converter
         const metadataHex = metadata ? utf8ToHex(metadata) : undefined
         const tagHex = tag ? utf8ToHex(tag) : undefined
-        if (tagHex && tagHex.length / 2 > MAX_TAG_FEATURE_LENGTH) {
+        if(tagHex && tagHex.length / 2  > MAX_TAG_FEATURE_LENGTH) {
             throw new Error(I18n.t('shimmer.tagExcessError'))
         }
-        if (metadataHex && metadataHex.length / 2 > MAX_METADATA_FEATURE_LENGTH) {
+        if(metadataHex && metadataHex.length / 2 > MAX_METADATA_FEATURE_LENGTH) {
             throw new Error(I18n.t('shimmer.metadataExcessError'))
         }
         output.features = [
-            ...(metadataHex
-                ? [
-                      {
-                          type: IotaObj.METADATA_FEATURE_TYPE,
-                          data: `0x${metadataHex}`
-                      }
-                  ]
-                : []),
-            ...(tagHex
-                ? [
-                      {
-                          type: 3, // TAG_FEATURE_TYPE
-                          tag: `0x${tagHex}`
-                      }
-                  ]
-                : [])
+            ...(metadataHex ? [{
+                type: IotaObj.METADATA_FEATURE_TYPE,
+                data:  `0x${metadataHex}`
+            }] : []),
+            ...(tagHex ? [{
+                type: 3, // TAG_FEATURE_TYPE
+                tag: `0x${tagHex}`
+            }] : [])
         ]
         return output
     },
@@ -2049,14 +2041,11 @@ const IotaSDK = {
                         baseSeed,
                         0,
                         [
-                            this.processFeature(
-                                {
-                                    addressBech32: toAddress,
-                                    amount: sendAmount,
-                                    isDustAllowance: false
-                                },
-                                { metadata, tag }
-                            )
+                            this.processFeature({
+                                addressBech32: toAddress,
+                                amount: sendAmount,
+                                isDustAllowance: false,
+                            }, { metadata, tag })
                         ],
                         {
                             key: IotaObj.Converter.utf8ToBytes(tag), //v1
@@ -2148,7 +2137,6 @@ const IotaSDK = {
                         } catch (error) {
                             Base.globalToast.hideLoading()
                             console.log(error)
-                            Base.globalToast.error(I18n.t('assets.restakeFailTips'))
                         }
                     } else {
                         this.restakeAfterSend(stakeInfo)
@@ -2163,7 +2151,6 @@ const IotaSDK = {
                             .catch((error) => {
                                 Base.globalToast.hideLoading()
                                 console.log(error)
-                                Base.globalToast.error(I18n.t('assets.restakeFailTips'))
                             })
                     }
                 } else {
@@ -3522,27 +3509,24 @@ const IotaSDK = {
         let otherTokensStorageDeposit = 0
         let remainderSMROutput = null
         let remainderOutput = null
-        let receiverOutput = this.processFeature(
-            {
-                address: `0x${this.bech32ToHex(toAddress)}`,
-                addressType: 0, // ED25519_ADDRESS_TYPE
-                amount: '',
-                type: 3, // BASIC_OUTPUT_TYPE
-                nativeTokens: [
-                    {
-                        id: tokenId,
-                        amount: `0x${BigNumber(sendAmount).toString(16)}`
-                    }
-                ],
-                unlockConditions: [
-                    {
-                        type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
-                        address: IotaObj.Bech32Helper.addressFromBech32(toAddress, this.info.protocol.bech32Hrp)
-                    }
-                ]
-            },
-            { metadata, tag }
-        )
+        let receiverOutput = this.processFeature({
+            address: `0x${this.bech32ToHex(toAddress)}`,
+            addressType: 0, // ED25519_ADDRESS_TYPE
+            amount: '',
+            type: 3, // BASIC_OUTPUT_TYPE
+            nativeTokens: [
+                {
+                    id: tokenId,
+                    amount: `0x${BigNumber(sendAmount).toString(16)}`
+                }
+            ],
+            unlockConditions: [
+                {
+                    type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
+                    address: IotaObj.Bech32Helper.addressFromBech32(toAddress, this.info.protocol.bech32Hrp)
+                }
+            ]
+        }, { metadata, tag })
         const receiverStorageDeposit = IotaObj.TransactionHelper.getStorageDeposit(receiverOutput, this.info.protocol.rentStructure)
         receiverOutput.amount = receiverStorageDeposit.toString()
         let remainderStorageDeposit = 0
@@ -3581,7 +3565,7 @@ const IotaSDK = {
                         type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
                         address: IotaObj.Bech32Helper.addressFromBech32(address, this.info.protocol.bech32Hrp)
                     }
-                ]
+                ],
             },
             this.info.protocol.rentStructure
         )
@@ -3598,7 +3582,7 @@ const IotaSDK = {
                                 type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
                                 address: IotaObj.Bech32Helper.addressFromBech32(bech32Address, this.info.protocol.bech32Hrp)
                             }
-                        ]
+                        ],
                     }
                 } else {
                     remainderOutput = null
@@ -3688,7 +3672,7 @@ const IotaSDK = {
                                                                     type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
                                                                     address: IotaObj.Bech32Helper.addressFromBech32(bech32Address, this.info.protocol.bech32Hrp)
                                                                 }
-                                                            ]
+                                                            ],
                                                         }
                                                         remainderStorageDeposit = IotaObj.TransactionHelper.getStorageDeposit(remainderSMROutput, this.info.protocol.rentStructure)
                                                         remainderSMROutput.amount = remainderStorageDeposit.toString()
@@ -3778,27 +3762,24 @@ const IotaSDK = {
         let otherTokensStorageDeposit = 0
         let remainderSMROutput = null
         let remainderOutput = null
-        let receiverOutput = this.processFeature(
-            {
-                address: `0x${this.bech32ToHex(toAddress)}`,
-                addressType: 0, // ED25519_ADDRESS_TYPE
-                amount: '',
-                type: 3, // BASIC_OUTPUT_TYPE
-                nativeTokens: [
-                    {
-                        id: tokenId,
-                        amount: `0x${BigNumber(sendAmount).toString(16)}`
-                    }
-                ],
-                unlockConditions: [
-                    {
-                        type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
-                        address: IotaObj.Bech32Helper.addressFromBech32(toAddress, this.info.protocol.bech32Hrp)
-                    }
-                ]
-            },
-            { metadata, tag }
-        )
+        let receiverOutput = this.processFeature({
+            address: `0x${this.bech32ToHex(toAddress)}`,
+            addressType: 0, // ED25519_ADDRESS_TYPE
+            amount: '',
+            type: 3, // BASIC_OUTPUT_TYPE
+            nativeTokens: [
+                {
+                    id: tokenId,
+                    amount: `0x${BigNumber(sendAmount).toString(16)}`
+                }
+            ],
+            unlockConditions: [
+                {
+                    type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
+                    address: IotaObj.Bech32Helper.addressFromBech32(toAddress, this.info.protocol.bech32Hrp)
+                }
+            ],
+        }, { metadata, tag })
         const receiverStorageDeposit = IotaObj.TransactionHelper.getStorageDeposit(receiverOutput, this.info.protocol.rentStructure)
         receiverOutput.amount = receiverStorageDeposit.toString()
         let remainderStorageDeposit = 0
@@ -3930,7 +3911,7 @@ const IotaSDK = {
                                                             type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
                                                             address: IotaObj.Bech32Helper.addressFromBech32(bech32Address, this.info.protocol.bech32Hrp)
                                                         }
-                                                    ]
+                                                    ],
                                                 }
                                                 otherNativeTokens.forEach((t) => {
                                                     if (!otherTokensOutput.nativeTokens.includes(t.id)) {
@@ -4054,6 +4035,39 @@ const IotaSDK = {
             throw error
         }
     },
+    getBasicTypeOutput(address, amount) {
+        return {
+            address: `0x${this.bech32ToHex(address)}`,
+            addressType: 0, // ED25519_ADDRESS_TYPE
+            amount: amount,
+            type: 3, // BASIC_OUTPUT_TYPE
+            unlockConditions: [
+                {
+                    type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
+                    address: IotaObj.Bech32Helper.addressFromBech32(address, this.info.protocol.bech32Hrp)
+                }
+            ]
+        }
+    },
+    getMinBalance(address) {
+        return IotaObj.TransactionHelper.getStorageDeposit(
+            this.getBasicTypeOutput(address, 0),
+            this.info.protocol.rentStructure
+        )
+    },
+    getInitialAddressState() {
+        return {
+            accountIndex: 0,
+            addressIndex: 0,
+            isInternal: false
+        }
+    },
+    getAddressOptions() {
+        return {
+            startIndex: 0,
+            zeroCount: 20
+        }
+    },
     async SMRNFTSend(fromInfo, toAddress, sendAmount, ext) {
         const { seed, password, address, nodeId } = fromInfo
 
@@ -4093,6 +4107,8 @@ const IotaSDK = {
                     return AppIota._validatePath(path)
                 }
             }
+
+            const minBalance = this.getMinBalance(address)
 
             const getAddressOutputIds = async () => {
                 let addressKeyPair = null
@@ -4134,31 +4150,42 @@ const IotaSDK = {
                             nftIds.includes(outputNftId)
                         ) {
                             const outputAmount = addressOutput.output.amount
-                            outputSMRBalance = outputSMRBalance.plus(outputAmount)
-                            const curOutput = this.processFeature(
-                                {
-                                    // ...addressOutput.output,
-                                    immutableFeatures: addressOutput.output.immutableFeatures,
-                                    address: `0x${this.bech32ToHex(toAddress)}`,
-                                    nftId: outputNftId,
-                                    addressType: 0, // NFT_ADDRESS_TYPE
-                                    amount: outputAmount,
-                                    type: 6,
-                                    unlockConditions: [
-                                        {
-                                            type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
-                                            address: IotaObj.Bech32Helper.addressFromBech32(toAddress, this.info.protocol.bech32Hrp)
-                                        }
-                                    ]
-                                },
-                                { metadata, tag }
-                            )
+                            const curOutput = this.processFeature({
+                                // ...addressOutput.output,
+                                immutableFeatures: addressOutput.output.immutableFeatures,
+                                address: `0x${this.bech32ToHex(toAddress)}`,
+                                nftId: outputNftId,
+                                addressType: 0, // NFT_ADDRESS_TYPE
+                                amount: outputAmount,
+                                type: 6,
+                                unlockConditions: [
+                                    {
+                                        type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
+                                        address: IotaObj.Bech32Helper.addressFromBech32(toAddress, this.info.protocol.bech32Hrp)
+                                    }
+                                ]
+                            },{ metadata, tag })
+
                             const deposit = IotaObj.TransactionHelper.getStorageDeposit(curOutput, this.info.protocol.rentStructure)
-                            // In order to reduce changes, we temporarily only deal with the situation where the deposit is not enough
-                            if (new BigNumber(curOutput.amount).lt(deposit)) {
+                            const diff = new BigNumber(curOutput.amount).minus(deposit)
+                            debugger
+                            
+                            if(diff.gte(minBalance)) {  
+                                // Need to recover balance
+                                // this nft outputBalance is 0
                                 curOutput.amount = deposit
+                                const recoveredBalance = this.getBasicTypeOutput(address, diff.toNumber())
+                                outputs.push(recoveredBalance)
+                            }else if(diff.gt(0) && diff.lt(minBalance)) {
+                                // Not to recover balance, just send to the other side
+                                // this nft outputBalance is 0
+                            }else{
+                                // this nft outputBalance is negative
+                                // Insufficient parts will be made up at the end
+                                curOutput.amount = deposit
+                                outputSMRBalance = outputSMRBalance.plus(diff)
                             }
-                            outputSMRBalance = outputSMRBalance.minus(curOutput.amount)
+                            
                             outputs.push(curOutput)
                             const input = {
                                 type: 0, // UTXO_INPUT_TYPE
@@ -4188,30 +4215,31 @@ const IotaSDK = {
                 throw I18n.t('assets.balanceError')
             }
             // After processing all nft output, Handle insufficient funds only once.
-            if (outputSMRBalance.lt(0)) {
-                let initialAddressState = {
-                    accountIndex: 0,
-                    addressIndex: 0,
-                    isInternal: false
-                }
-                const sendOutput = {
-                    address: `0x${this.bech32ToHex(toAddress)}`,
-                    addressType: 0, // ED25519_ADDRESS_TYPE
-                    amount: outputSMRBalance.multipliedBy(-1).toNumber(),
-                    type: 3, // BASIC_OUTPUT_TYPE
-                    unlockConditions: [
-                        {
-                            type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
-                            address: IotaObj.Bech32Helper.addressFromBech32(toAddress, this.info.protocol.bech32Hrp)
-                        }
-                    ]
-                }
-                let extraOnputs = [sendOutput]
-                const inputsAndKeys = await IotaObj.calculateInputs(this.client, baseSeed, initialAddressState, IotaObj.generateBip44Address, extraOnputs, 20, null)
+            if(outputSMRBalance.lt(0)) {
+                let initialAddressState = this.getInitialAddressState()
+                const addressOptions = this.getAddressOptions()
+
+                const sendOutput = this.getBasicTypeOutput(toAddress, outputSMRBalance.multipliedBy(-1).toNumber())
+                // This output will be filtered later, so add a symbol mark
+                const symbolMark = Symbol('compensation-for-insufficient-balance')
+                sendOutput.mark = symbolMark
+
+                let compensationOutputs = [sendOutput]
+
+                const inputsAndKeys = await IotaObj.calculateInputs(this.client, baseSeed, initialAddressState, IotaObj.generateBip44Address, compensationOutputs, addressOptions.zeroCount, null)
                 inputsAndSignatureKeyPairs = inputsAndSignatureKeyPairs.concat(inputsAndKeys)
-                const extraOnputsWithoutsendOutput = extraOnputs.filter((item) => item !== sendOutput)
-                outputs = outputs.concat(extraOnputsWithoutsendOutput)
+                const compensationOutputsWithoutsendOutput = compensationOutputs.filter(item => {
+                    if(item === sendOutput) {
+                        return false
+                    }
+                    if(item.mark && item.mark === symbolMark) {
+                        return false
+                    }
+                    return true
+                })
+                outputs = outputs.concat(compensationOutputsWithoutsendOutput)
             }
+
             if (this.mqttClient && this.mqttClient.nft) {
                 Base.globalDispatch({
                     type: 'nft.isRequestNft',
