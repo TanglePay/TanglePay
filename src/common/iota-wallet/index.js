@@ -3241,6 +3241,20 @@ const IotaSDK = {
         }
         return null
     },
+    async checkNFTOwner(nftContract, tokenId, address) {
+        if(!address) {
+            return false
+        }
+        try {
+            const owner = await nftContract.methods.ownerOf(tokenId).call()
+            if(owner.toLocaleLowerCase() !== address.toLocaleLowerCase()) {
+                return false
+            }
+            return true
+        }catch(error) {
+            return false
+        }
+    },
     getOtherContract(list, contract, functionSign) {
         let item = null
         let curContract = null
