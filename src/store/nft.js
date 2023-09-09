@@ -45,11 +45,48 @@ export const useGetNftList = () => {
                 })
             })
     }, [])
+    const filterImportedNFTList = async (nftImportedList, spaceList=[]) => {
+        const filtered = {}
+        try {
+            const contractAddressList = Object.keys(nftImportedList)
+            for (const contractAddress of contractAddressList) {
+                const nftContract = IotaSDK.getNFTContract(contractAddress)
+                if(nftContract === null) {
+                    continue
+                }
+                const collectionConfige = spaceList.find(item => item?.space?.toLocaleLowerCase() === contractAddress) ?? {}
+                const { logo, name } = collectionConfige
+
+                const list = nftImportedList[contractAddress]
+                const res = await Promise.all(list.map(({tokenId}) => IotaSDK.checkNFTOwner(nftContract, tokenId, curWallet.address)))
+                filtered[contractAddress] = {
+                    logo,
+                    name,
+                    list: list.filter((_,idx) => res[idx])
+                }
+            }
+            return filtered
+        }catch(error) {
+            console.warn('Filter imported nft list error:', error)
+            return {}
+        }
+    }
+    const setImportedNFTList = async (nftConfig) => {
+        if(!curWallet?.address) {
+            return
+        }
+        const nftImportedList = (await Base.getLocalData(`${curWallet.address}.nft.importedList`)) || {}
+        const filteredImportedNFTList = await filterImportedNFTList(nftImportedList, nftConfig.list)
+        dispatch({
+            type: 'nft.importedList',
+            data: filteredImportedNFTList
+        })
+    }
     useEffect(() => {
         const asyncFunc = async ()=>{
             addressRef.current = curWallet?.address
             const localList = (await Base.getLocalData(`${curWallet?.address}.nft.list`)) || []
-            const importedList = (await Base.getLocalData(`${curWallet?.address}.nft.importedList`)) || {}
+
             dispatch({
                 type: 'nft.isRequestNft',
                 data: !!localList?.length
@@ -58,10 +95,7 @@ export const useGetNftList = () => {
                 type: 'nft.list',
                 data: localList || []
             })
-            dispatch({
-                type: 'nft.importedList',
-                data: importedList
-            })
+            await setImportedNFTList(config)
         }
         asyncFunc();
     }, [curWallet?.address])
@@ -73,6 +107,7 @@ export const useGetNftList = () => {
                     data: []
                 })
             } else {
+                
                 dispatch({
                     type: 'nft.unlockList',
                     data: (await Base.getLocalData(`${address}.nft.unlockList`)) || []
@@ -81,6 +116,7 @@ export const useGetNftList = () => {
                     type: 'nft.lockList',
                     data: (await Base.getLocalData(`${address}.nft.lockList`)) || []
                 })
+                await setImportedNFTList(config)
                 if (!config?.list?.length) {
                     // dispatch({
                     //     type: 'nft.list',
