@@ -345,16 +345,16 @@ const IotaSDK = {
                 const version = Base.getVersion()
                 const versionRes = await fetch(`${API_URL}/switchConfig.json?v=${new Date().getTime()}`).then((res) => res.json())
                 const isCheck = version == versionRes.checkVersion
-                // if (isCheck) {
-                //     _nodes.forEach((e) => {
-                //         if (!e.filterMenuList.includes('apps')) {
-                //             e.filterMenuList.push('apps')
-                //         }
-                //         if (!e.filterAssetsList.includes('soonaverse')) {
-                //             e.filterAssetsList.push('soonaverse')
-                //         }
-                //     })
-                // }
+                if (isCheck) {
+                    _nodes.forEach((e) => {
+                        if (!e.filterMenuList.includes('apps')) {
+                            e.filterMenuList.push('apps')
+                        }
+                        if (!e.filterAssetsList.includes('soonaverse')) {
+                            e.filterAssetsList.push('soonaverse')
+                        }
+                    })
+                }
             }
             // check end
 
