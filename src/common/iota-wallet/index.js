@@ -23,6 +23,7 @@ import AppEth from '@ledgerhq/hw-app-eth'
 import AppIota from './hw-app-iota'
 import { ethers } from 'ethers'
 import TransportLedger from './ledger'
+import { Base64 } from '@iota/util.js'
 const { TransportWebBLE, TransportWebUSB, TransportWebHID } = TransportLedger
 
 const initTokenAbi = require('../abi/TokenERC20.json')
@@ -344,16 +345,16 @@ const IotaSDK = {
                 const version = Base.getVersion()
                 const versionRes = await fetch(`${API_URL}/switchConfig.json?v=${new Date().getTime()}`).then((res) => res.json())
                 const isCheck = version == versionRes.checkVersion
-                if (isCheck) {
-                    _nodes.forEach((e) => {
-                        if (!e.filterMenuList.includes('apps')) {
-                            e.filterMenuList.push('apps')
-                        }
-                        if (!e.filterAssetsList.includes('soonaverse')) {
-                            e.filterAssetsList.push('soonaverse')
-                        }
-                    })
-                }
+                // if (isCheck) {
+                //     _nodes.forEach((e) => {
+                //         if (!e.filterMenuList.includes('apps')) {
+                //             e.filterMenuList.push('apps')
+                //         }
+                //         if (!e.filterAssetsList.includes('soonaverse')) {
+                //             e.filterAssetsList.push('soonaverse')
+                //         }
+                //     })
+                // }
             }
             // check end
 
@@ -3240,6 +3241,25 @@ const IotaSDK = {
             return new this.client.eth.Contract(nonfungiblePositionManagerAbi, contract)
         }
         return null
+    },
+    async parseNFTTokenURI(tokenURI) {
+        try {
+            const base64EncodePrefix = 'data:application/json;base64,'
+            if(tokenURI && tokenURI.startsWith(base64EncodePrefix)) {
+                return JSON.parse(
+                    IotaSDK.hexToUtf8(
+                        IotaSDK.bytesToHex(
+                            Base64.decode(
+                                tokenURI.replace(base64EncodePrefix, '')
+                            )
+                        )
+                    )
+                )
+            }
+            return await fetch(tokenURI).then(res => res.json())
+        }catch(error) {
+            return null
+        }
     },
     async checkNFTOwner(nftContract, tokenId, address) {
         if(!address) {
