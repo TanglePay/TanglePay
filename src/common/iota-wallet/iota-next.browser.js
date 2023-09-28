@@ -19,7 +19,8 @@ import {
     checkUnLock,
     calculateInputs,
     serializeTransactionEssence,
-    buildTransactionPayload
+    buildTransactionPayload,
+    METADATA_FEATURE_TYPE
 } from '@iota/iota.js-next/dist/cjs/index-browser'
 import { MqttClient } from '@iota/mqtt.js-next/dist/cjs/index-browser'
 
@@ -48,5 +49,6 @@ export default {
     calculateInputs,
     WriteStream,
     serializeTransactionEssence,
-    buildTransactionPayload
+    buildTransactionPayload,
+    METADATA_FEATURE_TYPE
 }
