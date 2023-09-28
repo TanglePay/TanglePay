@@ -67,6 +67,12 @@ export const Base = {
         // data are considered as sensitive and saved on keychains
         storage.save({ key: s_key, data: data, expires })
     },
+    removeLocalData(s_key) {
+        console.log('**remove local data', s_key)
+        storage.remove({
+            key: s_key
+        })
+    },
     async getSensitiveInfo(key) {
         try {
             let data = await RNSInfo.getItem(key, {
