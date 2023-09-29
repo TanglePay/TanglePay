@@ -1970,9 +1970,13 @@ const IotaSDK = {
                 transactionHash: logInfo?.transactionHash || res.transactionHash,
                 transactionIndex: logInfo?.transactionIndex || res.transactionIndex
             }
-            this.setPastLogs(address, nodeId, [logData]).then(() => {
-                this.refreshAssets()
-            })
+
+            try {
+                await this.setPastLogs(address, nodeId, [logData])
+            }catch(error) {
+                console.log("Set past logs error: ", error)
+            }
+            
             actionTime = new Date().getTime() - actionTime
             Trace.actionLog(40, address, actionTime, Base.curLang, nodeId, traceToken)
             Base.globalToast.success(I18n.t('assets.sendSucc'))
