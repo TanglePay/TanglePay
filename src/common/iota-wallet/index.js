@@ -1965,7 +1965,8 @@ const IotaSDK = {
                 removed: logInfo?.removed || res.status,
                 topics: topics,
                 from: res.from,
-                to: res.to,
+                to: res.to, 
+                contractDetail: ext.contractDetail,
                 transactionHash: logInfo?.transactionHash || res.transactionHash,
                 transactionIndex: logInfo?.transactionIndex || res.transactionIndex
             }

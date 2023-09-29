@@ -414,6 +414,10 @@ const useUpdateHisList = () => {
                     address: otherAddress,
                     num: Base.formatNum(num),
                     decimal: 0,
+                    contractDetail: e.contractDetail ? {
+                        ...e.contractDetail,
+                        assets: Base.formatNum(new BigNumber(e.contractDetail.value).times(price[e.contractDetail.unit]) || 0)
+                    }: null,
                     assets: Base.formatNum(assets),
                     amount,
                     unit: ''
@@ -804,8 +808,11 @@ const useUpdateHisList = () => {
         const localHis = [...curAddressHis]
         if (hisList.length > 0) {
             hisList.forEach((e) => {
-                if (!localHis.find((d) => d.id == e.id)) {
+                const index = localHis.findIndex((d) => d.id == e.id)
+                if (index === -1) {
                     localHis.push(e)
+                } else if(e.contractDetail) {
+                    localHis[index] = e
                 }
             })
             localHis.sort((a, b) => b.timestamp - a.timestamp)
