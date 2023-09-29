@@ -675,7 +675,7 @@ const useUpdateHisList = () => {
 
             // adjust id using objectHash
             hisList.forEach((e) => {
-                e.id = IotaSDK.objectHash(e)
+                e.id = e.coin == 'SOON' ? IotaSDK.objectHash(e) : e.id
             })
         } else {
             const token = IotaSDK.curNode?.token || ''
@@ -810,7 +810,7 @@ const useUpdateHisList = () => {
             type: 'common.activityData',
             data: { ...activityData, [address]: [...activityList] }
         })
-        const curAddressHis = (await Base.getLocalData(`${nodeId}.${address}.common.hisListv2`)) || []
+        const curAddressHis = (await Base.getLocalData(`${nodeId}.${address}.common.hisListv3`)) || []
         const localHis = [...curAddressHis]
         console.log('localHis at useUpdateHisList 810', localHis)
         if (hisList.length > 0) {
@@ -820,7 +820,7 @@ const useUpdateHisList = () => {
                 }
             })
             localHis.sort((a, b) => b.timestamp - a.timestamp)
-            Base.setLocalData(`${nodeId}.${address}.common.hisListv2`, localHis)
+            Base.setLocalData(`${nodeId}.${address}.common.hisListv3`, localHis)
         }
         console.log('localHis at useUpdateHisList 819', localHis)
         dispatch({
