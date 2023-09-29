@@ -416,7 +416,7 @@ const useUpdateHisList = () => {
                     decimal: 0,
                     contractDetail: e.contractDetail ? {
                         ...e.contractDetail,
-                        assets: Base.formatNum(new BigNumber(e.contractDetail.value).times(price[e.contractDetail.unit]) || 0)
+                        assets: Base.formatNum(new BigNumber(e.contractDetail.value).times(price[e.contractDetail.unit] || 0))
                     }: null,
                     assets: Base.formatNum(assets),
                     amount,
