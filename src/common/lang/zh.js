@@ -196,10 +196,10 @@ Going Beyond Blockchain`,
         balanceStakeError: '資金不足。請先unstake。',
         sendErrorInsufficient: `錯誤：資金不足，無法進行交易。
 發送{token}數量：{amount} 
-預計存儲押金：{deposit} SMR 
+預計存儲押金：{deposit} {unit} 
 可用{token}餘額：{balance1} 
-可用 SMR 餘額：{balance2} 
-鎖定的 SMR 餘額：{balance3}`,
+可用 {platformToken} 餘額：{balance2} {unit}
+鎖定的 {platformToken} 餘額：{balance3} {unit}`,
 
         requestAssets: '正在獲取資產數據',
         requestHis: '正在獲取歷史交易記錄',
@@ -223,7 +223,7 @@ Going Beyond Blockchain`,
         tokenID: '代幣ID',
         dismissTips: '請確認是否暫不接收，資產將在到期後退回發送賬戶。',
         acceptSucc: '領取成功',
-        unlockError: '請確認地址中有足夠SMR用於領取代幣。',
+        unlockError: '請確認地址中有足夠{token}用於領取代幣。',
         locked: '已鎖定',
         unlockTime: '解鎖時間',
         tokenName: '名稱',
@@ -246,6 +246,7 @@ Going Beyond Blockchain`,
         estimateGasFee: '估計手續費',
         editPriority: '編輯優先權',
         gasFee: '手續費',
+        gasPrice: 'Gas Price',
         gasLimit: '手續費限額',
         maxFee: '最大費用',
         edit: '編輯',
@@ -352,8 +353,7 @@ Going Beyond Blockchain`,
         ConnectBtn: '連接',
         approve: `通過授予許可，您允許以下合約訪問您的資金。
 #address#
-權限: #contractAmount# #unit#
-手續費: #fee#
+權限: #unit#
 `,
         contractFunc: `function: #abiFunc#`
     },
