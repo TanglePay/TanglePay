@@ -3637,6 +3637,81 @@ const IotaSDK = {
         IotaObj.setIotaBip44BasePath("m/44'/4219'")
         return res
     },
+    async _getSendHelperContext({ seed, password, type, nodeId, address }){
+        const isLedger = type === 'ledger'
+        let baseSeed = undefined
+        let addressKeyPair = undefined
+        if (isLedger) {
+            baseSeed = this.getSeed(seed, password)
+            addressKeyPair = this.getPair(baseSeed)
+        }
+        let getHardwareBip32Path = null
+        let signatureFunc = null
+        if (isLedger) {
+            signatureFunc = async (essenceHash, inputs, outputs, isBinaryEssence) => {
+                return await this.getHardwareIotaSign(nodeId, essenceHash, inputs, true, isBinaryEssence)
+            }
+            getHardwareBip32Path = (path) => {
+                return AppIota._validatePath(path)
+            }
+        }
+        const processFeature = this.processFeature.bind(this)
+        const bech32ToHex = this.bech32ToHex.bind(this)
+        const IndexerPluginClient = this.IndexerPluginClient
+        const outputIdResolver = (outputId) => {
+            return this.client.output(outputId)
+        }
+        const {bech32Address,hardwarePath} = await this._getSendHelperContextAddress()
+        const {minBalance} = await this._getSendHelperContextMinBalance(bech32Address)
+        const bech32Hrp = this.info.protocol.bech32Hrp
+        const rentStructure = this.info.protocol.rentStructure
+        const client = this.client
+        return {address,client,bech32Address, baseSeed,isLedger,processFeature,bech32ToHex,IndexerPluginClient, outputIdResolver, minBalance, addressKeyPair, getHardwareBip32Path, signatureFunc, hardwarePath, bech32Hrp, rentStructure}
+    },
+    _getSendHelperContextMinBalance(address){
+        const minBalance = IotaObj.TransactionHelper.getStorageDeposit(
+            {
+                address: `0x${this.bech32ToHex(address)}`,
+                addressType: 0, // ED25519_ADDRESS_TYPE
+                type: 3, //BASIC_OUTPUT_TYPE
+                amount: '',
+                unlockConditions: [
+                    {
+                        type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
+                        address: IotaObj.Bech32Helper.addressFromBech32(address, this.info.protocol.bech32Hrp)
+                    }
+                ],
+            },
+            this.info.protocol.rentStructure
+        )
+        return {minBalance}
+    },
+    async _getSendHelperContextAddress(){
+        const genAddressFunc = async (index) => {
+            const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
+            return { address, path }
+        }
+        let initialAddressState = {
+            accountIndex: 0,
+            addressIndex: 0,
+            isInternal: false
+        }
+        let bech32Address = ''
+        let hardwarePath = ''
+        const path = IotaObj.generateBip44Address(initialAddressState)
+        if (!isLedger) {
+            const addressSeed = baseSeed.generateSeedFromPath(new IotaObj.Bip32Path(path))
+            addressKeyPair = addressSeed.keyPair()
+            const ed25519Address = new IotaObj.Ed25519Address(addressKeyPair.publicKey)
+            const addressBytes = ed25519Address.toAddress()
+            bech32Address = IotaObj.Bech32Helper.toBech32(0, addressBytes, this.info.protocol.bech32Hrp) // ED25519_ADDRESS_TYPE
+        } else {
+            const hardwareAddressRes = await genAddressFunc(initialAddressState.addressIndex)
+            bech32Address = hardwareAddressRes.address
+            hardwarePath = hardwareAddressRes.path
+        }
+        return {bech32Address,hardwarePath}
+    },
     async SMRTokenSend(fromInfo, toAddress, sendAmount, ext) {
         const { seed, password, address } = fromInfo
         const baseSeed = this.getSeed(seed, password)
