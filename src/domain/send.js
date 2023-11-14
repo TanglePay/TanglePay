@@ -1,10 +1,12 @@
 
 import {drainOutputIds, sleep, Channel} from './util'
-import Iota from './iota'
+import Iota from '../common/iota-wallet/iota'
 let IotaObj = Iota
 const ConsolidationStopThresInputsNums = 100;
 
 const domainName = 'send-consolidate';
+
+export const sendDomainSwitch = true;
 
 // flow: requirements -> expected outputs -> drain outputids until stop condition -> check inputs and outputs if match
 
@@ -423,15 +425,14 @@ const digestCashOutputToOutputs = (ctx, addressOutput) => {
     const outputAmount = new BigNumber(addressOutput.output.amount)
     ctx.outputSMRBalance = outputSMRBalance.plus(outputAmount)
 }
-export const supplyCashAndConsolidateAsMuchAsPossible = async ({        
-    outputs,
-    inputsAndSignatureKeyPairs,
-    outputSMRBalance,
-    inputSMRBalance}) => {
-    const {IndexerPluginClient, minBalance, bech32Hrp, bech32Address, addressKeyPair, baseSeed, isLedger, hardwarePath, signatureFunc, getHardwareBip32Path} = helperContext
+export const supplyCashAndConsolidateAsMuchAsPossible = async (args) => {
+    const {        
+        outputs,
+        inputsAndSignatureKeyPairs,
+        outputSMRBalance,
+        inputSMRBalance} = args
+    const {bech32Address} = helperContext
     
-    const {items: outputIdsRaw} = outputIdsWrapper ?? {}
-    const outputIds = outputIdsRaw ?? []
     // drain outputIds
     const drainContext = makeDrainOutputIdsContext(outputIdResolver)
     drainOutputIds(drainContext)
@@ -484,8 +485,7 @@ export const supplyCashAndConsolidateAsMuchAsPossible = async ({
         const diffOutput = makeBasicOutput(diff, bech32Address)
         ctx.outputs.push(diffOutput)
     }
-    const {outputs, inputsAndSignatureKeyPairs} = ctx
-    return {outputs, inputsAndSignatureKeyPairs}
+    return ctx
 }
 
 const checkInputsAndOutputsMatch = async ({inputsAndSignatureKeyPairs, outputs}) => {
