@@ -24,6 +24,7 @@ import AppIota from './hw-app-iota'
 import { ethers } from 'ethers'
 import TransportLedger from './ledger'
 import { Base64 } from '@iota/util.js'
+import { SMRTokenSend, SMRCashSend, SMRNFTSend, setHelperContext } from '../../domain/send'
 const { TransportWebBLE, TransportWebUSB, TransportWebHID } = TransportLedger
 
 const initTokenAbi = require('../abi/TokenERC20.json')
@@ -2115,6 +2116,15 @@ const IotaSDK = {
                 }
             } else {
                 amount = Base.formatNum(BigNumber(sendAmount).div(Math.pow(10, this.curNode.decimal || 6)))
+                try {
+                    const { seed, password, address, nodeId, type } = fromInfo
+                    const ctx = await this._getSendHelperContext({ seed, password, type, nodeId, address })
+                    setHelperContext(ctx)
+                    sendOut = await SMRCashSend(toAddress,sendAmount,ext)
+                } catch (error) {
+                    throw error
+                }
+                /*
                 let genAddressFunc = null
                 let signatureFunc = null
                 let getHardwareBip32Path = null
@@ -2177,6 +2187,7 @@ const IotaSDK = {
                 } catch (error) {
                     throw error
                 }
+                */
             }
             const messageId = sendOut.messageId || sendOut.blockId
             // const blockData = await this.blockData(messageId)
@@ -3965,13 +3976,17 @@ const IotaSDK = {
     },
     // cache , collection
     async SMRTokenSendV2(fromInfo, toAddress, sendAmount, ext) {
-        const { seed, password, address, nodeId } = fromInfo
+        const { seed, password, address, nodeId, type } = fromInfo
+        let { tokenId, token, taggedData, realBalance, mainBalance, tag, metadata } = ext
+        const ctx = await this._getSendHelperContext({ seed, password, type, nodeId, address })
+        setHelperContext(ctx)
+        const res = await SMRTokenSend(toAddress,sendAmount,ext)
+        return res;
         const isLedger = fromInfo.type === 'ledger'
         let baseSeed = null
         if (!isLedger) {
             baseSeed = this.getSeed(seed, password)
         }
-        let { tokenId, token, taggedData, realBalance, mainBalance, tag, metadata } = ext
         tag = tag || 'TanglePay'
         let SMRFinished = false
         let finished = false
@@ -4296,7 +4311,12 @@ const IotaSDK = {
         }
     },
     async SMRNFTSend(fromInfo, toAddress, sendAmount, ext) {
-        const { seed, password, address, nodeId } = fromInfo
+        const { seed, password, address, nodeId, type } = fromInfo
+        let { nftId, taggedData, tag, isNftUnlock, metadata } = ext
+        const ctx = await this._getSendHelperContext({ seed, password, type, nodeId, address })
+        setHelperContext(ctx)
+        const res = await SMRNFTSend(toAddress,ext)
+        return res;
 
         const isLedger = fromInfo.type === 'ledger'
         let baseSeed = null
@@ -4304,7 +4324,7 @@ const IotaSDK = {
             baseSeed = this.getSeed(seed, password)
         }
 
-        let { nftId, taggedData, tag, isNftUnlock, metadata } = ext
+
         const nftIds = (nftId || '').split(',')
         tag = tag || 'TanglePay'
         let finishedIndex = 0
