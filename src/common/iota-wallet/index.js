@@ -2453,7 +2453,6 @@ const IotaSDK = {
         return datas
     },
     async getHisList(outputList, { address, nodeId }, smrOutputIds) {
-        console.log('getHisList---', outputList, { address, nodeId }, smrOutputIds)
         if (!this.client) {
             return Base.globalToast.error(I18n.t('user.nodeError') + ':' + (this?.curNode?.curNodeKey || this?.curNode?.name))
         }
@@ -2481,7 +2480,6 @@ const IotaSDK = {
                 )
                 // let outputDatas = await Promise.all(smrOutputIds.map((e) => this.outputData(e.outputId)))
                 // const blockDatas = await Promise.all(outputDatas.map((e) => this.blockData(!e.metadata?.isSpent ? e.metadata.blockId : e.metadata?.transactionId)))
-                console.log('getHisList---outputDatas---', outputDatas, blockDatas)
                 let blockIds = []
                 allList = outputDatas.map((e, i) => {
                     if (!blockDatas[i]) {

@@ -464,7 +464,6 @@ const useUpdateHisList = () => {
             // token info end
             // let originalMergeTransaction = {}
             let tokenMergeTransactionIds = []
-            console.log('activityList at useUpdateHisList', activityList)
             activityList.forEach((e, i) => {
                 const { timestamp, blockId, outputBlockId, mergeTransactionId, unlockBlock, decimal, outputs, outputSpent, output, payloadData } = e
                 let isSpent = e.isSpent
@@ -603,7 +602,6 @@ const useUpdateHisList = () => {
                     })
                 }
             })
-            console.log('hisList at useUpdateHisList', hisList)
             // merge start
             const newHisList = {}
             hisList.forEach((e) => {
@@ -634,7 +632,6 @@ const useUpdateHisList = () => {
                 // }
             })
             hisList = Object.values(newHisList)
-            console.log('hisList at useUpdateHisList 631', hisList)
             hisList.forEach((e) => {
                 const { unlockConditions } = e
                 let otherAddress = ''
@@ -650,7 +647,6 @@ const useUpdateHisList = () => {
                 }
             })
             // log(hisList)
-            console.log('hisList at useUpdateHisList 646', hisList)
             hisList.forEach((e) => {
                 if (validAddressList.includes(e.address)) {
                     const { to, from } = e.payloadData || {}
@@ -668,7 +664,6 @@ const useUpdateHisList = () => {
                 }
             })
             hisList = hisList.filter((e) => Number(e.amount) > 0)
-            console.log('hisList at useUpdateHisList 662', hisList)
             hisList.forEach((obj) => {
                 const num = new BigNumber(obj.amount || '').div(Math.pow(10, obj.decimal))
                 const iotaPrice = price ? IotaSDK.priceDic[obj.token || obj.token.toLocaleUpperCase()] : 0
@@ -818,7 +813,6 @@ const useUpdateHisList = () => {
         })
         const curAddressHis = (await Base.getLocalData(`${nodeId}.${address}.common.hisListv3`)) || []
         const localHis = [...curAddressHis]
-        console.log('localHis at useUpdateHisList 810', localHis)
         if (hisList.length > 0) {
             hisList.forEach((e) => {
                 const index = localHis.findIndex((d) => d.id == e.id)
@@ -831,7 +825,6 @@ const useUpdateHisList = () => {
             localHis.sort((a, b) => b.timestamp - a.timestamp)
             Base.setLocalData(`${nodeId}.${address}.common.hisListv3`, localHis)
         }
-        console.log('localHis at useUpdateHisList 819', localHis)
         dispatch({
             type: 'common.hisList',
             data: localHis
