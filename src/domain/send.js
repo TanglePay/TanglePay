@@ -1,7 +1,8 @@
 
 import {drainOutputIds, sleep, Channel} from './util'
-import Iota from '../common/iota-wallet/iota'
-let IotaObj = Iota
+import IotaNext from '../common/iota-wallet/iota-next'
+import BigNumber from 'bignumber.js'
+let IotaObj = IotaNext
 const ConsolidationStopThresInputsNums = 100;
 
 const domainName = 'send-consolidate';
@@ -23,7 +24,7 @@ export const SMRTokenSend = async (toAddress, sendAmount, ext) => {
         const {
             bech32Address, baseSeed,isLedger,processFeature,bech32ToHex,IndexerPluginClient, outputIdResolver, minBalance, addressKeyPair, getHardwareBip32Path, signatureFunc,hardwarePath
         } = helperContext    
-        
+        const drainContext = makeDrainOutputIdsContext(outputIdResolver)
         drainOutputIds(drainContext)
         const tasks = [
             fetchOutputIdsIntoChannelForUnlock(drainContext.inChannel, {
@@ -34,7 +35,7 @@ export const SMRTokenSend = async (toAddress, sendAmount, ext) => {
             })
         ]
         await Promise.all(tasks)
-        let cd = outputIds.length
+        let cd = drainContext.inChannel.numPushed;
 
         const ctx = {
             outputs: [],
@@ -85,10 +86,11 @@ const fetchOutputIdsIntoChannelForUnlock = async (channel, extraQueryParam) => {
         pageSize: 10000,
     }
     const param = {...basicParam, ...extraQueryParam}
-    const outputIdsWrapper = await IndexerPluginClient.basicOutputs(param);
+    const outputIdsWrapper = await IndexerPluginClient.outputs(param);
     const {items: outputIdsRaw} = outputIdsWrapper ?? {}
     const outputIds = outputIdsRaw ?? []
     for (const outputId of outputIds) { // TODO: reverse?
+        console.log('fetchOutputIdsIntoChannelForUnlock push outputid',outputId)
         channel.push(outputId);
     }
 }
@@ -101,21 +103,22 @@ const fetchOutputIdsIntoChannelForExpiration = async (channel, extraQueryParam) 
         pageSize: 10000,
     }
     const param = {...basicParam, ...extraQueryParam}
-    const outputIdsWrapper = await IndexerPluginClient.basicOutputs(param);
+    const outputIdsWrapper = await IndexerPluginClient.outputs(param);
     const {items: outputIdsRaw} = outputIdsWrapper ?? {}
     const outputIds = outputIdsRaw ?? []
     for (const outputId of outputIds) { // TODO: reverse?
+        console.log('fetchOutputIdsIntoChannelForExpiration push outputid',outputId)
         channel.push(outputId);
     }
 }
 const makeBasicOutput = (outputBalanceBig, bech32Address) => {
-    const {minBalance, bech32Hrp} = helperContext
+    const {minBalance, bech32Hrp, bech32ToHex} = helperContext
     if (!outputBalanceBig.gte(minBalance)) return undefined
     const basicOutput = {
-        address: `0x${this.bech32ToHex(bech32Address)}`,
+        address: `0x${bech32ToHex(bech32Address)}`,
         addressType: 0, // ED25519_ADDRESS_TYPE
         type: 3, //BASIC_OUTPUT_TYPE
-        amount: outputBalance.toString(),
+        amount: outputBalanceBig.toString(),
         unlockConditions: [
             {
                 type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
@@ -149,6 +152,8 @@ export const SMRCashSend = async (toAddress, sendAmount, ext) => {
     }
     isProcessing = true
     try {
+        let { taggedData, tag } = ext
+        tag = tag || 'TanglePay'
         const {processFeature} = helperContext
         const expectedOutput = processFeature(makeBasicOutput(BigNumber(sendAmount), toAddress), ext)
         const ctx = {
@@ -160,6 +165,7 @@ export const SMRCashSend = async (toAddress, sendAmount, ext) => {
             ext,
             tag,
             taggedData,
+            tokenAmountToSend: BigNumber(sendAmount),
         };
         const outputsInputsWithCash = await supplyCashAndConsolidateAsMuchAsPossible(ctx)
         checkInputsAndOutputsMatch(outputsInputsWithCash)
@@ -170,7 +176,7 @@ export const SMRCashSend = async (toAddress, sendAmount, ext) => {
         isProcessing = false
     }
 }
-export const SMRNFTSend = async (toAddress, ext) => {
+export const SMRNFTSend = async (toAddress, sendAmount, ext) => {
     if (isProcessing) {
         throw new Error('is processing')
     }
@@ -197,6 +203,7 @@ export const SMRNFTSend = async (toAddress, ext) => {
             inputsAndSignatureKeyPairs: [],
             outputSMRBalance: BigNumber(0),
             inputSMRBalance: BigNumber(0),
+            tokenAmountToSend: BigNumber(sendAmount),
             toAddress,
             ext,
             tag,
@@ -276,10 +283,10 @@ const digestNftOutputToOutputs = (ctx, addressOutput) => {
         unlockConditions: [
             {
                 type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
-                address: IotaObj.Bech32Helper.addressFromBech32(toAddress, bech32Hrp)
+                address: IotaObj.Bech32Helper.addressFromBech32(ctx.toAddress, bech32Hrp)
             }
         ]
-    }, ext)
+    }, ctx.ext)
     const currentAmount = new BigNumber(curOutput.amount)
     const deposit = IotaObj.TransactionHelper.getStorageDeposit(curOutput, rentStructure)
     if (currentAmount.lt(deposit)) {
@@ -332,7 +339,7 @@ const canDigestTokenOutput = (ctx, addressOutput) => {
     }
     return false;
 }
-const digestTokenOutputToOutputs = (ctx, toAddress, addressOutput) => {
+const digestTokenOutputToOutputs = (ctx, addressOutput) => {
     const {processFeature, bech32ToHex, bech32Hrp, rentStructure, bech32Address} = helperContext
     const nativeTokens = [];
     let curToken
@@ -402,8 +409,10 @@ const digestTokenOutputToOutputs = (ctx, toAddress, addressOutput) => {
 const digestCashOutput = (ctx, addressOutput) => {
     const canDigest = canDigestCashOutput(ctx, addressOutput)
     if (canDigest) {
+        console.log('digestCashOutput before',JSON.parse(JSON.stringify(ctx),true))
         digestCashOutputToOutputs(ctx, addressOutput)
         digestOutputToInputsAndSignatureKeyPairs(ctx, addressOutput)
+        console.log('digestCashOutput after',JSON.parse(JSON.stringify(ctx),true))
     }
 }
 const canDigestCashOutput = (ctx, addressOutput) => {
@@ -422,16 +431,19 @@ const canDigestCashOutput = (ctx, addressOutput) => {
     return true;
 }
 const digestCashOutputToOutputs = (ctx, addressOutput) => {
-    const outputAmount = new BigNumber(addressOutput.output.amount)
-    ctx.outputSMRBalance = outputSMRBalance.plus(outputAmount)
 }
 export const supplyCashAndConsolidateAsMuchAsPossible = async (args) => {
     const {        
         outputs,
         inputsAndSignatureKeyPairs,
         outputSMRBalance,
-        inputSMRBalance} = args
-    const {bech32Address} = helperContext
+        inputSMRBalance,
+        toAddress,
+        tag,
+        taggedData,
+        ext
+    } = args
+    const {bech32Address, outputIdResolver} = helperContext
     
     // drain outputIds
     const drainContext = makeDrainOutputIdsContext(outputIdResolver)
@@ -452,7 +464,7 @@ export const supplyCashAndConsolidateAsMuchAsPossible = async (args) => {
         })
     ]
     await Promise.all(tasks)
-    let cd = outputIds.length
+    let cd = drainContext.inChannel.numPushed;
     const ctx = {
         outputs,
         inputsAndSignatureKeyPairs,
@@ -477,14 +489,14 @@ export const supplyCashAndConsolidateAsMuchAsPossible = async (args) => {
         }
     }
     drainContext.isStop = true;
-    if (!ctx.isConsolidationSatisfied) {
-        throw new Error('consolidation not satisfied')
-    }
+
     if (ctx.outputSMRBalance.lt(ctx.inputSMRBalance)) {
         const diff = ctx.inputSMRBalance.minus(ctx.outputSMRBalance)
         const diffOutput = makeBasicOutput(diff, bech32Address)
         ctx.outputs.push(diffOutput)
+        ctx.outputSMRBalance = ctx.outputSMRBalance.plus(diff)
     }
+    console.log('supplyCashAndConsolidateAsMuchAsPossible ctx',ctx)
     return ctx
 }
 
@@ -573,7 +585,7 @@ const checkInputsAndOutputsMatch = async ({inputsAndSignatureKeyPairs, outputs})
 
 const sendTx = async (ctx, {outputs, inputsAndSignatureKeyPairs}) => {
     const {client,address} = helperContext
-    const {tag, taggedData, ext} = ctx
+    const {tag, taggedData, ext, toAddress, tokenAmountToSend} = ctx
     const res = await IotaObj.sendAdvanced(client, inputsAndSignatureKeyPairs, outputs, {
         tag: IotaObj.Converter.utf8ToBytes(tag),
         data: taggedData
@@ -582,7 +594,7 @@ const sendTx = async (ctx, {outputs, inputsAndSignatureKeyPairs}) => {
                   JSON.stringify({
                       from: address, //main address
                       to: toAddress,
-                      amount: sendAmount,
+                      amount: tokenAmountToSend.toString(),
                       collection: ext?.isCollection ? 1 : 0
                   })
               )

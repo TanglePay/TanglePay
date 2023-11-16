@@ -63,10 +63,16 @@ export const sleep = async (ms) => {
 }
 export class Channel {
   queue = [];
+  numPushed = 0;
+  numPolled = 0;
   async poll() {
     for (;;) {
       if (this.queue.length > 0) {
-        return this.queue.shift();
+        const res = this.queue.shift();
+        if (res) {
+          this.numPolled++;
+          return res;
+        }
       } else {
         await sleep(100);
       }
@@ -75,6 +81,7 @@ export class Channel {
   
   push(item) {
     this.queue.push(item);
+    this.numPushed++;
   }
 
 }
@@ -83,8 +90,9 @@ export const drainOutputIds = async (args) => {
   for (let i = 0; i < args.threadNum; i++) {
     setTimeout(async () => {
       while (!args.isStop) {
-        const outputId = args.inChannel.poll();
+        const outputId = await args.inChannel.poll();
         if (outputId) {
+          console.log('drainOutputIds',outputId)
           const output = await args.outputIdResolver(outputId);
           if (output) {
             args.outChannel.push(output);
