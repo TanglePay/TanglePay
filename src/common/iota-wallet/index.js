@@ -40,8 +40,8 @@ const IOTA_NODE_ID = 1
 const shimmerTestnet = {
     id: 101,
     explorer: 'https://explorer.shimmer.network/testnet',
-    url: 'https://test.shimmer.node.tanglepay.com',
-    name: 'Shimmer Beta',
+    url: 'https://test.api.iotacat.com',
+    name: 'eta',
     enName: 'Shimmer Beta',
     deName: 'Shimmer Beta',
     zhName: 'Shimmer 测试網絡',
@@ -3671,7 +3671,7 @@ const IotaSDK = {
         const outputIdResolver = async (outputId) => {
             return await this.client.output(outputId)
         }
-        const {bech32Address,hardwarePath} = await this._getSendHelperContextAddress({isLedger,addressKeyPair})
+        const {bech32Address,hardwarePath} = await this._getSendHelperContextAddress({isLedger,addressKeyPair,nodeId})
         const {minBalance} = await this._getSendHelperContextMinBalance(bech32Address)
         const bech32Hrp = this.info.protocol.bech32Hrp
         const rentStructure = this.info.protocol.rentStructure
@@ -3696,7 +3696,7 @@ const IotaSDK = {
         )
         return {minBalance}
     },
-    async _getSendHelperContextAddress({isLedger,addressKeyPair}){
+    async _getSendHelperContextAddress({isLedger,addressKeyPair,nodeId}){
         const genAddressFunc = async (index) => {
             const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
             return { address, path }
