@@ -307,9 +307,14 @@ const digestNftOutput = (ctx,addressOutput) => {
 }
 const getNftIdFromOutput = (addressOutput) => {
     let outputNftId = addressOutput.output.nftId
-    if (outputNftId == 0) {
-        outputNftId = IotaObj.TransactionHelper.resolveIdFromOutputId(addressOutput.output.outputId)
+    // convert outputNftId from hex to number
+    if (outputNftId) {
+        const outputNftIdInt = parseInt(outputNftId, 16)
+        if (outputNftIdInt == 0) {
+            outputNftId = IotaObj.TransactionHelper.resolveIdFromOutputId(addressOutput.output.outputId)
+        }
     }
+    
     return outputNftId
 }
 
