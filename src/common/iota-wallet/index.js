@@ -24,7 +24,7 @@ import AppIota from './hw-app-iota'
 import { ethers } from 'ethers'
 import TransportLedger from './ledger'
 import { Base64 } from '@iota/util.js'
-import { SMRTokenSend, SMRCashSend, SMRNFTSend, setHelperContext, sendDomainSwitch } from '../../domain/send'
+import { SMRTokenSend, SMRCashSend, SMRNFTSend, setHelperContext, sendDomainSwitch, setExemptTagPrefixList, getExemptTagPrefixList } from '../../domain/send'
 const { TransportWebBLE, TransportWebUSB, TransportWebHID } = TransportLedger
 
 const initTokenAbi = require('../abi/TokenERC20.json')
@@ -356,6 +356,13 @@ const IotaSDK = {
                 })
         })
     },
+    setExemptTagPrefixList(list) {
+        setExemptTagPrefixList(list)
+    },
+    getExemptTagPrefixList() {
+        return getExemptTagPrefixList()
+    },
+
     async getNodes(callBack) {
         try {
             Base.getLocalData('tanglePayNodeList').then((res) => {
@@ -1777,6 +1784,7 @@ const IotaSDK = {
             collect(ids)
         }
     },
+    
     stopCollect() {
         this._stopCollect = true
     },
@@ -3676,7 +3684,7 @@ const IotaSDK = {
         const bech32Hrp = this.info.protocol.bech32Hrp
         const rentStructure = this.info.protocol.rentStructure
         const client = this.client
-        return {address,client,bech32Address, baseSeed,isLedger,processFeature,bech32ToHex,IndexerPluginClient, outputIdResolver, minBalance, addressKeyPair, getHardwareBip32Path, signatureFunc, hardwarePath, bech32Hrp, rentStructure}
+        return {nodeId, address,client,bech32Address, baseSeed,isLedger,processFeature,bech32ToHex,IndexerPluginClient, outputIdResolver, minBalance, addressKeyPair, getHardwareBip32Path, signatureFunc, hardwarePath, bech32Hrp, rentStructure}
     },
     _getSendHelperContextMinBalance(address){
         const minBalance = IotaObj.TransactionHelper.getStorageDeposit(

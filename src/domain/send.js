@@ -2,19 +2,21 @@
 import {drainOutputIds, sleep, Channel} from './util'
 import IotaNext from '../common/iota-wallet/iota-next'
 import BigNumber from 'bignumber.js'
+import I18n from '../common/lang'
+import IotaSDK from '../common/iota-wallet/index'
 let IotaObj = IotaNext
 const ConsolidationStopThresInputsNums = 100;
 
 const domainName = 'send-consolidate';
 
-let exceptTagPrefixList = ['PARTICIPATE','GROUPFIMUTE','GROUPFIVOTE','GROUPFIMARK']
-// get exceptTagPrefixList
+let exemptTagPrefixList = ['PARTICIPATE','GROUPFIMUTE','GROUPFIVOTE','GROUPFIMARK']
+// get exemptTagPrefixList
   
-export const setExzeptTagPrefixList = (list) => {
-    exceptTagPrefixList = list
+export const setExemptTagPrefixList = (list) => {
+    exemptTagPrefixList = list
 }
 
-export const getExzeptTagPrefixList = () => {
+export const getExemptTagPrefixList = () => {
 
 }
 
@@ -79,7 +81,7 @@ export const SMRTokenSend = async (toAddress, sendAmount, ext) => {
         console.log('SMRTokenSend ctx',JSON.parse(JSON.stringify(ctx),true))
         drainContext.isStop = true;
         if (!ctx.isTokenSatisfied) {
-            throw new Error('token not satisfied')
+            throw new Error(I18n.t('assets.sendInsufficientNativeToken'))
         }
         finishingCtx(ctx)
         checkInputsAndOutputsMatch(ctx)
@@ -219,10 +221,6 @@ export const SMRCashSend = async (toAddress, sendAmount, ext) => {
             isFromTokenSend: false
         };
         const outputsInputsWithCash = await supplyCashAndConsolidateAsMuchAsPossible(ctx)
-        // if input smr balance is less than output smr balance, throw insufficient balance error
-        if (ctx.inputSMRBalance.gt(ctx.outputSMRBalance)) {
-            throw new Error('insufficient balance')
-        }
         checkInputsAndOutputsMatch(outputsInputsWithCash)
         return await sendTx(ctx, outputsInputsWithCash)
     } catch (e) {
@@ -286,7 +284,7 @@ export const SMRNFTSend = async (toAddress, sendAmount, ext) => {
         console.log('SMRNFTSend ctx',JSON.parse(JSON.stringify(ctx),true))
         drainContext.isStop = true;
         if (!ctx.isNftSatisfied) {
-            throw new Error('nft not satisfied')
+            throw new Error(I18n.t('assets.sendInsufficientNfts'))
         }
         const outputsInputsWithCash = await supplyCashAndConsolidateAsMuchAsPossible(ctx)
         checkInputsAndOutputsMatch(outputsInputsWithCash)
@@ -305,14 +303,28 @@ const digestNftOutput = (ctx,addressOutput) => {
         digestOutputToInputsAndSignatureKeyPairs(ctx, addressOutput)
     }
 }
+function isHexZero(str) {
+    // Check if the input is null or not a string
+    if (str === null || typeof str !== 'string') {
+        return false;
+    }
+
+    // Check if the string starts with '0x' and has at least one more character
+    if (str.startsWith("0x") && str.length > 2) {
+        // Remove the '0x' prefix and check if the remaining characters are all zeros
+        return str.substring(2).split('').every(char => char === '0');
+    }
+    return false;
+}
 const getNftIdFromOutput = (addressOutput) => {
     let outputNftId = addressOutput.output.nftId
     // convert outputNftId from hex to number
-    if (outputNftId) {
-        const outputNftIdInt = parseInt(outputNftId, 16)
-        if (outputNftIdInt == 0) {
-            outputNftId = IotaObj.TransactionHelper.resolveIdFromOutputId(addressOutput.output.outputId)
+    if (isHexZero(outputNftId)) {
+        let outputId = addressOutput.output.outputId
+        if (outputId == undefined) {
+            outputId = IotaObj.TransactionHelper.outputIdFromTransactionData(addressOutput.metadata.transactionId,addressOutput.metadata.outputIndex)
         }
+        outputNftId = IotaObj.TransactionHelper.resolveIdFromOutputId(outputId)
     }
     
     return outputNftId
@@ -510,7 +522,7 @@ const canDigestCashOutput = (ctx, addressOutput) => {
         if (tag) {
               const tagStr = IotaObj.Converter.hexToUtf8(tag.tag)
               let isExzept = false;
-              for (const prefix of exceptTagPrefixList) {
+              for (const prefix of exemptTagPrefixList) {
                 if (tagStr && tagStr.startsWith(prefix)) {
                     isExzept = true;
                     break;
@@ -606,6 +618,26 @@ const finishingCtx = (ctx) => {
         ctx.outputSMRBalance = ctx.outputSMRBalance.plus(new BigNumber(cashOutput.amount))
     }
 }
+const checkInsufficientToken = (ctx,ext) => {
+    const {nodeId} = helperContext
+    const {token, realBalance, mainBalance } = ext
+    const sendAmount = ctx.tokenAmountToSend.toString()
+    if (ctx.tokenAmountByFar.lt(ctx.tokenAmountToSend)) {
+        let str = I18n.t('assets.sendErrorInsufficient')
+        const isIotaStardust = IotaSDK.isIotaStardust(nodeId)
+        str = str
+            .replace(/{token}/g, token)
+            .replace(/{amount}/g, sendAmount)
+            .replace(/{deposit}/g, Number(receiverStorageDeposit.toString()) + Number(remainderStorageDeposit.toString()) + Number(otherTokensStorageDeposit))
+            .replace(/{unit}/g, isIotaStardust ? 'MICRO' : 'GLOW')
+            .replace(/{platformToken}/g, isIotaStardust ? 'IOTA' : 'SMR')
+            .replace(/{balance1}/g, realBalance)
+            .replace(/{balance2}/g, mainBalance)
+            .replace(/{balance3}/g, Number(outputBalance))
+        throw new Error(str)
+        
+    }
+}
 const checkInputsAndOutputsMatch = async ({inputsAndSignatureKeyPairs, outputs}) => {
     const inputsSMRBalance = inputsAndSignatureKeyPairs.reduce((acc, cur) => {
         return acc.plus(new BigNumber(cur.consumingOutput.amount))
@@ -613,6 +645,10 @@ const checkInputsAndOutputsMatch = async ({inputsAndSignatureKeyPairs, outputs})
     const outputsSMRBalance = outputs.reduce((acc, cur) => {
         return acc.plus(new BigNumber(cur.amount))
     }, BigNumber(0))
+    // if inputsSmrBalance less than outputsSmrBalance
+    if (inputsSMRBalance.lt(outputsSMRBalance)) {
+        throw new Error(I18n.t('assets.sendErrorInsufficientCash'))
+    }
     if (!inputsSMRBalance.eq(outputsSMRBalance)) {
         throw new Error('inputs and outputs not match, smr balance not match')
     }
