@@ -931,6 +931,20 @@ const useUpdateUnlockConditions = () => {
             outputDatas = outputDatas.filter((e) => {
                 return (e.output?.unlockConditions || []).find((g) => g.type != 0)
             })
+            // filter out groupfi
+            // log
+            console.log('outputDatas before filter', outputDatas)
+            outputDatas = outputDatas.filter((e) => {
+                const tagFeature = (e.output?.features || []).find((g) => g.type == 3)
+                if (tagFeature) {
+                    const tag = IotaSDK.hexToUtf8(tagFeature.tag)
+                    if (tag && tag.startsWith('GROUPFI')) {
+                        return false
+                    }
+                }
+                return true
+            })
+            console.log('outputDatas after filter', outputDatas)
             let unlockConditionsList = []
             let lockedListArr = []
             const nowTime = parseInt(new Date().getTime() / 1000)
