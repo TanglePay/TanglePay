@@ -1764,17 +1764,17 @@ const IotaSDK = {
                 const sendAmountHex = this.client.utils.toHex(value)
 
                 const fromAddress = to;
-                const nonce = await eth.getTransactionCount(fromAddress)
-                
+
                 const params = {
                     to: contract,
                     from: to,
-                    nonce,
                 }
 
                 if(taggedData && value && value != 0) {
                     params.value = sendAmountHex
                 }
+
+                const isContractTransfer = !taggedData
 
                 if (!taggedData) {
                     const tokenAbi = JSON.parse(JSON.stringify(initTokenAbi))
@@ -1792,7 +1792,8 @@ const IotaSDK = {
                 }
                 initialGasLimitBn = BigNumber(initialGasLimitBn)
                 const upperGasLimitBn = blockGasLimitBn.times(0.9)
-                const bufferedGasLimitBn = initialGasLimitBn.times(1.5)
+                // const bufferedGasLimitBn = initialGasLimitBn.times(1.5)
+                const bufferedGasLimitBn = isContractTransfer ? initialGasLimitBn.times(1.5) : initialGasLimitBn
                 if (initialGasLimitBn.gt(upperGasLimitBn)) {
                     limit = initialGasLimitBn
                 } else if (bufferedGasLimitBn.lt(upperGasLimitBn)) {
