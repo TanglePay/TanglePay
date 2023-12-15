@@ -24,7 +24,7 @@ import AppIota from './hw-app-iota'
 import { ethers } from 'ethers'
 import TransportLedger from './ledger'
 import { Base64 } from '@iota/util.js'
-import { SMRTokenSend, SMRCashSend, SMRNFTSend, setHelperContext, sendDomainSwitch, setExemptTagPrefixList, getExemptTagPrefixList } from '../../domain/send'
+import { SMRTokenSend, SMRCashSend, SMRNFTSend, setHelperContext, sendDomainSwitch, setExemptTagPrefixList, getExemptTagPrefixList,calculateAddressBasicOutputState } from '../../domain/send'
 const { TransportWebBLE, TransportWebUSB, TransportWebHID } = TransportLedger
 
 const initTokenAbi = require('../abi/TokenERC20.json')
@@ -1271,6 +1271,27 @@ const IotaSDK = {
         }
         return await getAddressList(accountState)
     },
+    async getBalanceStateOfOneAddress(address) {
+        const IndexerPluginClient = this.IndexerPluginClient
+        const outputIdResolver = async (outputId) => {
+            return await this.client.output(outputId)
+        }
+        const rentStructure = this.info.protocol.rentStructure
+        const helperContext = {
+            outputIdResolver,
+            rentStructure,
+            IndexerPluginClient,
+            bech32Address: address
+        }
+        setHelperContext(helperContext)
+        const {balance,deposit} = await calculateAddressBasicOutputState()
+        // log method address balanceState
+        console.log('getBalanceStateOfOneAddress', address, balance.toString(), deposit.toString())
+
+        const available = balance.minus(deposit) 
+        return {balance:available}
+    },
+
     async getBalance({ id, address, nodeId }, addressList) {
         if (!this.client) {
             return []
@@ -1294,6 +1315,7 @@ const IotaSDK = {
                 let res = []
                 if (IotaObj.addressBalance) {
                     res = await Promise.all(addressList.map((e) => IotaObj.addressBalance(this.client, e)))
+                    
                     // cache shimmer outputDatas
                     let cacheOutputDatas = {}
                     addressList.forEach((e, i) => {

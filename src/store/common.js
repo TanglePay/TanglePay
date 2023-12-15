@@ -932,8 +932,6 @@ const useUpdateUnlockConditions = () => {
                 return (e.output?.unlockConditions || []).find((g) => g.type != 0)
             })
             // filter out groupfi
-            // log
-            console.log('outputDatas before filter', outputDatas)
             outputDatas = outputDatas.filter((e) => {
                 const tagFeature = (e.output?.features || []).find((g) => g.type == 3)
                 if (tagFeature) {
@@ -944,7 +942,6 @@ const useUpdateUnlockConditions = () => {
                 }
                 return true
             })
-            console.log('outputDatas after filter', outputDatas)
             let unlockConditionsList = []
             let lockedListArr = []
             const nowTime = parseInt(new Date().getTime() / 1000)

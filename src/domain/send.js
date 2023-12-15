@@ -5,7 +5,8 @@ import BigNumber from 'bignumber.js'
 import I18n from '../common/lang'
 import IotaSDK from '../common/iota-wallet/index'
 let IotaObj = IotaNext
-const ConsolidationStopThresInputsNums = 100;
+const ConsolidationStopThresInputsNums = 64;
+const ConsolidationThrowThresInputsNums = 128;
 
 const domainName = 'send-consolidate';
 
@@ -81,7 +82,8 @@ export const SMRTokenSend = async (toAddress, sendAmount, ext) => {
         console.log('SMRTokenSend ctx',JSON.parse(JSON.stringify(ctx),true))
         drainContext.isStop = true;
         if (!ctx.isTokenSatisfied) {
-            throw new Error(I18n.t('assets.sendInsufficientNativeToken'))
+            const errStr = I18n.t('assets.sendInsufficientNativeToken').replace(/{token}/g, token)
+            throw new Error(errStr)
         }
         finishingCtx(ctx)
         checkInputsAndOutputsMatch(ctx)
@@ -129,7 +131,6 @@ const fetchOutputIdsIntoChannelForExpiration = async (channel, extraQueryParam) 
 }
 const makeBasicOutput = (outputBalanceBig, bech32Address) => {
     const {minBalance, bech32Hrp, bech32ToHex} = helperContext
-    if (!outputBalanceBig.gte(minBalance)) return undefined
     const basicOutput = {
         address: `0x${bech32ToHex(bech32Address)}`,
         addressType: 0, // ED25519_ADDRESS_TYPE
@@ -206,8 +207,15 @@ export const SMRCashSend = async (toAddress, sendAmount, ext) => {
     try {
         let { taggedData, tag } = ext
         tag = tag || 'TanglePay'
-        const {processFeature} = helperContext
+        const {processFeature, rentStructure, nodeId} = helperContext
         const expectedOutput = processFeature(makeBasicOutput(BigNumber(sendAmount), toAddress), ext)
+        const expectedOutputDeposit = IotaObj.TransactionHelper.getStorageDeposit(expectedOutput, rentStructure)
+        if (BigNumber(expectedOutput.amount).lt(BigNumber(expectedOutputDeposit.toString()))) {
+            const isIotaStardust = IotaSDK.isIotaStardust(nodeId)
+        
+            const errStr = I18n.t('assets.sendAmountTooSmall').replace(/{amount}/g, expectedOutputDeposit.toString()+' '+(isIotaStardust ? 'MICRO' : 'GLOW'))
+            throw new Error(errStr)
+        }
         const ctx = {
             outputs: [expectedOutput],
             inputsAndSignatureKeyPairs: [],
@@ -606,39 +614,72 @@ export const supplyCashAndConsolidateAsMuchAsPossible = async (args) => {
     return ctx
 }
 const finishingCtx = (ctx) => {
-    const {bech32Address} = helperContext
+    const {bech32Address, rentStructure, nodeId} = helperContext
     if (ctx.nativeTokens.length > 0) {
         const tokenOutput = makeBasicOutputWithTokens(bech32Address, ctx.nativeTokens)
         ctx.outputs.push(tokenOutput)
         ctx.outputSMRBalance = ctx.outputSMRBalance.plus(new BigNumber(tokenOutput.amount))
     }
+    if (ctx.inputSMRBalance.lt(ctx.outputSMRBalance)) {
+        const errStr = I18n.t('assets.sendStorageDepositNotEnough')
+        throw new Error(errStr)
+    }
     if (ctx.outputSMRBalance.lt(ctx.inputSMRBalance)) {
         const cashOutput = makeBasicOutput(ctx.inputSMRBalance.minus(ctx.outputSMRBalance), bech32Address)
+        const cashOutputDeposit = IotaObj.TransactionHelper.getStorageDeposit(cashOutput, rentStructure)
+        if (BigNumber(cashOutput.amount).lt(BigNumber(cashOutputDeposit.toString()))) {
+            const isIotaStardust = IotaSDK.isIotaStardust(nodeId)
+            isIotaStardust ? 'MICRO' : 'GLOW'
+            const errStr = I18n.t('assets.sendInsufficientCashForRemainderDeposit').replace(/{amount}/g, cashOutputDeposit.toString()+' '+(isIotaStardust ? 'MICRO' : 'GLOW'))
+            throw new Error(errStr)
+        }
         ctx.outputs.push(cashOutput)
         ctx.outputSMRBalance = ctx.outputSMRBalance.plus(new BigNumber(cashOutput.amount))
     }
 }
-const checkInsufficientToken = (ctx,ext) => {
-    const {nodeId} = helperContext
-    const {token, realBalance, mainBalance } = ext
-    const sendAmount = ctx.tokenAmountToSend.toString()
-    if (ctx.tokenAmountByFar.lt(ctx.tokenAmountToSend)) {
-        let str = I18n.t('assets.sendErrorInsufficient')
-        const isIotaStardust = IotaSDK.isIotaStardust(nodeId)
-        str = str
-            .replace(/{token}/g, token)
-            .replace(/{amount}/g, sendAmount)
-            .replace(/{deposit}/g, Number(receiverStorageDeposit.toString()) + Number(remainderStorageDeposit.toString()) + Number(otherTokensStorageDeposit))
-            .replace(/{unit}/g, isIotaStardust ? 'MICRO' : 'GLOW')
-            .replace(/{platformToken}/g, isIotaStardust ? 'IOTA' : 'SMR')
-            .replace(/{balance1}/g, realBalance)
-            .replace(/{balance2}/g, mainBalance)
-            .replace(/{balance3}/g, Number(outputBalance))
-        throw new Error(str)
-        
+export const calculateAddressBasicOutputState = async () => {
+
+    const {outputIdResolver, rentStructure} = helperContext
+    
+    // drain outputIds
+    const drainContext = makeDrainOutputIdsContext(outputIdResolver)
+    drainOutputIds(drainContext)
+    const tasks = getAllBasicOutputsTask(drainContext)
+    await Promise.all(tasks)
+    let cd = drainContext.inChannel.numPushed;
+    const ctx = {
+        balance: BigNumber(0),
+        deposit: BigNumber(0),        
+        nativeTokens: [],
+    };
+    for(;;) {
+        cd--;
+        if (cd < 0) {
+            break;
+        }
+        const addressOutput = await drainContext.outChannel.poll();
+        if (addressOutput.metadata.isSpent) continue
+        const amount = new BigNumber(addressOutput.output.amount)
+        const deposit = IotaObj.TransactionHelper.getStorageDeposit(addressOutput.output, rentStructure)
+        ctx.balance = ctx.balance.plus(amount)
+        ctx.deposit = ctx.deposit.plus(new BigNumber(deposit.toString()))
+        if (addressOutput.output.nativeTokens && addressOutput.output.nativeTokens.length > 0) {
+            ctx.nativeTokens = mergeNativeTokens(ctx.nativeTokens, addressOutput.output.nativeTokens)
+        }
+    }
+    drainContext.isStop = true;
+    return {
+        balance: ctx.balance,
+        deposit: ctx.deposit,
+        nativeTokens: ctx.nativeTokens
     }
 }
 const checkInputsAndOutputsMatch = async ({inputsAndSignatureKeyPairs, outputs}) => {
+    const numOfTotalOutputs = outputs.length + inputsAndSignatureKeyPairs.length
+    if (numOfTotalOutputs >= ConsolidationThrowThresInputsNums) {
+        throw new Error('too many outputs')
+    }
+    const {nodeId} = helperContext
     const inputsSMRBalance = inputsAndSignatureKeyPairs.reduce((acc, cur) => {
         return acc.plus(new BigNumber(cur.consumingOutput.amount))
     }, BigNumber(0))
@@ -647,7 +688,10 @@ const checkInputsAndOutputsMatch = async ({inputsAndSignatureKeyPairs, outputs})
     }, BigNumber(0))
     // if inputsSmrBalance less than outputsSmrBalance
     if (inputsSMRBalance.lt(outputsSMRBalance)) {
-        throw new Error(I18n.t('assets.sendErrorInsufficientCash'))
+        const isIotaStardust = IotaSDK.isIotaStardust(nodeId)
+        const cashSymbol = isIotaStardust ? 'IOTA' : 'SMR'
+        const errStr = I18n.t('assets.sendErrorInsufficientCash').replace(/{cash}/g, cashSymbol)
+        throw new Error(errStr)
     }
     if (!inputsSMRBalance.eq(outputsSMRBalance)) {
         throw new Error('inputs and outputs not match, smr balance not match')
