@@ -546,8 +546,7 @@ const IotaSDK = {
                     callBack = null
                 }
             })
-            // let res = await fetch(`${API_URL}/evm.json?v=${new Date().getTime()}`)
-            let res = await fetch(`./evm.json?v=${new Date().getTime()}`)
+            let res = await fetch(`${API_URL}/evm.json?v=${new Date().getTime()}`)
             res = await res.json()
             const _nodes = [...initNodeList]
             res.forEach((e) => {
