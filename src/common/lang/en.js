@@ -133,7 +133,7 @@ Going Beyond Blockchain`,
         removeTitle: 'Remove Account',
         removeTips: `This account will be removed from your device.
 Please make sure you have the original
-Secret Recovery Phrase or private key for this account before continuing.`,
+Secret Recovery Phrase or private key for this assets.sendErrorInsufficientaccount before continuing.`,
         removeName: 'Name',
         removeAddress: 'Address',
         nevermind: 'Cancel',
@@ -257,7 +257,13 @@ Locked {platformToken} balance: {balance3} {unit}`,
         getAssetsFail: 'Asset synchronization failed, please scroll down to refresh',
         getActivityFail: 'Transaction record synchronization failed, please scroll down to refresh',
         sendConfirmation: 'Send Confirmation',
-        sendConfirmationTips: 'Please confirm the sending of this transaction'
+        sendConfirmationTips: 'Please confirm the sending of this transaction',
+        sendInsufficientNfts: 'NFT cannot be found.',
+        sendInsufficientNativeToken: '{token} is not enough.',
+        sendInsufficientCash: 'There is not enough {cash}.',
+        sendAmountTooSmall: 'Transfer amount cannot be lower than {amount}.',
+        sendStorageDepositNotEnough: 'Storage deposit is not enough.',
+        sendInsufficientCashForRemainderDeposit:'The remaining {amount} is not enough to pay the storage deposit.'
     },
     user: {
         me: 'Me',
