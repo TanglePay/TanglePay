@@ -24,7 +24,7 @@ import AppIota from './hw-app-iota'
 import { ethers } from 'ethers'
 import TransportLedger from './ledger'
 import { Base64 } from '@iota/util.js'
-import { SMRTokenSend, SMRCashSend, SMRNFTSend, setHelperContext, sendDomainSwitch, setExemptTagPrefixList, getExemptTagPrefixList,calculateAddressBasicOutputState } from '../../domain/send'
+import { SMRTokenSend, SMRCashSend, SMRNFTSend, setHelperContext, sendDomainSwitch, setExemptTagPrefixList, getExemptTagPrefixList, calculateAddressBasicOutputState } from '../../domain/send'
 const { TransportWebBLE, TransportWebUSB, TransportWebHID } = TransportLedger
 
 const initTokenAbi = require('../abi/TokenERC20.json')
@@ -76,170 +76,166 @@ const iotaTestnet = {
 }
 const shimmerEvmTestnet = {
     id: 6,
-    url: "https://json-rpc.evm.testnet.shimmer.network",
-    explorer: "https://explorer.evm.testnet.shimmer.network/",
-    name: "Shimmer Testnet",
-    enName: "Shimmer Testnet",
-    deName: "Shimmer Testnet",
-    zhName: "Shimmer Testnet",
+    url: 'https://json-rpc.evm.testnet.shimmer.network',
+    explorer: 'https://explorer.evm.testnet.shimmer.network/',
+    name: 'Shimmer Testnet',
+    enName: 'Shimmer Testnet',
+    deName: 'Shimmer Testnet',
+    zhName: 'Shimmer Testnet',
     type: 2,
-    network: "shimmer-evm",
-    bech32HRP: "shimmer-evm",
-    token: "RMS",
-    filterMenuList: [
-      "staking"
-    ],
-    filterAssetsList: [
-      "stake"
-    ],
+    network: 'shimmer-evm',
+    bech32HRP: 'shimmer-evm',
+    token: 'RMS',
+    filterMenuList: ['staking'],
+    filterAssetsList: ['stake'],
     contractList: [
-      {
-        contract: "0x038c4a46eB66f15Bc8739D9e23e3f46db95f102c",
-        token: "USDC",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0
-      },
-      {
-        contract: "0x39DEE4dFA8A94fB02F4004a38543c853F859d79E",
-        token: "SOONtest",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0
-      },
-      {
-        contract: "0x5026a8F54A07578ebBdC9d589Df21b67D75094be",
-        token: "USDT",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0
-      },
-      {
-        contract: "0x8CB067473a564F2e72cBcd21d2e2d01CfcB4D222",
-        token: "TT1",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0
-      },
-      {
-        contract: "0xf0D82b7837fC074B8d349e3cEd773089fA77Fde3",
-        token: "TT2",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0
-      },
-      {
-        contract: "0x68018Bf6127aD04Ad9b6b0f8ACf18fD5651dE0C8",
-        token: "TT3",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0
-      },
-      {
-        contract: "0xb6bB5544C6E43970BB6b0f7eb7b99c45343d206e",
-        token: "TT4",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0
-      },
-      {
-        contract: "0xdcc4e969f081c3e967581aa9175ef6f0a337ae88",
-        token: "IBTA",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      },
-      {
-        contract: "0xc9f3a2c8a5c05fdbe086549de9dd9954aca7bd22",
-        token: "IBTB",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      },
-      {
-        contract: "0xf849a0e4f2d0ee73fcdd76d48bb9d648f1f2f604",
-        token: "IBTC",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      },
-      {
-        contract: "0x77a8fb551bfdbcadf4bbcd52381004b71de021c3",
-        token: "EGG",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      },
-      {
-        contract: "0xbfbe97a4064360c64580529f3031d97c1380273b",
-        token: "WEN",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      },
-      {
-        contract: "0x87b1ccdbdd975807c96e43414cbb61e13c2b9fc3",
-        token: "MOON",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      },
-      {
-        contract: "0x87ba1c836adb867efad3f31aaed8c9e6f73c2510",
-        token: "fBTC",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      },
-      {
-        contract: "0x8f98916e6e9dd5d3d2d3fb3b3a84aacba72bcef0",
-        token: "FETH",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      },
-      {
-        contract: "0xd0549372f1031137da785e0166cd0347ef32be05",
-        token: "FAVAX",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      },
-      {
-        contract: "0x9ee409aa1e2cd2d813e3b2471e00d5260a71b833",
-        token: "fUSDT",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      },
-      {
-        contract: "0x83688e59c4722e6835eeae24c1632bdeb115e44e",
-        token: "FUSDC",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      },
-      {
-        contract: "0xdfc050688123a92d822afc050753db94f2dc6618",
-        token: "fMIOTA",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      },
-      {
-        contract: "0x88ba3fa1f7d371c9a54c812def7542c2e1dc0fed",
-        token: "sMATIC",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      },
-      {
-        contract: "0x8afdffe813826e63ae96a55c86fd4a48028f3d1a",
-        token: "sMIOTA",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      },
-      {
-        contract: "0x864d8cbc426b9dc6898fecbcb5d01aeb7fbcbc1f",
-        token: "sWBTC",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0,
-        isDel: true
-      }
+        {
+            contract: '0x038c4a46eB66f15Bc8739D9e23e3f46db95f102c',
+            token: 'USDC',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0
+        },
+        {
+            contract: '0x39DEE4dFA8A94fB02F4004a38543c853F859d79E',
+            token: 'SOONtest',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0
+        },
+        {
+            contract: '0x5026a8F54A07578ebBdC9d589Df21b67D75094be',
+            token: 'USDT',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0
+        },
+        {
+            contract: '0x8CB067473a564F2e72cBcd21d2e2d01CfcB4D222',
+            token: 'TT1',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0
+        },
+        {
+            contract: '0xf0D82b7837fC074B8d349e3cEd773089fA77Fde3',
+            token: 'TT2',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0
+        },
+        {
+            contract: '0x68018Bf6127aD04Ad9b6b0f8ACf18fD5651dE0C8',
+            token: 'TT3',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0
+        },
+        {
+            contract: '0xb6bB5544C6E43970BB6b0f7eb7b99c45343d206e',
+            token: 'TT4',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0
+        },
+        {
+            contract: '0xdcc4e969f081c3e967581aa9175ef6f0a337ae88',
+            token: 'IBTA',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        },
+        {
+            contract: '0xc9f3a2c8a5c05fdbe086549de9dd9954aca7bd22',
+            token: 'IBTB',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        },
+        {
+            contract: '0xf849a0e4f2d0ee73fcdd76d48bb9d648f1f2f604',
+            token: 'IBTC',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        },
+        {
+            contract: '0x77a8fb551bfdbcadf4bbcd52381004b71de021c3',
+            token: 'EGG',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        },
+        {
+            contract: '0xbfbe97a4064360c64580529f3031d97c1380273b',
+            token: 'WEN',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        },
+        {
+            contract: '0x87b1ccdbdd975807c96e43414cbb61e13c2b9fc3',
+            token: 'MOON',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        },
+        {
+            contract: '0x87ba1c836adb867efad3f31aaed8c9e6f73c2510',
+            token: 'fBTC',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        },
+        {
+            contract: '0x8f98916e6e9dd5d3d2d3fb3b3a84aacba72bcef0',
+            token: 'FETH',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        },
+        {
+            contract: '0xd0549372f1031137da785e0166cd0347ef32be05',
+            token: 'FAVAX',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        },
+        {
+            contract: '0x9ee409aa1e2cd2d813e3b2471e00d5260a71b833',
+            token: 'fUSDT',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        },
+        {
+            contract: '0x83688e59c4722e6835eeae24c1632bdeb115e44e',
+            token: 'FUSDC',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        },
+        {
+            contract: '0xdfc050688123a92d822afc050753db94f2dc6618',
+            token: 'fMIOTA',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        },
+        {
+            contract: '0x88ba3fa1f7d371c9a54c812def7542c2e1dc0fed',
+            token: 'sMATIC',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        },
+        {
+            contract: '0x8afdffe813826e63ae96a55c86fd4a48028f3d1a',
+            token: 'sMIOTA',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        },
+        {
+            contract: '0x864d8cbc426b9dc6898fecbcb5d01aeb7fbcbc1f',
+            token: 'sWBTC',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0,
+            isDel: true
+        }
     ],
     decimal: 18,
     gasLimit: 0,
@@ -250,22 +246,18 @@ const shimmerEvmTestnet = {
 
 const polyganTestnet = {
     id: 8,
-    url: "https://rpc-mumbai.maticvigil.com",
-    explorer: "https://mumbai.polygonscan.com",
-    name: "Mumbai",
-    enName: "Mumbai",
-    deName: "Mumbai",
-    zhName: "Mumbai",
+    url: 'https://rpc-mumbai.maticvigil.com',
+    explorer: 'https://mumbai.polygonscan.com',
+    name: 'Mumbai',
+    enName: 'Mumbai',
+    deName: 'Mumbai',
+    zhName: 'Mumbai',
     type: 2,
-    network: "mumbai",
-    bech32HRP: "mumbai",
-    token: "MATIC",
-    filterMenuList: [
-      "staking"
-    ],
-    filterAssetsList: [
-      "stake"
-    ],
+    network: 'mumbai',
+    bech32HRP: 'mumbai',
+    token: 'MATIC',
+    filterMenuList: ['staking'],
+    filterAssetsList: ['stake'],
     contractList: [],
     decimal: 18,
     gasLimit: 21000,
@@ -276,47 +268,43 @@ const polyganTestnet = {
 
 const shimmerEvm = {
     id: 5,
-    url: "https://json-rpc.evm.shimmer.network/",
-    explorer: "https://explorer.evm.shimmer.network/",
-    name: "Shimmer EVM",
-    enName: "Shimmer EVM",
-    deName: "Shimmer EVM",
-    zhName: "Shimmer EVM",
+    url: 'https://json-rpc.evm.shimmer.network/',
+    explorer: 'https://explorer.evm.shimmer.network/',
+    name: 'Shimmer EVM',
+    enName: 'Shimmer EVM',
+    deName: 'Shimmer EVM',
+    zhName: 'Shimmer EVM',
     type: 2,
-    network: "shimmer-evm",
-    bech32HRP: "shimmer-evm",
-    token: "SMR",
-    filterMenuList: [
-      "staking"
-    ],
-    filterAssetsList: [
-      "stake"
-    ],
+    network: 'shimmer-evm',
+    bech32HRP: 'shimmer-evm',
+    token: 'SMR',
+    filterMenuList: ['staking'],
+    filterAssetsList: ['stake'],
     contractList: [
-      {
-        contract: "0xa158A39d00C79019A01A6E86c56E96C461334Eb0",
-        token: "sETH",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0
-      },
-      {
-        contract: "0x1cDF3F46DbF8Cf099D218cF96A769cea82F75316",
-        token: "sBTC",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0
-      },
-      {
-        contract: "0x3C844FB5AD27A078d945dDDA8076A4084A76E513",
-        token: "sSOON",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0
-      },
-      {
-        contract: "0x5dA63f4456A56a0c5Cb0B2104a3610D5CA3d48E8",
-        token: "sIOTA",
-        gasLimit: 21000,
-        maxPriorityFeePerGas: 0
-      }
+        {
+            contract: '0xa158A39d00C79019A01A6E86c56E96C461334Eb0',
+            token: 'sETH',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0
+        },
+        {
+            contract: '0x1cDF3F46DbF8Cf099D218cF96A769cea82F75316',
+            token: 'sBTC',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0
+        },
+        {
+            contract: '0x3C844FB5AD27A078d945dDDA8076A4084A76E513',
+            token: 'sSOON',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0
+        },
+        {
+            contract: '0x5dA63f4456A56a0c5Cb0B2104a3610D5CA3d48E8',
+            token: 'sIOTA',
+            gasLimit: 21000,
+            maxPriorityFeePerGas: 0
+        }
     ],
     decimal: 18,
     gasLimit: 0,
@@ -327,48 +315,44 @@ const shimmerEvm = {
 const initNodeList = [
     {
         id: IOTA_NODE_ID,
-        url: "https://austria.dlt.green",
-        explorer: "https://explorer.iota.org/mainnet",
-        name: "IOTA Mainnet",
-        enName: "IOTA Mainnet",
-        deName: "IOTA Mainnet",
-        zhName: "IOTA 主網",
+        url: 'https://austria.dlt.green',
+        explorer: 'https://explorer.iota.org/mainnet',
+        name: 'IOTA Mainnet',
+        enName: 'IOTA Mainnet',
+        deName: 'IOTA Mainnet',
+        zhName: 'IOTA 主網',
         type: 3,
-        mqtt: "wss://austria.dlt.green:443/api/mqtt/v1",
-        network: "mainnet",
-        bech32HRP: "iota",
-        token: "IOTA",
-        filterMenuList: ["staking"],
+        mqtt: 'wss://austria.dlt.green:443/api/mqtt/v1',
+        network: 'mainnet',
+        bech32HRP: 'iota',
+        token: 'IOTA',
+        filterMenuList: ['staking'],
         filterAssetsList: [],
         decimal: 6,
-        explorerApiUrl: "https://explorer-api.iota.org/stardust",
+        explorerApiUrl: 'https://explorer-api.iota.org/stardust',
         rank: 1,
         sendTokenV2: true
     },
     {
         id: 102,
-        explorer: "https://explorer.shimmer.network/shimmer",
-        url: "https://mainnet.shimmer.node.tanglepay.com",
-        name: "Shimmer Mainnet",
-        enName: "Shimmer Mainnet",
-        deName: "Shimmer Mainnet",
-        zhName: "Shimmer 主網",
+        explorer: 'https://explorer.shimmer.network/shimmer',
+        url: 'https://mainnet.shimmer.node.tanglepay.com',
+        name: 'Shimmer Mainnet',
+        enName: 'Shimmer Mainnet',
+        deName: 'Shimmer Mainnet',
+        zhName: 'Shimmer 主網',
         type: 3,
-        mqtt: "wss://api.mainnet.shimmer.network:443/api/mqtt/v1",
-        network: "shimmer",
-        bech32HRP: "smr",
-        token: "SMR",
-        filterMenuList: [
-          "staking"
-        ],
-        filterAssetsList: [
-          "stake"
-        ],
+        mqtt: 'wss://api.mainnet.shimmer.network:443/api/mqtt/v1',
+        network: 'shimmer',
+        bech32HRP: 'smr',
+        token: 'SMR',
+        filterMenuList: ['staking'],
+        filterAssetsList: ['stake'],
         decimal: 6,
-        explorerApiUrl: "https://explorer-api.shimmer.network/stardust",
+        explorerApiUrl: 'https://explorer-api.shimmer.network/stardust',
         sendTokenV2: true
     },
-    {...shimmerEvm},
+    { ...shimmerEvm },
     { ...shimmerEvmTestnet },
     // { ...iotaTestnet },
     // {
@@ -398,51 +382,43 @@ const initNodeList = [
     // },
     {
         id: 4,
-        url: "https://bsc-dataseed.binance.org/",
-        explorer: "https://bscscan.com",
-        name: "BSC",
-        enName: "BSC",
-        deName: "BSC",
-        zhName: "BSC",
+        url: 'https://bsc-dataseed.binance.org/',
+        explorer: 'https://bscscan.com',
+        name: 'BSC',
+        enName: 'BSC',
+        deName: 'BSC',
+        zhName: 'BSC',
         type: 2,
-        network: "bsc",
-        bech32HRP: "bsc",
-        token: "BNB",
-        filterMenuList: [
-          "staking"
-        ],
-        filterAssetsList: [
-          "stake"
-        ],
+        network: 'bsc',
+        bech32HRP: 'bsc',
+        token: 'BNB',
+        filterMenuList: ['staking'],
+        filterAssetsList: ['stake'],
         contractList: [
-          {
-            contract: "0x55d398326f99059ff775485246999027b3197955",
-            token: "USDT",
-            gasLimit: 21000,
-            maxPriorityFeePerGas: 0
-          }
+            {
+                contract: '0x55d398326f99059ff775485246999027b3197955',
+                token: 'USDT',
+                gasLimit: 21000,
+                maxPriorityFeePerGas: 0
+            }
         ],
         decimal: 18,
         gasLimit: 21000
     },
     {
         id: 7,
-        url: "https://polygon-rpc.com/",
-        explorer: "https://polygonscan.com",
-        name: "Polygon",
-        enName: "Polygon",
-        deName: "Polygon",
-        zhName: "Polygon",
+        url: 'https://polygon-rpc.com/',
+        explorer: 'https://polygonscan.com',
+        name: 'Polygon',
+        enName: 'Polygon',
+        deName: 'Polygon',
+        zhName: 'Polygon',
         type: 2,
-        network: "matic",
-        bech32HRP: "matic",
-        token: "MATIC",
-        filterMenuList: [
-          "staking"
-        ],
-        filterAssetsList: [
-          "stake"
-        ],
+        network: 'matic',
+        bech32HRP: 'matic',
+        token: 'MATIC',
+        filterMenuList: ['staking'],
+        filterAssetsList: ['stake'],
         contractList: [],
         decimal: 18,
         gasLimit: 21000
@@ -473,10 +449,10 @@ const IotaSDK = {
         return nodeInfo?.type == 1
     },
     isIotaStardust(nodeId) {
-        return this.isIotaAccordingId(nodeId) && this.checkSMR(nodeId);
+        return this.isIotaAccordingId(nodeId) && this.checkSMR(nodeId)
     },
     isIotaAccordingId(nodeId) {
-        return nodeId === IOTA_NODE_ID 
+        return nodeId === IOTA_NODE_ID
     },
     IOTA_MI: 1000000, // 1mi = 1000000i
     convertUnits(value, fromUnit, toUnit) {
@@ -485,9 +461,9 @@ const IotaSDK = {
     changeIota(nodeId) {
         if (this.checkSMR(nodeId)) {
             IotaObj = IotaNext
-            if(this.isIotaStardust(nodeId)) {
+            if (this.isIotaStardust(nodeId)) {
                 IotaObj.setIotaBip44BasePath("m/44'/4218'")
-            }else{
+            } else {
                 IotaObj.setIotaBip44BasePath("m/44'/4219'")
             }
         } else {
@@ -554,9 +530,9 @@ const IotaSDK = {
                 if (index >= 0) {
                     // _nodes[index] = e
                     // Check if there is a rank
-                    if(_nodes[index].rank !== undefined && e.rank !== undefined && e.rank >= _nodes[index].rank) {
+                    if (_nodes[index].rank !== undefined && e.rank !== undefined && e.rank >= _nodes[index].rank) {
                         // Do nothing
-                    }else{
+                    } else {
                         _nodes[index] = e
                     }
                 } else {
@@ -661,9 +637,9 @@ const IotaSDK = {
                             if (Domain) {
                                 const url = `https://${Domain}`
                                 let client = null
-                                if(nodeInfo && this.isIotaStardust(nodeInfo.id)){
+                                if (nodeInfo && this.isIotaStardust(nodeInfo.id)) {
                                     client = new IotaNext.SingleNodeClient(url)
-                                }else if (select?.ShimmerHornet) {
+                                } else if (select?.ShimmerHornet) {
                                     client = new IotaNext.SingleNodeClient(url)
                                 } else {
                                     client = new Iota.SingleNodeClient(url)
@@ -677,7 +653,7 @@ const IotaSDK = {
                             }
                         }
                         return info
-                    }catch(error) {
+                    } catch (error) {
                         return null
                     }
                 }
@@ -1458,12 +1434,12 @@ const IotaSDK = {
             bech32Address: address
         }
         setHelperContext(helperContext)
-        const {balance,deposit} = await calculateAddressBasicOutputState()
+        const { balance, deposit } = await calculateAddressBasicOutputState()
         // log method address balanceState
         console.log('getBalanceStateOfOneAddress', address, balance.toString(), deposit.toString())
 
-        const available = balance.minus(deposit) 
-        return {balance:available}
+        const available = balance.minus(deposit)
+        return { balance: available }
     },
 
     async getBalance({ id, address, nodeId }, addressList) {
@@ -1489,7 +1465,7 @@ const IotaSDK = {
                 let res = []
                 if (IotaObj.addressBalance) {
                     res = await Promise.all(addressList.map((e) => IotaObj.addressBalance(this.client, e)))
-                    
+
                     // cache shimmer outputDatas
                     let cacheOutputDatas = {}
                     addressList.forEach((e, i) => {
@@ -1575,7 +1551,7 @@ const IotaSDK = {
         const hash = CryptoJS.SHA256(data).toString(CryptoJS.enc.Hex)
         return hash
     },
-    
+
     _sortObject(obj) {
         const sorted = {}
         Object.keys(obj)
@@ -1762,14 +1738,14 @@ const IotaSDK = {
                 blockGasLimitBn = BigNumber(block.gasLimit)
                 const sendAmountHex = this.client.utils.toHex(value)
 
-                const fromAddress = to;
+                const fromAddress = to
 
                 const params = {
                     to: contract,
-                    from: to,
+                    from: to
                 }
 
-                if(taggedData && value && value != 0) {
+                if (taggedData && value && value != 0) {
                     params.value = sendAmountHex
                 }
 
@@ -1782,7 +1758,7 @@ const IotaSDK = {
                 }
 
                 params.data = taggedData
-                
+
                 let initialGasLimitBn
                 try {
                     initialGasLimitBn = await eth.estimateGas(params)
@@ -1969,7 +1945,7 @@ const IotaSDK = {
             collect(ids)
         }
     },
-    
+
     stopCollect() {
         this._stopCollect = true
     },
@@ -2047,21 +2023,29 @@ const IotaSDK = {
         const { utf8ToHex } = IotaObj.Converter
         const metadataHex = metadata ? utf8ToHex(metadata) : undefined
         const tagHex = tag ? utf8ToHex(tag) : undefined
-        if(tagHex && tagHex.length / 2  > MAX_TAG_FEATURE_LENGTH) {
+        if (tagHex && tagHex.length / 2 > MAX_TAG_FEATURE_LENGTH) {
             throw new Error(I18n.t('shimmer.tagExcessError'))
         }
-        if(metadataHex && metadataHex.length / 2 > MAX_METADATA_FEATURE_LENGTH) {
+        if (metadataHex && metadataHex.length / 2 > MAX_METADATA_FEATURE_LENGTH) {
             throw new Error(I18n.t('shimmer.metadataExcessError'))
         }
         output.features = [
-            ...(metadataHex ? [{
-                type: IotaObj.METADATA_FEATURE_TYPE,
-                data:  `0x${metadataHex}`
-            }] : []),
-            ...(tagHex ? [{
-                type: 3, // TAG_FEATURE_TYPE
-                tag: `0x${tagHex}`
-            }] : [])
+            ...(metadataHex
+                ? [
+                      {
+                          type: IotaObj.METADATA_FEATURE_TYPE,
+                          data: `0x${metadataHex}`
+                      }
+                  ]
+                : []),
+            ...(tagHex
+                ? [
+                      {
+                          type: 3, // TAG_FEATURE_TYPE
+                          tag: `0x${tagHex}`
+                      }
+                  ]
+                : [])
         ]
         return output
     },
@@ -2079,6 +2063,7 @@ const IotaSDK = {
         let actionTime = new Date().getTime()
         let traceToken = ''
         if (this.checkWeb3Node(nodeId)) {
+            console.log('fromInfo, toAddress, sendAmount, ext===', fromInfo, toAddress, sendAmount, ext)
             if (!/^0x/.test(toAddress)) {
                 throw I18n.t('assets.sendError')
             }
@@ -2087,48 +2072,71 @@ const IotaSDK = {
             const eth = this.client.eth
 
             const nonce = await eth.getTransactionCount(address)
-            const { contract, token, taggedData } = ext || {}
+            let { contract, token, taggedData, collectionId, nftId } = ext || {}
             let res = null
             let privateKey = null
             if (!isLedger) {
                 privateKey = await this.getPrivateKey(seed, password)
             }
+            if (collectionId && nftId) {
+                contract = collectionId
+            }
             if (contract || taggedData) {
-                const contractInfo = (nodeInfo.contractList || []).find((e) => e.token === token)
-                // if (!contractInfo) {
-                //     return Base.globalToast.error('contract error')
-                // }
-                const tokenAbi = JSON.parse(JSON.stringify(initTokenAbi))
-                const web3Contract = new eth.Contract(tokenAbi, contract)
+                let signData = null
                 let gasLimit
-                let gasPrice
-                if (ext.gas) {
+                // erc721
+                if (collectionId && nftId) {
+                    const abiRes = await fetch(`${API_URL}/abi/NonfungiblePositionManager.json?v=${new Date().getTime()}`).then((d) => d.json())
+                    const web3Contract = new eth.Contract(abiRes, contract)
+                    const transferData = web3Contract.methods.transferFrom(address, toAddress, nftId).encodeABI()
                     gasLimit = this.client.utils.toHex(this.getNumberStr(ext.gas))
-                    gasPrice = ext.gasPrice ? this.client.utils.toHex(this.getNumberStr(ext.gasPrice)) : await eth.getGasPrice()
+                    const gasPrice = ext.gasPrice ? this.client.utils.toHex(this.getNumberStr(ext.gasPrice)) : await eth.getGasPrice()
+                    signData = {
+                        to: contract,
+                        value: '0x00',
+                        from: address,
+                        nonce,
+                        gasLimit,
+                        gasPrice,
+                        data: transferData
+                    }
                 } else {
-                    const contractGasLimit = contractInfo?.gasLimit
-                    const gasRes = await this.getGasLimit(contractGasLimit, address, taggedData ? sendAmount : 0, ext.gasMultiple)
-                    gasLimit = gasRes.gasLimit
-                    gasPrice = gasRes.gasPrice
+                    const contractInfo = (nodeInfo.contractList || []).find((e) => e.token === token)
+                    // if (!contractInfo) {
+                    //     return Base.globalToast.error('contract error')
+                    // }
+                    const tokenAbi = JSON.parse(JSON.stringify(initTokenAbi))
+                    const web3Contract = new eth.Contract(tokenAbi, contract)
+                    let gasPrice
+                    if (ext.gas) {
+                        gasLimit = this.client.utils.toHex(this.getNumberStr(ext.gas))
+                        gasPrice = ext.gasPrice ? this.client.utils.toHex(this.getNumberStr(ext.gasPrice)) : await eth.getGasPrice()
+                    } else {
+                        const contractGasLimit = contractInfo?.gasLimit
+                        const gasRes = await this.getGasLimit(contractGasLimit, address, taggedData ? sendAmount : 0, ext.gasMultiple)
+                        gasLimit = gasRes.gasLimit
+                        gasPrice = gasRes.gasPrice
+                    }
+                    if (gasLimit === -1) {
+                        const str = I18n.t('assets.evmGasNotSufficient').replace(/{token}/, nodeInfo?.token)
+                        Base.globalToast.error(str)
+                        throw str
+                    }
+                    // const estimatePrice = this.client.utils
+                    signData = {
+                        to: contract || contractInfo?.contract,
+                        value: taggedData ? sendAmountHex : '0x00',
+                        from: address,
+                        nonce,
+                        gasLimit,
+                        gasPrice,
+                        data: taggedData || web3Contract.methods.transfer(toAddress, sendAmountHex).encodeABI()
+                    }
+                    if (contractInfo?.maxPriorityFeePerGas) {
+                        signData.maxPriorityFeePerGas = contractInfo?.maxPriorityFeePerGas
+                    }
                 }
-                if (gasLimit === -1) {
-                    const str = I18n.t('assets.evmGasNotSufficient').replace(/{token}/, nodeInfo?.token)
-                    Base.globalToast.error(str)
-                    throw str
-                }
-                // const estimatePrice = this.client.utils
-                const signData = {
-                    to: contract || contractInfo?.contract,
-                    value: taggedData ? sendAmountHex : '0x00',
-                    from: address,
-                    nonce,
-                    gasLimit,
-                    gasPrice,
-                    data: taggedData || web3Contract.methods.transfer(toAddress, sendAmountHex).encodeABI()
-                }
-                if (contractInfo?.maxPriorityFeePerGas) {
-                    signData.maxPriorityFeePerGas = contractInfo?.maxPriorityFeePerGas
-                }
+
                 try {
                     let signed = null
                     if (isLedger) {
@@ -2149,6 +2157,20 @@ const IotaSDK = {
                         signed = await eth.accounts.signTransaction(signData, privateKey)
                     }
                     res = await eth.sendSignedTransaction(signed.rawTransaction)
+                    // erc 721
+                    if (collectionId && nftId) {
+                        const nftImportedList = (await Base.getLocalData(`${address}.nft.importedList`)) || {}
+                        console.log('nftImportedList===', nftImportedList)
+                        if (nftImportedList[collectionId]) {
+                            console.log('nftImportedList[collectionId]===', nftImportedList[collectionId])
+                            nftImportedList[collectionId] = nftImportedList[collectionId].filter((e) => e.tokenId != nftId)
+                            console.log('nftImportedList===', nftImportedList)
+                            Base.globalDispatch({
+                                type: 'nft.importedList',
+                                data: nftImportedList
+                            })
+                        }
+                    }
                     // this._ethReSend = 0
                 } catch (error) {
                     if (String(error).includes(`"gasUsed": ${Number(this.client.utils.BN(gasLimit))}`)) {
@@ -2256,7 +2278,7 @@ const IotaSDK = {
                 removed: logInfo?.removed || res.status,
                 topics: topics,
                 from: res.from,
-                to: res.to, 
+                to: res.to,
                 contractDetail: ext.contractDetail,
                 transactionHash: logInfo?.transactionHash || res.transactionHash,
                 transactionIndex: logInfo?.transactionIndex || res.transactionIndex
@@ -2264,10 +2286,10 @@ const IotaSDK = {
 
             try {
                 await this.setPastLogs(address, nodeId, [logData])
-            }catch(error) {
-                console.log("Set past logs error: ", error)
+            } catch (error) {
+                console.log('Set past logs error: ', error)
             }
-            
+
             actionTime = new Date().getTime() - actionTime
             Trace.actionLog(40, address, actionTime, Base.curLang, nodeId, traceToken)
             Base.globalToast.success(I18n.t('assets.sendSucc'))
@@ -2314,7 +2336,7 @@ const IotaSDK = {
                     try {
                         const ctx = await this._getSendHelperContext({ seed, password, type, nodeId, address })
                         setHelperContext(ctx)
-                        sendOut = await SMRCashSend(toAddress,sendAmount,ext)
+                        sendOut = await SMRCashSend(toAddress, sendAmount, ext)
                     } catch (error) {
                         throw error
                     }
@@ -2348,11 +2370,14 @@ const IotaSDK = {
                             baseSeed,
                             0,
                             [
-                                this.processFeature({
-                                    addressBech32: toAddress,
-                                    amount: sendAmount,
-                                    isDustAllowance: false,
-                                }, ext)
+                                this.processFeature(
+                                    {
+                                        addressBech32: toAddress,
+                                        amount: sendAmount,
+                                        isDustAllowance: false
+                                    },
+                                    ext
+                                )
                             ],
                             {
                                 key: IotaObj.Converter.utf8ToBytes(tag), //v1
@@ -2362,13 +2387,13 @@ const IotaSDK = {
                                     : taggedData
                                     ? IotaObj.Converter.utf8ToBytes(taggedData)
                                     : IotaObj.Converter.utf8ToBytes(
-                                        JSON.stringify({
-                                            from: address, //main address
-                                            to: toAddress,
-                                            amount: sendAmount,
-                                            collection: ext?.isCollection ? 1 : 0
-                                        })
-                                    )
+                                          JSON.stringify({
+                                              from: address, //main address
+                                              to: toAddress,
+                                              amount: sendAmount,
+                                              collection: ext?.isCollection ? 1 : 0
+                                          })
+                                      )
                             },
                             {
                                 startIndex: 0,
@@ -3191,7 +3216,7 @@ const IotaSDK = {
                 // iotaAddressList.push(e)
                 if (nodeId && this.isIotaStardust(nodeId)) {
                     shimmerAddressList.push(e)
-                }else{
+                } else {
                     iotaAddressList.push(e)
                 }
             } else if (/^smr/i.test(e) || /^rms/i.test(e)) {
@@ -3301,7 +3326,7 @@ const IotaSDK = {
         res = [...res, ...shimmerRes]
 
         actionTime = new Date().getTime() - actionTime
-        
+
         if (nodeId) {
             Trace.actionLog(50, addressList[0], actionTime, Base.curLang, nodeId, this.curNode?.token)
         }
@@ -3560,33 +3585,25 @@ const IotaSDK = {
     async parseNFTTokenURI(tokenURI) {
         try {
             const base64EncodePrefix = 'data:application/json;base64,'
-            if(tokenURI && tokenURI.startsWith(base64EncodePrefix)) {
-                return JSON.parse(
-                    IotaSDK.hexToUtf8(
-                        IotaSDK.bytesToHex(
-                            Base64.decode(
-                                tokenURI.replace(base64EncodePrefix, '')
-                            )
-                        )
-                    )
-                )
+            if (tokenURI && tokenURI.startsWith(base64EncodePrefix)) {
+                return JSON.parse(IotaSDK.hexToUtf8(IotaSDK.bytesToHex(Base64.decode(tokenURI.replace(base64EncodePrefix, '')))))
             }
-            return await fetch(tokenURI).then(res => res.json())
-        }catch(error) {
+            return await fetch(tokenURI).then((res) => res.json())
+        } catch (error) {
             return null
         }
     },
     async checkNFTOwner(nftContract, tokenId, address) {
-        if(!address) {
+        if (!address) {
             return false
         }
         try {
             const owner = await nftContract.methods.ownerOf(tokenId).call()
-            if(owner.toLocaleLowerCase() !== address.toLocaleLowerCase()) {
+            if (owner.toLocaleLowerCase() !== address.toLocaleLowerCase()) {
                 return false
             }
             return true
-        }catch(error) {
+        } catch (error) {
             return false
         }
     },
@@ -3840,7 +3857,7 @@ const IotaSDK = {
         IotaObj.setIotaBip44BasePath("m/44'/4219'")
         return res
     },
-    async _getSendHelperContext({ seed, password, type, nodeId, address }){
+    async _getSendHelperContext({ seed, password, type, nodeId, address }) {
         const isLedger = type === 'ledger'
         let baseSeed = undefined
         let addressKeyPair = undefined
@@ -3864,14 +3881,32 @@ const IotaSDK = {
         const outputIdResolver = async (outputId) => {
             return await this.client.output(outputId)
         }
-        const {bech32Address,hardwarePath} = await this._getSendHelperContextAddress({isLedger,addressKeyPair,nodeId})
-        const {minBalance} = await this._getSendHelperContextMinBalance(bech32Address)
+        const { bech32Address, hardwarePath } = await this._getSendHelperContextAddress({ isLedger, addressKeyPair, nodeId })
+        const { minBalance } = await this._getSendHelperContextMinBalance(bech32Address)
         const bech32Hrp = this.info.protocol.bech32Hrp
         const rentStructure = this.info.protocol.rentStructure
         const client = this.client
-        return {nodeId, address,client,bech32Address, baseSeed,isLedger,processFeature,bech32ToHex,IndexerPluginClient, outputIdResolver, minBalance, addressKeyPair, getHardwareBip32Path, signatureFunc, hardwarePath, bech32Hrp, rentStructure}
+        return {
+            nodeId,
+            address,
+            client,
+            bech32Address,
+            baseSeed,
+            isLedger,
+            processFeature,
+            bech32ToHex,
+            IndexerPluginClient,
+            outputIdResolver,
+            minBalance,
+            addressKeyPair,
+            getHardwareBip32Path,
+            signatureFunc,
+            hardwarePath,
+            bech32Hrp,
+            rentStructure
+        }
     },
-    _getSendHelperContextMinBalance(address){
+    _getSendHelperContextMinBalance(address) {
         const minBalance = IotaObj.TransactionHelper.getStorageDeposit(
             {
                 address: `0x${this.bech32ToHex(address)}`,
@@ -3883,13 +3918,13 @@ const IotaSDK = {
                         type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
                         address: IotaObj.Bech32Helper.addressFromBech32(address, this.info.protocol.bech32Hrp)
                     }
-                ],
+                ]
             },
             this.info.protocol.rentStructure
         )
-        return {minBalance}
+        return { minBalance }
     },
-    async _getSendHelperContextAddress({isLedger,addressKeyPair,nodeId}){
+    async _getSendHelperContextAddress({ isLedger, addressKeyPair, nodeId }) {
         const genAddressFunc = async (index) => {
             const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
             return { address, path }
@@ -3910,7 +3945,7 @@ const IotaSDK = {
             bech32Address = hardwareAddressRes.address
             hardwarePath = hardwareAddressRes.path
         }
-        return {bech32Address,hardwarePath}
+        return { bech32Address, hardwarePath }
     },
     async SMRTokenSend(fromInfo, toAddress, sendAmount, ext) {
         const { seed, password, address } = fromInfo
@@ -3930,24 +3965,27 @@ const IotaSDK = {
         let otherTokensStorageDeposit = 0
         let remainderSMROutput = null
         let remainderOutput = null
-        let receiverOutput = this.processFeature({
-            address: `0x${this.bech32ToHex(toAddress)}`,
-            addressType: 0, // ED25519_ADDRESS_TYPE
-            amount: '',
-            type: 3, // BASIC_OUTPUT_TYPE
-            nativeTokens: [
-                {
-                    id: tokenId,
-                    amount: `0x${BigNumber(sendAmount).toString(16)}`
-                }
-            ],
-            unlockConditions: [
-                {
-                    type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
-                    address: IotaObj.Bech32Helper.addressFromBech32(toAddress, this.info.protocol.bech32Hrp)
-                }
-            ]
-        }, ext)
+        let receiverOutput = this.processFeature(
+            {
+                address: `0x${this.bech32ToHex(toAddress)}`,
+                addressType: 0, // ED25519_ADDRESS_TYPE
+                amount: '',
+                type: 3, // BASIC_OUTPUT_TYPE
+                nativeTokens: [
+                    {
+                        id: tokenId,
+                        amount: `0x${BigNumber(sendAmount).toString(16)}`
+                    }
+                ],
+                unlockConditions: [
+                    {
+                        type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
+                        address: IotaObj.Bech32Helper.addressFromBech32(toAddress, this.info.protocol.bech32Hrp)
+                    }
+                ]
+            },
+            ext
+        )
         const receiverStorageDeposit = IotaObj.TransactionHelper.getStorageDeposit(receiverOutput, this.info.protocol.rentStructure)
         receiverOutput.amount = receiverStorageDeposit.toString()
         let remainderStorageDeposit = 0
@@ -3986,7 +4024,7 @@ const IotaSDK = {
                         type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
                         address: IotaObj.Bech32Helper.addressFromBech32(address, this.info.protocol.bech32Hrp)
                     }
-                ],
+                ]
             },
             this.info.protocol.rentStructure
         )
@@ -4003,7 +4041,7 @@ const IotaSDK = {
                                 type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
                                 address: IotaObj.Bech32Helper.addressFromBech32(bech32Address, this.info.protocol.bech32Hrp)
                             }
-                        ],
+                        ]
                     }
                 } else {
                     remainderOutput = null
@@ -4093,7 +4131,7 @@ const IotaSDK = {
                                                                     type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
                                                                     address: IotaObj.Bech32Helper.addressFromBech32(bech32Address, this.info.protocol.bech32Hrp)
                                                                 }
-                                                            ],
+                                                            ]
                                                         }
                                                         remainderStorageDeposit = IotaObj.TransactionHelper.getStorageDeposit(remainderSMROutput, this.info.protocol.rentStructure)
                                                         remainderSMROutput.amount = remainderStorageDeposit.toString()
@@ -4170,8 +4208,8 @@ const IotaSDK = {
         if (sendDomainSwitch) {
             const ctx = await this._getSendHelperContext({ seed, password, type, nodeId, address })
             setHelperContext(ctx)
-            const res = await SMRTokenSend(toAddress,sendAmount,ext)
-            return res;
+            const res = await SMRTokenSend(toAddress, sendAmount, ext)
+            return res
         }
         const isLedger = fromInfo.type === 'ledger'
         let baseSeed = null
@@ -4192,24 +4230,27 @@ const IotaSDK = {
         let otherTokensStorageDeposit = 0
         let remainderSMROutput = null
         let remainderOutput = null
-        let receiverOutput = this.processFeature({
-            address: `0x${this.bech32ToHex(toAddress)}`,
-            addressType: 0, // ED25519_ADDRESS_TYPE
-            amount: '',
-            type: 3, // BASIC_OUTPUT_TYPE
-            nativeTokens: [
-                {
-                    id: tokenId,
-                    amount: `0x${BigNumber(sendAmount).toString(16)}`
-                }
-            ],
-            unlockConditions: [
-                {
-                    type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
-                    address: IotaObj.Bech32Helper.addressFromBech32(toAddress, this.info.protocol.bech32Hrp)
-                }
-            ],
-        }, ext)
+        let receiverOutput = this.processFeature(
+            {
+                address: `0x${this.bech32ToHex(toAddress)}`,
+                addressType: 0, // ED25519_ADDRESS_TYPE
+                amount: '',
+                type: 3, // BASIC_OUTPUT_TYPE
+                nativeTokens: [
+                    {
+                        id: tokenId,
+                        amount: `0x${BigNumber(sendAmount).toString(16)}`
+                    }
+                ],
+                unlockConditions: [
+                    {
+                        type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
+                        address: IotaObj.Bech32Helper.addressFromBech32(toAddress, this.info.protocol.bech32Hrp)
+                    }
+                ]
+            },
+            ext
+        )
         const receiverStorageDeposit = IotaObj.TransactionHelper.getStorageDeposit(receiverOutput, this.info.protocol.rentStructure)
         receiverOutput.amount = receiverStorageDeposit.toString()
         let remainderStorageDeposit = 0
@@ -4341,7 +4382,7 @@ const IotaSDK = {
                                                             type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
                                                             address: IotaObj.Bech32Helper.addressFromBech32(bech32Address, this.info.protocol.bech32Hrp)
                                                         }
-                                                    ],
+                                                    ]
                                                 }
                                                 otherNativeTokens.forEach((t) => {
                                                     if (!otherTokensOutput.nativeTokens.includes(t.id)) {
@@ -4483,10 +4524,7 @@ const IotaSDK = {
         }
     },
     getMinBalance(address) {
-        return IotaObj.TransactionHelper.getStorageDeposit(
-            this.getBasicTypeOutput(address, 0),
-            this.info.protocol.rentStructure
-        )
+        return IotaObj.TransactionHelper.getStorageDeposit(this.getBasicTypeOutput(address, 0), this.info.protocol.rentStructure)
     },
     getInitialAddressState() {
         return {
@@ -4508,14 +4546,13 @@ const IotaSDK = {
             const ctx = await this._getSendHelperContext({ seed, password, type, nodeId, address })
             setHelperContext(ctx)
             const res = await SMRNFTSend(toAddress, sendAmount, ext)
-            return res;
+            return res
         }
         const isLedger = fromInfo.type === 'ledger'
         let baseSeed = null
         if (!isLedger) {
             baseSeed = this.getSeed(seed, password)
         }
-
 
         const nftIds = (nftId || '').split(',')
         tag = tag || 'TanglePay'
@@ -4589,41 +4626,44 @@ const IotaSDK = {
                             nftIds.includes(outputNftId)
                         ) {
                             const outputAmount = addressOutput.output.amount
-                            const curOutput = this.processFeature({
-                                // ...addressOutput.output,
-                                immutableFeatures: addressOutput.output.immutableFeatures,
-                                address: `0x${this.bech32ToHex(toAddress)}`,
-                                nftId: outputNftId,
-                                addressType: 0, // NFT_ADDRESS_TYPE
-                                amount: outputAmount,
-                                type: 6,
-                                unlockConditions: [
-                                    {
-                                        type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
-                                        address: IotaObj.Bech32Helper.addressFromBech32(toAddress, this.info.protocol.bech32Hrp)
-                                    }
-                                ]
-                            }, ext)
+                            const curOutput = this.processFeature(
+                                {
+                                    // ...addressOutput.output,
+                                    immutableFeatures: addressOutput.output.immutableFeatures,
+                                    address: `0x${this.bech32ToHex(toAddress)}`,
+                                    nftId: outputNftId,
+                                    addressType: 0, // NFT_ADDRESS_TYPE
+                                    amount: outputAmount,
+                                    type: 6,
+                                    unlockConditions: [
+                                        {
+                                            type: 0, // ADDRESS_UNLOCK_CONDITION_TYPE
+                                            address: IotaObj.Bech32Helper.addressFromBech32(toAddress, this.info.protocol.bech32Hrp)
+                                        }
+                                    ]
+                                },
+                                ext
+                            )
 
                             const deposit = IotaObj.TransactionHelper.getStorageDeposit(curOutput, this.info.protocol.rentStructure)
                             const diff = new BigNumber(curOutput.amount).minus(deposit)
-                            
-                            if(diff.gte(minBalance)) {  
+
+                            if (diff.gte(minBalance)) {
                                 // Need to recover balance
                                 // this nft outputBalance is 0
                                 curOutput.amount = deposit
                                 const recoveredBalance = this.getBasicTypeOutput(address, diff.toNumber())
                                 outputs.push(recoveredBalance)
-                            }else if(diff.gt(0) && diff.lt(minBalance)) {
+                            } else if (diff.gt(0) && diff.lt(minBalance)) {
                                 // Not to recover balance, just send to the other side
                                 // this nft outputBalance is 0
-                            }else{
+                            } else {
                                 // this nft outputBalance is negative
                                 // Insufficient parts will be made up at the end
                                 curOutput.amount = deposit
                                 outputSMRBalance = outputSMRBalance.plus(diff)
                             }
-                            
+
                             outputs.push(curOutput)
                             const input = {
                                 type: 0, // UTXO_INPUT_TYPE
@@ -4653,7 +4693,7 @@ const IotaSDK = {
                 throw I18n.t('assets.balanceError')
             }
             // After processing all nft output, Handle insufficient funds only once.
-            if(outputSMRBalance.lt(0)) {
+            if (outputSMRBalance.lt(0)) {
                 let initialAddressState = this.getInitialAddressState()
                 const addressOptions = this.getAddressOptions()
 
@@ -4666,11 +4706,11 @@ const IotaSDK = {
 
                 const inputsAndKeys = await IotaObj.calculateInputs(this.client, baseSeed, initialAddressState, IotaObj.generateBip44Address, compensationOutputs, addressOptions.zeroCount, null)
                 inputsAndSignatureKeyPairs = inputsAndSignatureKeyPairs.concat(inputsAndKeys)
-                const compensationOutputsWithoutsendOutput = compensationOutputs.filter(item => {
-                    if(item === sendOutput) {
+                const compensationOutputsWithoutsendOutput = compensationOutputs.filter((item) => {
+                    if (item === sendOutput) {
                         return false
                     }
-                    if(item.mark && item.mark === symbolMark) {
+                    if (item.mark && item.mark === symbolMark) {
                         return false
                     }
                     return true
