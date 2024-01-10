@@ -911,7 +911,6 @@ export const useHandleUnlocalConditions = () => {
         let unlockConditionsList = _get(store, 'common.unlockConditions')
         unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.blockId))
         unlockConditionsList = unlockConditionsList.filter((e) => e.blockId !== item.blockId)
-        Base.setLocalData('common.unlockConditions.dismiss', localDismissList)
         dispatch({
             type: 'common.unlockConditions',
             data: unlockConditionsList
@@ -934,7 +933,6 @@ export const useHandleUnlocalConditions = () => {
         const localDismissList = (await Base.getLocalData('nft.unlockList.dismiss')) || []
         unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.nftId))
         unlockConditionsList = unlockConditionsList.filter((e) => e.nftId != item.nftId)
-        Base.setLocalData('nft.unlockList.dismiss', localDismissList)
         dispatch({
             type: 'nft.unlockList',
             data: unlockConditionsList
