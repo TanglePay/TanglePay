@@ -318,14 +318,18 @@ export const useGetNftList = () => {
                         if (e.lockType == 3 && !e.isExpiration) {
                             let timeStr = Base.getTimeStr(e.expirationTime, nowTime)
                             expirationList.push({ ...e, timeStr })
+                        } else if(e.lockType === 1) {
+                            expirationList.push({...e})
                         }
+
                         if (e.lockType == 2 && !e.isUnlock) {
                             let timeStr = Base.getTimeStr(e.lockTime, nowTime)
                             lockList.push({ ...e, timeStr })
                         }
                         // expiration end
                     })
-                    obj.list = list.filter((e) => e.lockType != 3 && !(e.lockType == 2 && !e.isUnlock))
+                    // obj.list = list.filter((e) => e.lockType != 3 && e.lockType !== 1 && !(e.lockType == 2 && !e.isUnlock))
+                    obj.list = list.filter(e => e.isUnlock)
                 })
                 configList = configList.filter((e) => e.link || e.list.length > 0)
                 const localDismissList = (await Base.getLocalData('nft.unlockList.dismiss')) || []
