@@ -333,7 +333,7 @@ export const useUpdateBalance = () => {
             const isSMR = IotaSDK.checkSMR(curNodeId)
             return {
                 decimal,
-                balance: Base.formatNum(balance,6),
+                balance: Base.formatNum(balance, 6),
                 realBalance: Number(realBalance),
                 // unit: IotaSDK.checkIota(curNodeId) ? 'Mi' : isSMR && !isSMRToken ? 'SMR' : '',
                 unit: IotaSDK.checkIota(curNodeId) ? 'Mi' : isSMR && !isSMRToken && !IotaSDK.isIotaStardust(curNodeId) ? 'SMR' : '',
@@ -342,7 +342,7 @@ export const useUpdateBalance = () => {
                 assets: Base.formatNum(assets),
                 isSMRToken,
                 tokenId,
-                available: Base.formatNum(available,6),
+                available: Base.formatNum(available, 6),
                 realAvailable: Number(realAvailable),
                 logoUrl,
                 standard
@@ -415,10 +415,12 @@ const useUpdateHisList = () => {
                     address: otherAddress,
                     num: Base.formatNum(num),
                     decimal: 0,
-                    contractDetail: e.contractDetail ? {
-                        ...e.contractDetail,
-                        assets: Base.formatNum(new BigNumber(e.contractDetail.value).times(price[e.contractDetail.unit] || 0))
-                    }: null,
+                    contractDetail: e.contractDetail
+                        ? {
+                              ...e.contractDetail,
+                              assets: Base.formatNum(new BigNumber(e.contractDetail.value).times(price[e.contractDetail.unit] || 0))
+                          }
+                        : null,
                     assets: Base.formatNum(assets),
                     amount,
                     unit: ''
@@ -818,7 +820,7 @@ const useUpdateHisList = () => {
                 const index = localHis.findIndex((d) => d.id == e.id)
                 if (index === -1) {
                     localHis.push(e)
-                } else if(e.contractDetail) {
+                } else if (e.contractDetail) {
                     localHis[index] = e
                 }
             })
@@ -905,12 +907,20 @@ export const useHandleUnlocalConditions = () => {
     }
     const onAccept = async (item) => {
         const res = await IotaSDK.SMRUNlock(item)
+        const localDismissList = (await Base.getLocalData('common.unlockConditions.dismiss')) || []
+        let unlockConditionsList = _get(store, 'common.unlockConditions')
+        unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.blockId))
+        unlockConditionsList = unlockConditionsList.filter((e) => e.blockId !== item.blockId)
+        Base.setLocalData('common.unlockConditions.dismiss', localDismissList)
+        dispatch({
+            type: 'common.unlockConditions',
+            data: unlockConditionsList
+        })
         return res
     }
     const onDismissNft = async (nftId) => {
         let unlockConditionsList = _get(store, 'nft.unlockList')
         const localDismissList = (await Base.getLocalData('nft.unlockList.dismiss')) || []
-        localDismissList.push(nftId)
         unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.nftId))
         Base.setLocalData('nft.unlockList.dismiss', localDismissList)
         dispatch({
@@ -920,6 +930,15 @@ export const useHandleUnlocalConditions = () => {
     }
     const onAcceptNft = async (item) => {
         const res = await IotaSDK.SMRUNlockNft(item)
+        let unlockConditionsList = _get(store, 'nft.unlockList')
+        const localDismissList = (await Base.getLocalData('nft.unlockList.dismiss')) || []
+        unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.nftId))
+        unlockConditionsList = unlockConditionsList.filter((e) => e.nftId != item.nftId)
+        Base.setLocalData('nft.unlockList.dismiss', localDismissList)
+        dispatch({
+            type: 'nft.unlockList',
+            data: unlockConditionsList
+        })
         return res
     }
     return { onDismiss, onAccept, onDismissNft, onAcceptNft }
