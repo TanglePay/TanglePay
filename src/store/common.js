@@ -333,7 +333,7 @@ export const useUpdateBalance = () => {
             const isSMR = IotaSDK.checkSMR(curNodeId)
             return {
                 decimal,
-                balance: Base.formatNum(balance),
+                balance: Base.formatNum(balance,6),
                 realBalance: Number(realBalance),
                 // unit: IotaSDK.checkIota(curNodeId) ? 'Mi' : isSMR && !isSMRToken ? 'SMR' : '',
                 unit: IotaSDK.checkIota(curNodeId) ? 'Mi' : isSMR && !isSMRToken && !IotaSDK.isIotaStardust(curNodeId) ? 'SMR' : '',
@@ -342,7 +342,7 @@ export const useUpdateBalance = () => {
                 assets: Base.formatNum(assets),
                 isSMRToken,
                 tokenId,
-                available: Base.formatNum(available),
+                available: Base.formatNum(available,6),
                 realAvailable: Number(realAvailable),
                 logoUrl,
                 standard
