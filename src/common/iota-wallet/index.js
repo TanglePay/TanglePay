@@ -3343,16 +3343,18 @@ const IotaSDK = {
             })
         )
         iotaMemberIds = _flatten(iotaMemberIds)
-        let ethMemberIds = await Promise.all(
-            ethAddressList.map((e) => {
-                return fetch(`https://soonaverse.com/api/getById?collection=member&uid=${e}`)
-                    .then((res) => res.json())
-                    .catch(() => null)
-            })
-        )
-        ethMemberIds = ethMemberIds.filter((e) => !!e)
 
-        iotaMemberIds = [...iotaMemberIds, ...ethMemberIds]
+        // let ethMemberIds = await Promise.all(
+        //     ethAddressList.map((e) => {
+        //         return fetch(`https://soonaverse.com/api/getById?collection=member&uid=${e}`)
+        //             .then((res) => res.json())
+        //             .catch(() => null)
+        //     })
+        // )
+        // ethMemberIds = ethMemberIds.filter((e) => !!e)
+
+        // iotaMemberIds = [...iotaMemberIds, ...ethMemberIds]
+
         let res = await Promise.all(
             iotaMemberIds.map((e) => {
                 return fetch(`https://soonaverse.com/api/getMany?collection=nft&fieldName=owner&fieldValue=${e.uid}`)
