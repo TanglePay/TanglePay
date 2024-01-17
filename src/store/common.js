@@ -917,10 +917,11 @@ export const useHandleUnlocalConditions = () => {
         })
         return res
     }
-    const onDismissNft = async (nftId) => {
+    const onDismissNft = async (outputId) => {
         let unlockConditionsList = _get(store, 'nft.unlockList')
         const localDismissList = (await Base.getLocalData('nft.unlockList.dismiss')) || []
-        unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.nftId))
+        localDismissList.push(outputId)
+        unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.outputId))
         Base.setLocalData('nft.unlockList.dismiss', localDismissList)
         dispatch({
             type: 'nft.unlockList',
@@ -931,7 +932,7 @@ export const useHandleUnlocalConditions = () => {
         const res = await IotaSDK.SMRUNlockNft(item)
         let unlockConditionsList = _get(store, 'nft.unlockList')
         const localDismissList = (await Base.getLocalData('nft.unlockList.dismiss')) || []
-        unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.nftId))
+        unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.outputId))
         unlockConditionsList = unlockConditionsList.filter((e) => e.nftId != item.nftId)
         dispatch({
             type: 'nft.unlockList',
@@ -1191,12 +1192,16 @@ export const useGetAssetsList = (curWallet) => {
                 }
                 // Sync balance
                 IotaSDK.getBalance(newCurWallet, addressList)
-                    .then((list) => {
-                        if (newCurWallet.nodeId == IotaSDK?.curNode?.id) {
-                            updateBalance(curAddress, list, newCurWallet.nodeId)
-                        } else {
+                    .then(({ isSpending, list}) => {
+                        if(isSpending) {
                             setRequestAssets(true, dispatch)
-                            setAssetsData({}, [], dispatch)
+                        }else {
+                            if (newCurWallet.nodeId == IotaSDK?.curNode?.id) {
+                                updateBalance(curAddress, list, newCurWallet.nodeId)
+                            } else {
+                                setRequestAssets(true, dispatch)
+                                setAssetsData({}, [], dispatch)
+                            }
                         }
                     })
                     .catch(() => {
