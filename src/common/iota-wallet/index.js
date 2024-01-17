@@ -1535,7 +1535,10 @@ const IotaSDK = {
 
     async getBalance({ id, address, nodeId }, addressList) {
         if (!this.client) {
-            return []
+            return {
+                isSpending: false,
+                list: []
+            }
         }
         const node = IotaSDK.nodes.find((e) => e.id == nodeId)
         const token = node?.token
@@ -1556,6 +1559,14 @@ const IotaSDK = {
                 let res = []
                 if (IotaObj.addressBalance) {
                     res = await Promise.all(addressList.map((e) => IotaObj.addressBalance(this.client, e)))
+
+                    if(res.find(r => r.isSomeOutputSpending) !== undefined) {
+                        setTimeout(this.refreshAssets, 0)
+                        return {
+                            isSpending: true,
+                            list: []
+                        }
+                    }
 
                     // cache shimmer outputDatas
                     let cacheOutputDatas = {}
@@ -1624,7 +1635,11 @@ const IotaSDK = {
             ...contractAssets,
             ...availableNativeTokens
         ]
-        return balanceList
+        // return balanceList
+        return {
+            isSpending: false,
+            list: balanceList
+        }
     },
     getPair(seed, isFirst = true, accountState) {
         accountState = accountState || {

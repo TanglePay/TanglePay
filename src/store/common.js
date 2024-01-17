@@ -1192,12 +1192,16 @@ export const useGetAssetsList = (curWallet) => {
                 }
                 // Sync balance
                 IotaSDK.getBalance(newCurWallet, addressList)
-                    .then((list) => {
-                        if (newCurWallet.nodeId == IotaSDK?.curNode?.id) {
-                            updateBalance(curAddress, list, newCurWallet.nodeId)
-                        } else {
+                    .then(({ isSpending, list}) => {
+                        if(isSpending) {
                             setRequestAssets(true, dispatch)
-                            setAssetsData({}, [], dispatch)
+                        }else {
+                            if (newCurWallet.nodeId == IotaSDK?.curNode?.id) {
+                                updateBalance(curAddress, list, newCurWallet.nodeId)
+                            } else {
+                                setRequestAssets(true, dispatch)
+                                setAssetsData({}, [], dispatch)
+                            }
                         }
                     })
                     .catch(() => {
