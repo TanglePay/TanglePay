@@ -1124,11 +1124,22 @@ const IotaSDK = {
         }
         return [pathCoinType, cointType]
     },
-    async getHardwareAddressInIota(nodeId, index, display = false, count = 1) {
+    async getHardwareAccountInIota(nodeId, index, display = false, count = 1) {
+        return this.getHardwareAddressInIota(nodeId, index, display, count, (index, pathCoinType) => {
+            const path = `2c'/${pathCoinType}'/${index}'/0'/0'`
+            return [AppIota._validatePath(path), path]
+        })
+    },
+    async getHardwareAddressInIota(nodeId, index, display = false, count = 1, getPathFunc) {
         const [pathCoinType, cointType] = this.getHardwareCoinParams(nodeId, index)
-        const getPath = (index) => {
+        let getPath = (index) => {
             const path = `2c'/${pathCoinType}'/0'/0'/${index}'`
             return [AppIota._validatePath(path), path]
+        }
+        if (getPathFunc) {
+            getPath = (index) => {
+                return getPathFunc(index, pathCoinType)
+            }
         }
         try {
             const transport = await this.getTransport()
@@ -1560,7 +1571,7 @@ const IotaSDK = {
                 if (IotaObj.addressBalance) {
                     res = await Promise.all(addressList.map((e) => IotaObj.addressBalance(this.client, e)))
 
-                    if(res.find(r => r.isSomeOutputSpending) !== undefined) {
+                    if (res.find((r) => r.isSomeOutputSpending) !== undefined) {
                         setTimeout(this.refreshAssets, 0)
                         return {
                             isSpending: true,
@@ -1611,7 +1622,9 @@ const IotaSDK = {
                 logoUrl: info.logoUrl,
                 standard
             })
-            Trace.updateAddressAmount(id, address, realBalance, nodeId, symbol)
+            if (id) {
+                Trace.updateAddressAmount(id, address, realBalance, nodeId, symbol)
+            }
         })
 
         actionTime = new Date().getTime() - actionTime
@@ -1621,7 +1634,9 @@ const IotaSDK = {
         realBalance = Number(realBalance)
         available = realAvailable.div(Math.pow(10, decimal))
         realAvailable = Number(realAvailable)
-        Trace.updateAddressAmount(id, address, realBalance, nodeId, token)
+        if (id) {
+            Trace.updateAddressAmount(id, address, realBalance, nodeId, token)
+        }
         const contractAssets = await this.getContractAssets(nodeId, address, id)
         const balanceList = [
             {
@@ -3383,35 +3398,35 @@ const IotaSDK = {
         })
         let shimmerRes = []
         if (this.IndexerPluginClient) {
-
-            const outputs = await Promise.all(
-                [...shimmerAddressList.map((e) => {
+            const outputs = await Promise.all([
+                ...shimmerAddressList.map((e) => {
                     return this.IndexerPluginClient.nfts({
                         addressBech32: e
                     })
-                }), ...shimmerAddressList.map((e) => {
+                }),
+                ...shimmerAddressList.map((e) => {
                     return this.IndexerPluginClient.nfts({
                         expirationReturnAddressBech32: e
                     })
-                })]
-            )
-            
+                })
+            ])
+
             let outputIds = []
             outputs.forEach((e) => {
                 outputIds = [...outputIds, ...e.items]
             })
-            
+
             let nftInfos = await Promise.all(
                 outputIds.map((e) => {
                     return this.client.output(e)
                 })
             )
 
-            nftInfos = nftInfos.filter(nft => {
+            nftInfos = nftInfos.filter((nft) => {
                 const unlockConditions = nft.output.unlockConditions
-                const addressUnlockCondition = unlockConditions.find(item => item.type === 0)
-                const expirationUnlockCondition = unlockConditions.find(item => item.type === 3)
-                
+                const addressUnlockCondition = unlockConditions.find((item) => item.type === 0)
+                const expirationUnlockCondition = unlockConditions.find((item) => item.type === 3)
+
                 let addressInAddressUnlockCondition
                 let addressInExpirationUnlockCondition
                 let unixTimeInExpirationUnlockCondition
@@ -3424,22 +3439,21 @@ const IotaSDK = {
                     unixTimeInExpirationUnlockCondition = expirationUnlockCondition.unixTime
                 }
 
-                const nowUnixTime = Math.round(Date.now()/1000)
-                
-                if(addressInAddressUnlockCondition && shimmerAddressList.includes(addressInAddressUnlockCondition)) {
+                const nowUnixTime = Math.round(Date.now() / 1000)
+
+                if (addressInAddressUnlockCondition && shimmerAddressList.includes(addressInAddressUnlockCondition)) {
                     // 过滤掉过期的 unixTimeInExpirationUnlockCondition < nowUnixTime
-                    if(unixTimeInExpirationUnlockCondition && unixTimeInExpirationUnlockCondition < nowUnixTime ) {
+                    if (unixTimeInExpirationUnlockCondition && unixTimeInExpirationUnlockCondition < nowUnixTime) {
                         return false
                     }
                 }
 
-                if(addressInExpirationUnlockCondition && shimmerAddressList.includes(addressInExpirationUnlockCondition)) {
+                if (addressInExpirationUnlockCondition && shimmerAddressList.includes(addressInExpirationUnlockCondition)) {
                     // 过滤掉没过期的 nowUnixTime <= unixTimeInExpirationUnlockCondition
-                    if(unixTimeInExpirationUnlockCondition && nowUnixTime <= unixTimeInExpirationUnlockCondition) {
+                    if (unixTimeInExpirationUnlockCondition && nowUnixTime <= unixTimeInExpirationUnlockCondition) {
                         return false
                     }
                 }
-
 
                 return true
             })
@@ -3459,8 +3473,8 @@ const IotaSDK = {
                         const unlockConditions = e?.output?.unlockConditions || []
                         const immutableFeatures = e?.output?.immutableFeatures || []
                         const isUnlock = IotaObj.checkNFTUnLock(e, shimmerAddressList, this.hexToBech32.bind(this))
-                        
-                        const returnStorageDeposit = unlockConditions.find(d => d.type === 1)
+
+                        const returnStorageDeposit = unlockConditions.find((d) => d.type === 1)
                         const lockData = unlockConditions.find((d) => d.type == 2) //TIMELOCK_UNLOCK_CONDITION_TYPE
                         const expirationData = unlockConditions.find((d) => d.type == 3) // EXPIRATION_UNLOCK_CONDITION_TYPE
 
