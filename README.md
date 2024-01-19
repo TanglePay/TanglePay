@@ -2,8 +2,7 @@
 ![Tangle Pay](https://tanglepay.com/image/TanglePayLogo.png "Tangle Pay")
 
 ## Intro
-[TanglePay](https://www.tanglepay.com) is an open-source IOTA wallet that manages your IOTA token and explore the IOTA ecosystem
-in one secure interface on your mobile or browser.
+[TanglePay](https://www.tanglepay.com) is A Web3 Talking Wallet powered by GroupFi protocol.
 
 This repo hosts the source code of TanglePay mobile version that supports iOS and Android.
 
