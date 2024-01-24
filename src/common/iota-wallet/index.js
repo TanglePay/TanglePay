@@ -1124,28 +1124,20 @@ const IotaSDK = {
         }
         return [pathCoinType, cointType]
     },
-    async getHardwareAccountInIota(nodeId, index, display = false, count = 1) {
-        return this.getHardwareAddressInIota(nodeId, index, display, count, (index, pathCoinType) => {
-            const path = `2c'/${pathCoinType}'/${index}'/0'/0'`
-            return [AppIota._validatePath(path), path]
-        })
+    getHardwareAccountByPathInIota(path) {
+        return Number(path.split('/')[2].replace("'", ''))
     },
-    async getHardwareAddressInIota(nodeId, index, display = false, count = 1, getPathFunc) {
-        const [pathCoinType, cointType] = this.getHardwareCoinParams(nodeId, index)
-        let getPath = (index) => {
-            const path = `2c'/${pathCoinType}'/0'/0'/${index}'`
+    async getHardwareAddressInIota(nodeId, display = false, startIndex = 0, indexCount = 1, startAccount = 0, accountCount = 1) {
+        const [pathCoinType, cointType] = this.getHardwareCoinParams(nodeId)
+        const getPath = (accountIndex, index) => {
+            const path = `2c'/${pathCoinType}'/${accountIndex || 0}'/0'/${index}'`
             return [AppIota._validatePath(path), path]
-        }
-        if (getPathFunc) {
-            getPath = (index) => {
-                return getPathFunc(index, pathCoinType)
-            }
         }
         try {
             const transport = await this.getTransport()
             const appIota = new AppIota(transport)
-            const getAddress = async (index) => {
-                const [arr, path] = getPath(index)
+            const getAddress = async (index, account) => {
+                const [arr, path] = getPath(index, account)
                 await appIota._setAccount(arr[2], { id: cointType })
                 await appIota._generateAddress(arr[3], arr[4], 1, display)
                 const addressList = await appIota._getData()
@@ -1155,11 +1147,16 @@ const IotaSDK = {
             }
             let countList = []
             const list = []
-            for (let i = 0; i < count; i++) {
-                countList.push(i)
+            for (let i = startIndex; i < indexCount; i++) {
+                for (let j = startAccount; j < accountCount; j++) {
+                    countList.push({
+                        account: j,
+                        index: i
+                    })
+                }
             }
-            for (const i of countList) {
-                list.push(await getAddress(index + i))
+            for (const e of countList) {
+                list.push(await getAddress(e.account, startIndex + e.index))
             }
             return list
         } catch (error) {
@@ -1261,7 +1258,19 @@ const IotaSDK = {
             for (const e of pathList) {
                 addressList.push(await eth.getAddress(e))
             }
-            const balanceList = await Promise.all(addressList.map((e) => this.client.eth.getBalance(e.address)))
+
+            const evmNodes = this.nodes.filter((e) => e.type == 2).filter((e) => [4, 5, 7].includes(e.id))
+            for (let i = 0; i < evmNodes.length; i++) {
+                const client = new Web3(evmNodes[i].url)
+                const balanceList = await Promise.all(addressList.map((e) => client.eth.getBalance(e.address)))
+                addressList.forEach((c, j) => {
+                    c.balances = c.balances || []
+                    c.balances.push({
+                        balance: balanceList[j],
+                        nodeId: evmNodes[i].id
+                    })
+                })
+            }
             const walletList = await this.getWalletList()
             const hardwareAddressList = addressList.map((e, i) => {
                 const importItem = walletList.find((d) => d.address == e.address)
@@ -1270,7 +1279,6 @@ const IotaSDK = {
                     index: (current - 1) * pageSize + i + 1,
                     path: pathList[i],
                     type: 'ledger',
-                    balance: balanceList[i],
                     hasImport: !!importItem,
                     id: importItem?.id
                 }
@@ -2480,8 +2488,9 @@ const IotaSDK = {
                     let signatureFunc = null
                     let getHardwareBip32Path = null
                     if (isLedger) {
+                        const accountIndex = this.getHardwareAccountByPathInIota(fromInfo.path)
                         genAddressFunc = async (index) => {
-                            const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
+                            const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, false, index, 1, accountIndex, 1)
                             return { address, path }
                         }
                         signatureFunc = async (essenceHash, inputs, outputs, isBinaryEssence) => {
@@ -3151,8 +3160,9 @@ const IotaSDK = {
         let getHardwareBip32Path = null
         const nodeId = wallet.nodeId
         if (isLedger) {
+            const accountIndex = this.getHardwareAccountByPathInIota(wallet.path)
             genAddressFunc = async (index) => {
-                const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
+                const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, false, index, 1, accountIndex, 1)
                 return { address, path }
             }
             signatureFunc = async (essenceHash, inputs, outputs, isBinaryEssence) => {
@@ -4091,7 +4101,7 @@ const IotaSDK = {
         const outputIdResolver = async (outputId) => {
             return await this.client.output(outputId)
         }
-        const { bech32Address, hardwarePath } = await this._getSendHelperContextAddress({ isLedger, addressKeyPair, nodeId })
+        const { bech32Address, hardwarePath } = await this._getSendHelperContextAddress({ isLedger, addressKeyPair, nodeId, path })
         const { minBalance } = await this._getSendHelperContextMinBalance(bech32Address)
         const bech32Hrp = this.info.protocol.bech32Hrp
         const rentStructure = this.info.protocol.rentStructure
@@ -4134,9 +4144,10 @@ const IotaSDK = {
         )
         return { minBalance }
     },
-    async _getSendHelperContextAddress({ isLedger, addressKeyPair, nodeId }) {
+    async _getSendHelperContextAddress({ isLedger, addressKeyPair, nodeId, path }) {
+        const accountIndex = this.getHardwareAccountByPathInIota(path)
         const genAddressFunc = async (index) => {
-            const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
+            const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, false, index, 1, accountIndex, 1)
             return { address, path }
         }
         let initialAddressState = {
@@ -4466,8 +4477,9 @@ const IotaSDK = {
         let remainderStorageDeposit = 0
         let outputBalance = BigNumber(receiverOutput.amount * -1)
         let zeroBalance = 0
+        const accountIndex = this.getHardwareAccountByPathInIota(path)
         const genAddressFunc = async (index) => {
-            const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
+            const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, false, index, 1, accountIndex, 1)
             return { address, path }
         }
 
@@ -4779,10 +4791,12 @@ const IotaSDK = {
             let finished = false
             let outputSMRBalance = BigNumber(0) //
 
+            const accountIndex = this.getHardwareAccountByPathInIota(path)
             const genAddressFunc = async (index) => {
-                const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
+                const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, false, index, 1, accountIndex, 1)
                 return { address, path }
             }
+
             let getHardwareBip32Path = null
             let signatureFunc = null
             if (isLedger) {
@@ -5027,8 +5041,9 @@ const IotaSDK = {
         let genAddressFunc = null
         let signatureFunc = null
         if (isLedger) {
+            const accountIndex = this.getHardwareAccountByPathInIota(path)
             genAddressFunc = async (index) => {
-                const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
+                const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, false, index, 1, accountIndex, 1)
                 return { address, path }
             }
             signatureFunc = async (essenceHash, inputs, outputs, isBinaryEssence) => {
@@ -5167,8 +5182,9 @@ const IotaSDK = {
         let genAddressFunc = null
         let signatureFunc = null
         if (isLedger) {
+            const accountIndex = this.getHardwareAccountByPathInIota(path)
             genAddressFunc = async (index) => {
-                const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, index, false, 1)
+                const [{ address, path }] = await this.getHardwareAddressInIota(nodeId, false, index, 1, accountIndex, 1)
                 return { address, path }
             }
             signatureFunc = async (essenceHash, inputs, outputs, isBinaryEssence) => {
