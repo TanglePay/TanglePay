@@ -60,10 +60,18 @@ export const useGetNftList = () => {
 
                 const list = nftImportedList[contractAddress]
                 const res = await Promise.all(list.map(({ tokenId }) => IotaSDK.checkNFTOwner(nftContract, tokenId, curWallet.address)))
+                const newList = []
+                const tokenIdDic = {}
+                list.filter((_, idx) => res[idx]).forEach(({ tokenId }, i) => {
+                    if (!tokenIdDic[tokenId]) {
+                        newList.push(filterList[i])
+                        tokenIdDic[tokenId] = true
+                    }
+                })
                 filtered[contractAddress] = {
                     logo,
                     name,
-                    list: list.filter((_, idx) => res[idx])
+                    list: newList
                 }
             }
             return filtered
@@ -318,8 +326,8 @@ export const useGetNftList = () => {
                         if (e.lockType == 3 && !e.isExpiration) {
                             let timeStr = Base.getTimeStr(e.expirationTime, nowTime)
                             expirationList.push({ ...e, timeStr })
-                        } else if(e.lockType === 1) {
-                            expirationList.push({...e})
+                        } else if (e.lockType === 1) {
+                            expirationList.push({ ...e })
                         }
 
                         if (e.lockType == 2 && !e.isUnlock) {
@@ -329,7 +337,7 @@ export const useGetNftList = () => {
                         // expiration end
                     })
                     // obj.list = list.filter((e) => e.lockType != 3 && e.lockType !== 1 && !(e.lockType == 2 && !e.isUnlock))
-                    obj.list = list.filter(e => e.isUnlock)
+                    obj.list = list.filter((e) => e.isUnlock)
                 })
                 configList = configList.filter((e) => e.link || e.list.length > 0)
                 const localDismissList = (await Base.getLocalData('nft.unlockList.dismiss')) || []
