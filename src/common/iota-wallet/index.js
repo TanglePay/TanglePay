@@ -2305,17 +2305,21 @@ const IotaSDK = {
                     res = await eth.sendSignedTransaction(signed.rawTransaction)
                     // erc 721
                     if (collectionId && nftId) {
-                        const nftImportedList = (await Base.getLocalData(`${address}.nft.importedList`)) || {}
-                        console.log('nftImportedList===', nftImportedList)
-                        if (nftImportedList[collectionId]) {
-                            console.log('nftImportedList[collectionId]===', nftImportedList[collectionId])
-                            nftImportedList[collectionId] = nftImportedList[collectionId].filter((e) => e.tokenId != nftId)
-                            console.log('nftImportedList===', nftImportedList)
-                            Base.globalDispatch({
-                                type: 'nft.importedList',
-                                data: nftImportedList
-                            })
-                        }
+                        // const nftImportedList = (await Base.getLocalData(`${address}.nft.importedList`)) || {}
+                        // console.log('nftImportedList===', nftImportedList)
+                        // if (nftImportedList[collectionId]) {
+                        //     console.log('nftImportedList[collectionId]===', nftImportedList[collectionId])
+                        //     nftImportedList[collectionId] = nftImportedList[collectionId].filter((e) => e.tokenId != nftId)
+                        //     console.log('nftImportedList===', nftImportedList)
+                        //     Base.globalDispatch({
+                        //         type: 'nft.importedList',
+                        //         data: nftImportedList
+                        //     })
+                        // }
+                        Base.globalDispatch({
+                            type: 'nft.forceRequest',
+                            data: Math.random()
+                        })
                     }
                     // this._ethReSend = 0
                 } catch (error) {
@@ -3474,9 +3478,7 @@ const IotaSDK = {
                 return true
             })
 
-            outputIds = outputIds.filter((_,idx) => !filteredOutputIdxList.includes(idx))
-
-            
+            outputIds = outputIds.filter((_, idx) => !filteredOutputIdxList.includes(idx))
 
             nftInfos.forEach((e, i) => {
                 let info = (e?.output?.immutableFeatures || []).find((d) => {

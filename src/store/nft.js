@@ -62,7 +62,8 @@ export const useGetNftList = () => {
                 const res = await Promise.all(list.map(({ tokenId }) => IotaSDK.checkNFTOwner(nftContract, tokenId, curWallet.address)))
                 const newList = []
                 const tokenIdDic = {}
-                list.filter((_, idx) => res[idx]).forEach(({ tokenId }, i) => {
+                const filterList = list.filter((_, idx) => res[idx])
+                filterList.forEach(({ tokenId }, i) => {
                     if (!tokenIdDic[tokenId]) {
                         newList.push(filterList[i])
                         tokenIdDic[tokenId] = true
