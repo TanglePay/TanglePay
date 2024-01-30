@@ -47,7 +47,7 @@ const TraceMethod = {
     },
     // Trace.updateAddressAmount
     updateAddressAmount: async (walletIdentify, address, amount, blockChainCode, tokenCode) => {
-        const key = `${address}_${blockChainCode}_${tokenCode}`
+        const key = `${address}-${blockChainCode}-${tokenCode}`
         const hasAdd = await Base.getLocalData(key)
         if (!hasAdd) {
             await TraceMethod.addAddress(walletIdentify, address, blockChainCode, tokenCode)

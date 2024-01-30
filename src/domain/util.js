@@ -58,5 +58,49 @@ export const getStorage = async (name) => {
     return undefined;
   }
 }
+export const sleep = async (ms) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+export class Channel {
+  queue = [];
+  numPushed = 0;
+  numPolled = 0;
+  async poll() {
+    for (;;) {
+      if (this.queue.length > 0) {
+        const res = this.queue.shift();
+        if (res) {
+          this.numPolled++;
+          return res;
+        }
+      } else {
+        await sleep(100);
+      }
+    }
+  }
+  
+  push(item) {
+    this.queue.push(item);
+    this.numPushed++;
+  }
 
+}
 
+export const drainOutputIds = async (args) => {
+  for (let i = 0; i < args.threadNum; i++) {
+    setTimeout(async () => {
+      while (!args.isStop) {
+        const outputId = await args.inChannel.poll();
+        if (outputId) {
+          console.log('drainOutputIds',outputId)
+          const output = await args.outputIdResolver(outputId);
+          if (output) {
+            args.outChannel.push(output);
+          }
+        } else {
+          await sleep(1000);
+        }
+      }
+    }, 0);
+  }
+};

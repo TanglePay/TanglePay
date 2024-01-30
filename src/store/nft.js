@@ -12,7 +12,8 @@ export const initState = {
     isRequestNft: false,
     forceRequest: 0, //force data sync indicator
     unlockList: [],
-    lockList: []
+    lockList: [],
+    importedList: {}
 }
 export const reducer = (state, action) => {
     let { type, data } = action
@@ -45,34 +46,43 @@ export const useGetNftList = () => {
                 })
             })
     }, [])
-    const filterImportedNFTList = async (nftImportedList, spaceList=[]) => {
+    const filterImportedNFTList = async (nftImportedList, spaceList = []) => {
         const filtered = {}
         try {
             const contractAddressList = Object.keys(nftImportedList)
             for (const contractAddress of contractAddressList) {
                 const nftContract = IotaSDK.getNFTContract(contractAddress)
-                if(nftContract === null) {
+                if (nftContract === null) {
                     continue
                 }
-                const collectionConfige = spaceList.find(item => item?.space?.toLocaleLowerCase() === contractAddress.toLocaleLowerCase()) ?? {}
+                const collectionConfige = spaceList.find((item) => item?.space?.toLocaleLowerCase() === contractAddress.toLocaleLowerCase()) ?? {}
                 const { logo, name } = collectionConfige
 
                 const list = nftImportedList[contractAddress]
-                const res = await Promise.all(list.map(({tokenId}) => IotaSDK.checkNFTOwner(nftContract, tokenId, curWallet.address)))
+                const res = await Promise.all(list.map(({ tokenId }) => IotaSDK.checkNFTOwner(nftContract, tokenId, curWallet.address)))
+                const newList = []
+                const tokenIdDic = {}
+                const filterList = list.filter((_, idx) => res[idx])
+                filterList.forEach(({ tokenId }, i) => {
+                    if (!tokenIdDic[tokenId]) {
+                        newList.push(filterList[i])
+                        tokenIdDic[tokenId] = true
+                    }
+                })
                 filtered[contractAddress] = {
                     logo,
                     name,
-                    list: list.filter((_,idx) => res[idx])
+                    list: newList
                 }
             }
             return filtered
-        }catch(error) {
+        } catch (error) {
             console.warn('Filter imported nft list error:', error)
             return {}
         }
     }
     const setImportedNFTList = async (nftConfig) => {
-        if(!curWallet?.address) {
+        if (!curWallet?.address) {
             return
         }
         const nftImportedList = (await Base.getLocalData(`${curWallet.address}.nft.importedList`)) || {}
@@ -83,7 +93,7 @@ export const useGetNftList = () => {
         })
     }
     useEffect(() => {
-        const asyncFunc = async ()=>{
+        const asyncFunc = async () => {
             addressRef.current = curWallet?.address
             const localList = (await Base.getLocalData(`${curWallet?.address}.nft.list`)) || []
 
@@ -97,7 +107,7 @@ export const useGetNftList = () => {
             })
             await setImportedNFTList(config)
         }
-        asyncFunc();
+        asyncFunc()
     }, [curWallet?.address])
     useEffect(() => {
         const request = async (address) => {
@@ -107,7 +117,6 @@ export const useGetNftList = () => {
                     data: []
                 })
             } else {
-                
                 dispatch({
                     type: 'nft.unlockList',
                     data: (await Base.getLocalData(`${address}.nft.unlockList`)) || []
@@ -318,18 +327,22 @@ export const useGetNftList = () => {
                         if (e.lockType == 3 && !e.isExpiration) {
                             let timeStr = Base.getTimeStr(e.expirationTime, nowTime)
                             expirationList.push({ ...e, timeStr })
+                        } else if (e.lockType === 1) {
+                            expirationList.push({ ...e })
                         }
+
                         if (e.lockType == 2 && !e.isUnlock) {
                             let timeStr = Base.getTimeStr(e.lockTime, nowTime)
                             lockList.push({ ...e, timeStr })
                         }
                         // expiration end
                     })
-                    obj.list = list.filter((e) => e.lockType != 3 && !(e.lockType == 2 && !e.isUnlock))
+                    // obj.list = list.filter((e) => e.lockType != 3 && e.lockType !== 1 && !(e.lockType == 2 && !e.isUnlock))
+                    obj.list = list.filter((e) => e.isUnlock)
                 })
                 configList = configList.filter((e) => e.link || e.list.length > 0)
                 const localDismissList = (await Base.getLocalData('nft.unlockList.dismiss')) || []
-                expirationList = expirationList.filter((e) => !localDismissList.includes(e.nftId))
+                expirationList = expirationList.filter((e) => !localDismissList.includes(e.outputId))
                 dispatch({
                     type: 'nft.unlockList',
                     data: expirationList
