@@ -2604,70 +2604,70 @@ const IotaSDK = {
             const isNoRestake = true
             // awaitTime: await ms
             const { residue, awaitStake } = ext || {}
-            if (this.checkIota(nodeId) && !isNoRestake && residue > 0) {
-                const participationEvents = await Base.getLocalData('staking.participationEvents')
-                const { commencingList = [], upcomingList = [] } = participationEvents || {}
-                const tokens = [...commencingList, ...upcomingList].map((e) => {
-                    return {
-                        eventId: e.id
-                    }
-                })
-                if (tokens.length > 0) {
-                    this.isNeedRestake = 1
-                    const stakeInfo = {
-                        wallet: { ...fromInfo },
-                        tokens,
-                        amount: residue,
-                        type: 1
-                    }
-                    Base.globalToast.success(I18n.t('assets.sendSuccRestakeTips'))
-                    if (awaitStake) {
-                        if (Base.isBrowser) {
-                            setTimeout(() => {
-                                Base.globalToast.showLoading()
-                            }, 2000)
-                        }
-                        try {
-                            await this.restakeAfterSend(stakeInfo)
-                            Base.globalToast.success(I18n.t('assets.restakeSuccTips'))
-                            if (Base.isBrowser) {
-                                setTimeout(() => {
-                                    Base.globalToast.hideLoading()
-                                }, 2000)
-                            }
-                        } catch (error) {
-                            Base.globalToast.hideLoading()
-                            console.log(error)
-                        }
-                    } else {
-                        this.restakeAfterSend(stakeInfo)
-                            .then((res) => {
-                                Base.globalToast.success(I18n.t('assets.restakeSuccTips'))
-                                if (Base.isBrowser) {
-                                    setTimeout(() => {
-                                        Base.globalToast.hideLoading()
-                                    }, 2000)
-                                }
-                            })
-                            .catch((error) => {
-                                Base.globalToast.hideLoading()
-                                console.log(error)
-                            })
-                    }
-                } else {
-                    Base.globalToast.success(I18n.t('assets.sendSucc'))
-                    setTimeout(() => {
-                        Base.globalToast.hideLoading()
-                    }, 2000)
-                }
-            } else {
-                if (!ext?.isCollection) {
-                    Base.globalToast.success(I18n.t('assets.sendSucc'))
-                    setTimeout(() => {
-                        Base.globalToast.hideLoading()
-                    }, 2000)
-                }
+            // if (this.checkIota(nodeId) && !isNoRestake && residue > 0) {
+            //     const participationEvents = await Base.getLocalData('staking.participationEvents')
+            //     const { commencingList = [], upcomingList = [] } = participationEvents || {}
+            //     const tokens = [...commencingList, ...upcomingList].map((e) => {
+            //         return {
+            //             eventId: e.id
+            //         }
+            //     })
+            //     if (tokens.length > 0) {
+            //         this.isNeedRestake = 1
+            //         const stakeInfo = {
+            //             wallet: { ...fromInfo },
+            //             tokens,
+            //             amount: residue,
+            //             type: 1
+            //         }
+            //         Base.globalToast.success(I18n.t('assets.sendSuccRestakeTips'))
+            //         if (awaitStake) {
+            //             if (Base.isBrowser) {
+            //                 setTimeout(() => {
+            //                     Base.globalToast.showLoading()
+            //                 }, 2000)
+            //             }
+            //             try {
+            //                 await this.restakeAfterSend(stakeInfo)
+            //                 Base.globalToast.success(I18n.t('assets.restakeSuccTips'))
+            //                 if (Base.isBrowser) {
+            //                     setTimeout(() => {
+            //                         Base.globalToast.hideLoading()
+            //                     }, 2000)
+            //                 }
+            //             } catch (error) {
+            //                 Base.globalToast.hideLoading()
+            //                 console.log(error)
+            //             }
+            //         } else {
+            //             this.restakeAfterSend(stakeInfo)
+            //                 .then((res) => {
+            //                     Base.globalToast.success(I18n.t('assets.restakeSuccTips'))
+            //                     if (Base.isBrowser) {
+            //                         setTimeout(() => {
+            //                             Base.globalToast.hideLoading()
+            //                         }, 2000)
+            //                     }
+            //                 })
+            //                 .catch((error) => {
+            //                     Base.globalToast.hideLoading()
+            //                     console.log(error)
+            //                 })
+            //         }
+            //     } else {
+            //         Base.globalToast.success(I18n.t('assets.sendSucc'))
+            //         setTimeout(() => {
+            //             Base.globalToast.hideLoading()
+            //         }, 2000)
+            //     }
+            // } else {
+            if (!ext?.isCollection) {
+                Base.globalToast.success(I18n.t('assets.sendSucc'))
+                setTimeout(() => {
+                    Base.globalToast.hideLoading()
+                }, 2000)
             }
+            // }
             // restake end
             setTimeout(() => {
                 this.refreshAssets()
