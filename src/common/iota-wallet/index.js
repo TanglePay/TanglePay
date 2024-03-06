@@ -2854,7 +2854,7 @@ const IotaSDK = {
         }
         return datas
     },
-    async getHisList(outputList, { address, nodeId }, smrOutputIds) {
+    async getHisList(outputList, { address, nodeId }, smrOutputIds, cursorInfo) {
         if (!this.client) {
             return Base.globalToast.error(I18n.t('user.nodeError') + ':' + (this?.curNode?.curNodeKey || this?.curNode?.name))
         }
@@ -2865,21 +2865,31 @@ const IotaSDK = {
                 let list = await this.getPastLogs(address, nodeId)
                 actionTime = new Date().getTime() - actionTime
                 Trace.actionLog(20, address, actionTime, Base.curLang, nodeId, nodeInfo.token)
-                return list
+                return [list]
             }
             return []
         } else {
-            const transactionhistoryRes = await Http.GET(`${this.explorerApiUrl}/transactionhistory/${this.curNode.network}/${address}`, {
+            const requestParams = {
                 isHandlerError: true,
-                pageSize: 1000,
-                sort: 'newest'
+                pageSize: 30
+            }
+            if (cursorInfo && cursorInfo?.cursor) {
+                if (cursorInfo?.cursor) {
+                    requestParams.cursor = cursorInfo?.cursor
+                }
+                if (cursorInfo?.type) {
+                    requestParams.sort = cursorInfo?.type
+                }
+            }
+            const transactionhistoryRes = await Http.GET(`${this.explorerApiUrl}/transactionhistory/${this.curNode.network}/${address}`, {
+                ...requestParams
             })
+            const newCursor = transactionhistoryRes?.cursor
             const transactionhistoryList = transactionhistoryRes?.items || []
             const outputDatas = await this.batchRequest(
                 transactionhistoryList.map((e) => e.outputId),
                 (arg) => this.outputData(arg)
             )
-            console.log(outputDatas, '-----outputDatas')
             const outputListWithDetails = transactionhistoryList.map((e, i) => {
                 const details = outputDatas[i]
                 return {
@@ -2888,7 +2898,6 @@ const IotaSDK = {
                     amount: details?.output?.amount
                 }
             })
-            console.log(outputListWithDetails, '====outputListWithDetails')
             const groupOutputsByTransactionId = (outputsWithDetails) => {
                 const transactionIdToOutputs = new Map()
                 outputsWithDetails.forEach((output) => {
@@ -2978,9 +2987,7 @@ const IotaSDK = {
             }
 
             const transactionIdToOutputs = groupOutputsByTransactionId(outputListWithDetails)
-            console.log(transactionIdToOutputs, '=-===transactionIdToOutputs')
             const transactionsLocal = getTransactionHistoryRecords(transactionIdToOutputs, this.curNode.newwork)
-            console.log(transactionsLocal, '====transactionsLocal')
             let newList = JSON.parse(JSON.stringify(transactionsLocal))
             const nowTime = parseInt(new Date().getTime() / 1000)
             newList = newList.filter((e) => {
@@ -3104,8 +3111,7 @@ const IotaSDK = {
                 }
                 e.tokenInfo = tokenInfo
             })
-            console.log(newList, '========newList')
-            return newList
+            return [newList, newCursor]
         }
     },
     set passwordDialog(dialog) {
