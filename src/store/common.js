@@ -48,7 +48,8 @@ export const initState = {
 
     isPinSet: false, // user if set pin yet
     pinHash: undefined,
-    canShowDappDialog: false
+    canShowDappDialog: false,
+    hisCacheDic: {}
 }
 
 export const reducer = (state, action) => {
@@ -838,9 +839,9 @@ const useUpdateUnlockConditions = () => {
 }
 
 // Asset list only supports IOTA，data structure includes balance, transaction history
+let requestHisId = ''
 export const useGetAssetsList = (curWallet) => {
     const { store, dispatch } = useContext(StoreContext)
-    const requestHisRef = useRef()
     const updateBalance = useUpdateBalance()
     const updateHisList = useUpdateHisList()
     const updateUnlockConditions = useUpdateUnlockConditions()
@@ -988,88 +989,50 @@ export const useGetAssetsList = (curWallet) => {
                             // Base.globalToast.show(I18n.t('assets.getActivityFail'))
                         })
                 } else {
-                    // IotaSDK.getAllOutputIds(addressList).then((outputList) => {
-                    // Base.setLocalData(`${nodeId}.${address}.common.cursor`, cursor)
-                    // type = newest,oldest
-                    const batchRequest = async (walletInfo, type, requestId) => {
-                        type = type || 'oldest'
-                        const localKey = `${walletInfo.nodeId}.${walletInfo.address}`
-                        const localActiviceList = (await Base.getLocalData(`${localKey}.common.activiceList`)) || []
-                        const cursor = await Base.getLocalData(`${localKey}.common.cursor.${type}`)
-                        const [hisList, newCursor] = await IotaSDK.getHisList(outputIds, walletInfo, smrOutputIds, { cursor, type })
+                    const hisDic = {}
+                    const batchRequest = async (walletInfo, cursor, requestId) => {
+                        console.log(requestId, requestHisId, '==========requestId')
+                        const [hisList, newCursor] = await IotaSDK.getHisList(outputIds, walletInfo, smrOutputIds, { cursor })
 
-                        if (requestId !== requestHisRef.current) {
+                        if (requestId !== requestHisId) {
                             return
                         }
+                        const requestAddress = walletInfo.address
                         if (hisList.length > 0) {
-                            const newActiviceList = [...localActiviceList]
-                            hisList.forEach((e) => {
-                                if (newActiviceList.findIndex((item) => item.timestamp === e.timestamp && item.transactionId == e.transactionId) === -1) {
-                                    newActiviceList.push(e)
+                            hisDic[requestAddress] = hisDic[requestAddress] || []
+                            hisDic[requestAddress] = [...hisDic[requestAddress], ...hisList]
+                            const newList = {}
+                            hisDic[requestAddress].forEach((e) => {
+                                const item = newList[e.transactionId]
+                                if (!item) {
+                                    newList[e.transactionId] = e
+                                } else {
+                                    const balanceChange = item.balanceChange + e.balanceChange
+                                    newList[e.transactionId] = {
+                                        ...item,
+                                        balanceChange,
+                                        isSpent: balanceChange <= 0
+                                    }
                                 }
                             })
-                            newActiviceList.sort((a, b) => b.timestamp - a.timestamp)
-                            if (requestId !== requestHisRef.current) {
+                            hisDic[requestAddress] = Object.values(newList)
+                            hisDic[requestAddress].sort((a, b) => b.timestamp - a.timestamp)
+                            if (requestId !== requestHisId) {
                                 return
                             }
-                            await Base.setLocalData(`${localKey}.common.activiceList`, newActiviceList)
-                            await updateHisList(newActiviceList, walletInfo)
+                            await updateHisList(hisDic[walletInfo.address], walletInfo)
+                        } else {
+                            setRequestHis(true, dispatch)
+                        }
+                        if (requestId !== requestHisId) {
+                            return
                         }
                         if (newCursor) {
-                            // if (!cursor) {
-                            //     await Base.setLocalData(`${localKey}.common.cursor.newest`, newCursor)
-                            //     await Base.setLocalData(`${localKey}.common.cursor.oldest`, newCursor)
-                            // } else {
-                            await Base.setLocalData(`${localKey}.common.cursor.${type}`, newCursor)
-                            // }
-                        }
-                        if (requestId !== requestHisRef.current) {
-                            if (hisList.length > 0 && newCursor) {
-                                console.log(hisList, cursor, '============================================', type)
-                                await batchRequest(walletInfo, type, requestId)
-                            } else if (type == 'oldest') {
-                                console.log(hisList, cursor, '开始newest============================================', type)
-                                await batchRequest(walletInfo, 'newest', requestId)
-                            }
+                            await batchRequest(walletInfo, newCursor, requestId)
                         }
                     }
-                    requestHisRef.current = Math.random()
-                    batchRequest(JSON.parse(JSON.stringify(newCurWallet)), 'oldest', requestHisRef.current)
-                    // if (newCurWallet.nodeId == IotaSDK?.curNode?.id) {
-                    //     Base.getLocalData(`${newCurWallet.nodeId}.${newCurWallet.address}.common.hisListv8`).then((hisList) => {
-                    //         dispatch({
-                    //             type: 'common.hisList',
-                    //             data: hisList || []
-                    //         })
-                    //     })
-                    // }
-                    // IotaSDK.getHisList(outputIds, newCurWallet, smrOutputIds)
-                    //     .then(([activityList, cursor]) => {
-                    //         if (newCurWallet.nodeId == IotaSDK?.curNode?.id) {
-                    //             updateHisList(activityList, newCurWallet)
-                    //         }
-                    //     })
-                    //     .catch(() => {
-                    //         // updateHisList([], newCurWallet)
-                    //         // Base.globalToast.show(I18n.t('assets.getActivityFail'))
-                    //     })
-                    // })
-                    // Sync stake rewards
-                    // IotaSDK.getAddressListRewards(addressList)
-                    //     .then((dic) => {
-                    //         if (newCurWallet.nodeId == IotaSDK?.curNode?.id) {
-                    //             dispatch({
-                    //                 type: 'staking.stakedRewards',
-                    //                 data: dic
-                    //             })
-                    //         }
-                    //     })
-                    //     .catch(() => {
-                    //         dispatch({
-                    //             type: 'staking.stakedRewards',
-                    //             data: {}
-                    //         })
-                    //     })
+                    requestHisId = Math.random()
+                    batchRequest(JSON.parse(JSON.stringify(newCurWallet)), '', requestHisId)
                 }
             })
         }

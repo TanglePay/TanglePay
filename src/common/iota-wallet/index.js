@@ -2871,15 +2871,11 @@ const IotaSDK = {
         } else {
             const requestParams = {
                 isHandlerError: true,
-                pageSize: 30
+                pageSize: 50
             }
-            if (cursorInfo && cursorInfo?.cursor) {
-                if (cursorInfo?.cursor) {
-                    requestParams.cursor = cursorInfo?.cursor
-                }
-                if (cursorInfo?.type) {
-                    requestParams.sort = cursorInfo?.type
-                }
+            if (cursorInfo?.cursor) {
+                requestParams.cursor = cursorInfo?.cursor
+                requestParams.sort = 'newest'
             }
             const transactionhistoryRes = await Http.GET(`${this.explorerApiUrl}/transactionhistory/${this.curNode.network}/${address}`, {
                 ...requestParams
