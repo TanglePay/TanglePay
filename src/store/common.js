@@ -495,7 +495,7 @@ const useUpdateHisList = () => {
                         decimal: decimals,
                         assets: 0
                     })
-                } else if (e.outputType == 6) {
+                } else if (e.outputType == 6 && e.nftId) {
                     // NFT_OUTPUT_TYPE
                     let info = (e?.outputInfo?.immutableFeatures || []).find((d) => {
                         return d.type == 2
