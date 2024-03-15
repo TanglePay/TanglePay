@@ -526,13 +526,13 @@ const useUpdateHisList = () => {
             let localTipsData = await Base.getLocalData('localTipsData')
             localTipsData = localTipsData || {}
             if (!localTipsData?.[lastData.id] && lastData.num > 0) {
-                if (lastData?.type == 0 || lastData?.type === 5) {
-                    const str = I18n.t('assets.receivedSucc')
-                        .replace('{num}', lastData.num)
-                        .replace('{unit}', lastData.unit || '')
-                        .replace('{token}', lastData.token)
-                    Base.globalToast.success(str)
-                }
+                // if (lastData?.type == 0 || lastData?.type === 5) {
+                //     const str = I18n.t('assets.receivedSucc')
+                //         .replace('{num}', lastData.num)
+                //         .replace('{unit}', lastData.unit || '')
+                //         .replace('{token}', lastData.token)
+                //     Base.globalToast.success(str)
+                // }
                 localTipsData[lastData.id] = 1
                 Base.setLocalData('localTipsData', localTipsData)
 
