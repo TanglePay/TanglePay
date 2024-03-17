@@ -118,6 +118,10 @@ export const useGetNftList = () => {
                 })
             } else {
                 dispatch({
+                    type: 'nft.isRequestNft',
+                    data: false
+                })
+                dispatch({
                     type: 'nft.unlockList',
                     data: (await Base.getLocalData(`${address}.nft.unlockList`)) || []
                 })
