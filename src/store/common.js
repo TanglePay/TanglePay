@@ -479,25 +479,9 @@ const useUpdateHisList = () => {
                     amount: amount,
                     assets: Base.formatNum(assets)
                 }
-                if (!!e.tokenInfo) {
-                    const tokenId = e.tokenInfo.id
-                    const decimals = tokenDic[tokenId]?.decimals || 0
-                    const symbol = tokenDic[tokenId]?.symbol || ''
-                    let num = BigNumber(e.tokenInfo?.amount || 0)
-                    let amount = num.div(Math.pow(10, decimals))
-                    num = Number(num)
-                    Object.assign(obj, {
-                        type: !obj.isSpent ? 5 : 6,
-                        num: Number(amount),
-                        amount: Number(amount),
-                        coin: symbol,
-                        token: symbol,
-                        decimal: decimals,
-                        assets: 0
-                    })
-                } else if (e.outputType == 6 && e.nftId) {
+                if (e.nftId) {
                     // NFT_OUTPUT_TYPE
-                    let info = (e?.outputInfo?.immutableFeatures || []).find((d) => {
+                    let info = (e?.nftInfo?.immutableFeatures || []).find((d) => {
                         return d.type == 2
                     })
                     if (info && info.data) {
@@ -516,6 +500,22 @@ const useUpdateHisList = () => {
                             })
                         } catch (error) {}
                     }
+                } else if (!!e.tokenInfo) {
+                    const tokenId = e.tokenInfo.id
+                    const decimals = tokenDic[tokenId]?.decimals || 0
+                    const symbol = tokenDic[tokenId]?.symbol || ''
+                    let num = BigNumber(e.tokenInfo?.amount || 0)
+                    let amount = num.div(Math.pow(10, decimals))
+                    num = Number(num)
+                    Object.assign(obj, {
+                        type: !obj.isSpent ? 5 : 6,
+                        num: Number(amount),
+                        amount: Number(amount),
+                        coin: symbol,
+                        token: symbol,
+                        decimal: decimals,
+                        assets: 0
+                    })
                 }
                 return obj
             })
