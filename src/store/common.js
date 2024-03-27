@@ -635,23 +635,28 @@ const useUpdateHisList = () => {
 
 export const useHandleUnlocalConditions = () => {
     const { store, dispatch } = useContext(StoreContext)
+    const [curWallet] = useGetNodeWallet()
     const onDismiss = async (blockId) => {
         let unlockConditionsList = _get(store, 'common.unlockConditions')
-        const localDismissList = (await Base.getLocalData('common.unlockConditions.dismiss')) || []
+        const localKey = `${curWallet?.nodeId}.${curWallet.address}.common.unlockConditions.dismiss`
+        const localDismissList = (await Base.getLocalData(localKey)) || []
         localDismissList.push(blockId)
         unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.blockId))
-        Base.setLocalData('common.unlockConditions.dismiss', localDismissList)
+        Base.setLocalData(localKey, localDismissList)
         dispatch({
             type: 'common.unlockConditions',
             data: unlockConditionsList
         })
     }
     const onAccept = async (item) => {
+        const localKey = `${curWallet?.nodeId}.${curWallet.address}.common.unlockConditions.dismiss`
         const res = await IotaSDK.SMRUNlock(item)
-        const localDismissList = (await Base.getLocalData('common.unlockConditions.dismiss')) || []
+        const localDismissList = (await Base.getLocalData(localKey)) || []
         let unlockConditionsList = _get(store, 'common.unlockConditions')
         unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.blockId))
+        localDismissList.push(item.blockId)
         unlockConditionsList = unlockConditionsList.filter((e) => e.blockId !== item.blockId)
+        Base.setLocalData(localKey, localDismissList)
         dispatch({
             type: 'common.unlockConditions',
             data: unlockConditionsList
@@ -659,11 +664,12 @@ export const useHandleUnlocalConditions = () => {
         return res
     }
     const onDismissNft = async (outputId) => {
+        const localKey = `${curWallet.address}.nft.unlockList.dismiss`
         let unlockConditionsList = _get(store, 'nft.unlockList')
-        const localDismissList = (await Base.getLocalData('nft.unlockList.dismiss')) || []
+        const localDismissList = (await Base.getLocalData(localKey)) || []
         localDismissList.push(outputId)
         unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.outputId))
-        Base.setLocalData('nft.unlockList.dismiss', localDismissList)
+        Base.setLocalData(localKey, localDismissList)
         dispatch({
             type: 'nft.unlockList',
             data: unlockConditionsList
@@ -671,10 +677,13 @@ export const useHandleUnlocalConditions = () => {
     }
     const onAcceptNft = async (item) => {
         const res = await IotaSDK.SMRUNlockNft(item)
+        const localKey = `${curWallet.address}.nft.unlockList.dismiss`
         let unlockConditionsList = _get(store, 'nft.unlockList')
-        const localDismissList = (await Base.getLocalData('nft.unlockList.dismiss')) || []
+        const localDismissList = (await Base.getLocalData(localKey)) || []
+        localDismissList.push(item.outputId)
         unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.outputId))
         unlockConditionsList = unlockConditionsList.filter((e) => e.nftId != item.nftId)
+        Base.setLocalData(localKey, localDismissList)
         dispatch({
             type: 'nft.unlockList',
             data: unlockConditionsList
@@ -799,17 +808,18 @@ const useUpdateUnlockConditions = () => {
                     }
                 }
             })
-            const localDismissList = (await Base.getLocalData('common.unlockConditions.dismiss')) || []
+            const localDismissList = (await Base.getLocalData(`${nodeId}.${address}.common.unlockConditions.dismiss`)) || []
             unlockConditionsList = unlockConditionsList.filter((e) => !localDismissList.includes(e.blockId))
             // const unlockConditionsSendList = unlockConditionsList.filter((e) => e.unlockAddress == address)
             const arr = unlockConditionsList.filter((e) => e.unlockAddress != address)
+            console.log('-------------------arr', arr)
             dispatch({
                 type: 'common.unlockConditions',
                 data: arr
             })
-            if (arr.length > 0) {
-                Base.setLocalData(`${nodeId}.${address}.common.unlockConditions`, arr)
-            }
+            // if (arr.length > 0) {
+            Base.setLocalData(`${nodeId}.${address}.common.unlockConditions`, arr)
+            // }
             dispatch({
                 type: 'common.unlockConditionsSend',
                 data: []
@@ -818,9 +828,9 @@ const useUpdateUnlockConditions = () => {
                 type: 'common.lockedList',
                 data: lockedListArr
             })
-            if (lockedListArr.length > 0) {
-                Base.setLocalData(`${nodeId}.${address}.common.lockedList`, lockedListArr)
-            }
+            // if (lockedListArr.length > 0) {
+            Base.setLocalData(`${nodeId}.${address}.common.lockedList`, lockedListArr)
+            // }
         } else {
             dispatch({
                 type: 'common.unlockConditions',
@@ -891,6 +901,9 @@ export const useGetAssetsList = (curWallet) => {
             const dispatchCache = async (key, defaultData) => {
                 const curKey = `${curWallet.nodeId}.${curWallet.address}.${key}`
                 const localData = (await Base.getLocalData(curKey)) || defaultData
+                if (key === 'common.unlockConditions') {
+                    console.log(localData, '===============localData')
+                }
                 dispatch({
                     type: key,
                     data: localData
