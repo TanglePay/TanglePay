@@ -461,10 +461,10 @@ const useUpdateHisList = () => {
             })
             hisList = activityList.map((e) => {
                 // type：0->receive, 1->send, 2->stake, 3->unstake, 4->sign, 5->receive smr token, 6->send smr token, 7->receive smr nft, 8->send smr nft,
-                const num = new BigNumber(Math.abs(e?.balanceChange) || 0)
+                let num = new BigNumber(Math.abs(e?.balanceChange) || 0)
                 const amount = Number(num.div(Math.pow(10, IotaSDK.curNode?.decimal || 0)))
                 const assets = amount * (price[token] || 0)
-                const obj = {
+                let obj = {
                     viewUrl: `${nodeInfo.explorer}/transaction/${e.transactionId}`,
                     id: e.transactionId,
                     coin: IotaSDK.isIotaStardust(nodeId) ? 'IOTA' : 'SMR',
