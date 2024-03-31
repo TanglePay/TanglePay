@@ -4375,7 +4375,7 @@ const IotaSDK = {
             return { address, path }
         }
         let initialAddressState = {
-            accountIndex: 0,
+            accountIndex: path || 0,
             addressIndex: 0,
             isInternal: false
         }
@@ -4667,7 +4667,7 @@ const IotaSDK = {
         let outputSMRBalance = BigNumber(0) //
         const inputsAndSignatureKeyPairs = []
         let initialAddressState = {
-            accountIndex: 0,
+            accountIndex: path || 0,
             addressIndex: 0,
             isInternal: false
         }
@@ -4973,9 +4973,9 @@ const IotaSDK = {
     getMinBalance(address) {
         return IotaObj.TransactionHelper.getStorageDeposit(this.getBasicTypeOutput(address, 0), this.info.protocol.rentStructure)
     },
-    getInitialAddressState() {
+    getInitialAddressState(path) {
         return {
-            accountIndex: 0,
+            accountIndex: path || 0,
             addressIndex: 0,
             isInternal: false
         }
@@ -5008,7 +5008,7 @@ const IotaSDK = {
             let outputs = []
             let inputsAndSignatureKeyPairs = []
             let initialAddressState = {
-                accountIndex: 0,
+                accountIndex: path || 0,
                 addressIndex: 0,
                 isInternal: false
             }
@@ -5143,7 +5143,7 @@ const IotaSDK = {
             }
             // After processing all nft output, Handle insufficient funds only once.
             if (outputSMRBalance.lt(0)) {
-                let initialAddressState = this.getInitialAddressState()
+                let initialAddressState = this.getInitialAddressState(path)
                 const addressOptions = this.getAddressOptions()
 
                 const sendOutput = this.getBasicTypeOutput(toAddress, outputSMRBalance.multipliedBy(-1).toNumber())
@@ -5327,7 +5327,7 @@ const IotaSDK = {
         }
         if (output?.nativeTokens?.length || smrUnlockConditionAmount) {
             let initialAddressState = {
-                accountIndex: 0,
+                accountIndex: path || 0,
                 addressIndex: 0,
                 isInternal: false
             }
@@ -5455,7 +5455,7 @@ const IotaSDK = {
                 }
             ]
             let initialAddressState = {
-                accountIndex: 0,
+                accountIndex: path || 0,
                 addressIndex: 0,
                 isInternal: false
             }
