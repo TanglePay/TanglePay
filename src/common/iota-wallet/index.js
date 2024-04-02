@@ -854,7 +854,6 @@ const IotaSDK = {
                 if (this.mqttClient) {
                     if (this.mqttClient?.outputByConditionAndAddress) {
                         this.subscriptionId = this.mqttClient.blocksTransaction((topic, data) => {
-                            console.log('-------------------------------------data', data)
                             const sender = (data?.payload?.unlocks || []).find((e) => {
                                 const publicKey = e?.signature?.publicKey
                                 return publicKey && this.publicKeyToBech32(publicKey) === address
@@ -2944,6 +2943,13 @@ const IotaSDK = {
                     }
 
                     let amount = Number(outputFromDetails.amount)
+                    const unlockConditions = output?.details?.output?.unlockConditions || []
+                    unlockConditions.forEach((condition) => {
+                        const returnAddress = condition?.returnAddress?.pubKeyHash
+                        if (returnAddress && !returnAddress.unixTime) {
+                            amount = Number(condition.amount || 0)
+                        }
+                    })
                     if (output.isSpent) {
                         amount = -1 * amount
                     }
@@ -3087,8 +3093,8 @@ const IotaSDK = {
                 if (!!hasReturnAddress) {
                     // e.fromOutputs = toOutputs
                     // e.toOutputs = fromOutputs
-                    e.isSpent = !e.isSpent
-                    e.balanceChange = -1 * e.balanceChange
+                    // e.isSpent = !e.isSpent
+                    // e.balanceChange = -1 * e.balanceChange
                     e.isAccept = true
                 }
                 if (e.isSpent) {
@@ -3103,8 +3109,9 @@ const IotaSDK = {
                 const getTokenAmount = (output, isFrom) => {
                     const unlockConditions = output.unlockConditions || []
                     const item = unlockConditions.find((c) => c.address?.pubKeyHash)
+                    const hasReturn = unlockConditions.find((c) => c.returnAddress?.pubKeyHash)
                     const address = item?.address?.pubKeyHash
-                    if (address && output.nativeTokens && output.nativeTokens.length) {
+                    if (address && output.nativeTokens && output.nativeTokens.length && !hasReturn) {
                         dic[address] = dic[address] || {}
                         output.nativeTokens.forEach((t) => {
                             // dic[address][t.id] = dic[address][t.id] || new BigNumber(0)
@@ -3135,7 +3142,7 @@ const IotaSDK = {
                             isToken = true
                             tokenInfo = {
                                 id: j,
-                                amount: from.minus(to).valueOf()
+                                amount: Math.abs(from.minus(to).valueOf())
                             }
                         } else if (e.isAccept && !e.isSpent) {
                             tokenInfo = {
@@ -3149,6 +3156,25 @@ const IotaSDK = {
                 const nftInfo = e.fromOutputs.find((d) => !!d.nftId) || e.toOutputs.find((d) => !!d.nftId)
                 e.nftId = nftInfo?.nftId
                 e.nftInfo = nftInfo
+                const payload = e?.payload?.essence?.payload || {}
+                const { data, tag, type } = payload
+                if (data && tag) {
+                    let payloadData = IotaObj.Converter.hexToUtf8(data)
+                    e.payloadTag = IotaObj.Converter.hexToUtf8(tag)
+                    e.payloadType = type
+                    try {
+                        payloadData = JSON.parse(payloadData)
+                    } catch (error) {
+                        payloadData = null
+                    }
+                    e.payloadData = payloadData
+                    if (payloadData && payloadData.version == 1 && payloadData.unlock == 1) {
+                        e.from = payloadData.from || e.from
+                        e.to = payloadData.to || e.to
+                        e.balanceChange = payloadData.amount || e.amount
+                        e.isSpent = false
+                    }
+                }
             })
             return [newList, newCursor]
         }
@@ -3667,7 +3693,11 @@ const IotaSDK = {
                 if (info && info.data) {
                     try {
                         info = IotaObj.Converter.hexToUtf8(info.data)
-                        info = JSON.parse(info)
+                        try {
+                            info = JSON.parse(info)
+                        } catch (error) {
+                            info = {}
+                        }
                         let nftId = e?.output?.nftId
                         if (nftId == 0) {
                             nftId = IotaObj.TransactionHelper.resolveIdFromOutputId(outputIds[i])
@@ -4343,7 +4373,7 @@ const IotaSDK = {
             return { address, path }
         }
         let initialAddressState = {
-            accountIndex: 0,
+            accountIndex: path || 0,
             addressIndex: 0,
             isInternal: false
         }
@@ -4635,7 +4665,7 @@ const IotaSDK = {
         let outputSMRBalance = BigNumber(0) //
         const inputsAndSignatureKeyPairs = []
         let initialAddressState = {
-            accountIndex: 0,
+            accountIndex: path || 0,
             addressIndex: 0,
             isInternal: false
         }
@@ -4911,7 +4941,8 @@ const IotaSDK = {
                                   from: address, //main address
                                   to: toAddress,
                                   amount: sendAmount,
-                                  collection: 0
+                                  collection: 0,
+                                  version: 1
                               })
                           )
                 },
@@ -4940,9 +4971,9 @@ const IotaSDK = {
     getMinBalance(address) {
         return IotaObj.TransactionHelper.getStorageDeposit(this.getBasicTypeOutput(address, 0), this.info.protocol.rentStructure)
     },
-    getInitialAddressState() {
+    getInitialAddressState(path) {
         return {
-            accountIndex: 0,
+            accountIndex: path || 0,
             addressIndex: 0,
             isInternal: false
         }
@@ -4975,7 +5006,7 @@ const IotaSDK = {
             let outputs = []
             let inputsAndSignatureKeyPairs = []
             let initialAddressState = {
-                accountIndex: 0,
+                accountIndex: path || 0,
                 addressIndex: 0,
                 isInternal: false
             }
@@ -5110,7 +5141,7 @@ const IotaSDK = {
             }
             // After processing all nft output, Handle insufficient funds only once.
             if (outputSMRBalance.lt(0)) {
-                let initialAddressState = this.getInitialAddressState()
+                let initialAddressState = this.getInitialAddressState(path)
                 const addressOptions = this.getAddressOptions()
 
                 const sendOutput = this.getBasicTypeOutput(toAddress, outputSMRBalance.multipliedBy(-1).toNumber())
@@ -5174,7 +5205,8 @@ const IotaSDK = {
                                   from: address, //main address
                                   to: toAddress,
                                   amount: sendAmount,
-                                  collection: 0
+                                  collection: 0,
+                                  version: 1
                               })
                           )
                 },
@@ -5293,7 +5325,7 @@ const IotaSDK = {
         }
         if (output?.nativeTokens?.length || smrUnlockConditionAmount) {
             let initialAddressState = {
-                accountIndex: 0,
+                accountIndex: path || 0,
                 addressIndex: 0,
                 isInternal: false
             }
@@ -5321,10 +5353,11 @@ const IotaSDK = {
                 tag: IotaObj.Converter.utf8ToBytes('TanglePay'),
                 data: IotaObj.Converter.utf8ToBytes(
                     JSON.stringify({
-                        from: address,
+                        from: unlockAddress,
                         to: address,
                         amount,
-                        unlock: 1
+                        unlock: 1,
+                        version: 1
                     })
                 )
             },
@@ -5420,7 +5453,7 @@ const IotaSDK = {
                 }
             ]
             let initialAddressState = {
-                accountIndex: 0,
+                accountIndex: path || 0,
                 addressIndex: 0,
                 isInternal: false
             }
@@ -5444,11 +5477,12 @@ const IotaSDK = {
                 tag: IotaObj.Converter.utf8ToBytes('TanglePay'),
                 data: IotaObj.Converter.utf8ToBytes(
                     JSON.stringify({
-                        from: address,
+                        from: unlockAddress,
                         to: address,
                         nftId: outputData.output.nftId,
                         amount: 1,
-                        unlock: 1
+                        unlock: 1,
+                        version: 1
                     })
                 )
             },
