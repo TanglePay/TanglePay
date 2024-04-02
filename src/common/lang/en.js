@@ -36,7 +36,7 @@ const EN = {
         intoTitle2: 'Backup File Import',
         mnemonicTips: 'Enter mnemonic phrases SEPARATED by spaces',
         intoSelectFile: 'Select the stronghold file',
-        intoName: 'Set account name ',
+        intoName: 'Set Account Name ',
         intoNameTips: 'Please enter a name ',
         intoPassword: 'Set Password',
         intoPin: 'Set PIN Code',
