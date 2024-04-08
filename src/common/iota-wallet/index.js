@@ -513,6 +513,13 @@ const IotaSDK = {
         return getExemptTagPrefixList()
     },
 
+    getTagUtf8(tag) {
+        if (IotaObj.Converter && tag && /^0x/.test(tag)) {
+            return IotaObj.Converter.hexToUtf8(tag)
+        }
+        return ''
+    },
+
     async getNodes(callBack) {
         try {
             Base.getLocalData('tanglePayNodeList').then((res) => {
@@ -626,7 +633,7 @@ const IotaSDK = {
                 }
                 const selectNode = async (list, nodeInfo) => {
                     list.sort((a, b) => a['dlt.green'].PoolRank - b['dlt.green'].PoolRank)
-                    list = list.slice(0, 10)
+                    list = list.slice(0, 20)
                     const index = parseInt(Math.random() * list.length)
                     let info = null
                     try {
@@ -852,22 +859,24 @@ const IotaSDK = {
                                 return publicKey && this.publicKeyToBech32(publicKey) === address
                             })
                             let isReceiver = false
-                            if (!sender) {
-                                const outputs = data?.payload?.essence?.outputs || []
-                                for (let i = 0; i < outputs.length; i++) {
-                                    const unlockConditions = outputs[i]?.unlockConditions || []
-                                    for (let j = 0; j < unlockConditions.length; j++) {
-                                        const pubKeyHash = unlockConditions[j]?.address?.pubKeyHash
-                                        if (pubKeyHash && this.hexToBech32(pubKeyHash) === address) {
-                                            isReceiver = true
-                                            break
-                                        }
-                                    }
-                                    if (isReceiver) {
+                            let isNft = false
+                            // if (!sender) {
+                            const outputs = data?.payload?.essence?.outputs || []
+                            for (let i = 0; i < outputs.length; i++) {
+                                const unlockConditions = outputs[i]?.unlockConditions || []
+                                if (outputs[i] && outputs[i].nftId) {
+                                    isNft = true
+                                }
+                                for (let j = 0; j < unlockConditions.length; j++) {
+                                    const pubKeyHash = unlockConditions[j]?.address?.pubKeyHash
+                                    if (pubKeyHash && this.hexToBech32(pubKeyHash) === address) {
+                                        isReceiver = true
                                         break
                                     }
                                 }
                             }
+                            // }
+                            console.log(sender, isReceiver, isNft)
                             if (sender || isReceiver) {
                                 if (Base.globalDispatch) {
                                     Base.globalDispatch({
@@ -875,9 +884,15 @@ const IotaSDK = {
                                         data: false
                                     })
                                 }
-                                setTimeout(() => {
+                                const requestAssets = () => {
                                     self.refreshAssets()
-                                }, 8000)
+                                    if (isNft) {
+                                        self.refreshNft()
+                                    }
+                                }
+                                requestAssets()
+                                setTimeout(requestAssets, 3000)
+                                setTimeout(requestAssets, 10000)
                             }
                         })
                     } else {
@@ -2597,70 +2612,70 @@ const IotaSDK = {
             const isNoRestake = true
             // awaitTime: await ms
             const { residue, awaitStake } = ext || {}
-            if (this.checkIota(nodeId) && !isNoRestake && residue > 0) {
-                const participationEvents = await Base.getLocalData('staking.participationEvents')
-                const { commencingList = [], upcomingList = [] } = participationEvents || {}
-                const tokens = [...commencingList, ...upcomingList].map((e) => {
-                    return {
-                        eventId: e.id
-                    }
-                })
-                if (tokens.length > 0) {
-                    this.isNeedRestake = 1
-                    const stakeInfo = {
-                        wallet: { ...fromInfo },
-                        tokens,
-                        amount: residue,
-                        type: 1
-                    }
-                    Base.globalToast.success(I18n.t('assets.sendSuccRestakeTips'))
-                    if (awaitStake) {
-                        if (Base.isBrowser) {
-                            setTimeout(() => {
-                                Base.globalToast.showLoading()
-                            }, 2000)
-                        }
-                        try {
-                            await this.restakeAfterSend(stakeInfo)
-                            Base.globalToast.success(I18n.t('assets.restakeSuccTips'))
-                            if (Base.isBrowser) {
-                                setTimeout(() => {
-                                    Base.globalToast.hideLoading()
-                                }, 2000)
-                            }
-                        } catch (error) {
-                            Base.globalToast.hideLoading()
-                            console.log(error)
-                        }
-                    } else {
-                        this.restakeAfterSend(stakeInfo)
-                            .then((res) => {
-                                Base.globalToast.success(I18n.t('assets.restakeSuccTips'))
-                                if (Base.isBrowser) {
-                                    setTimeout(() => {
-                                        Base.globalToast.hideLoading()
-                                    }, 2000)
-                                }
-                            })
-                            .catch((error) => {
-                                Base.globalToast.hideLoading()
-                                console.log(error)
-                            })
-                    }
-                } else {
-                    Base.globalToast.success(I18n.t('assets.sendSucc'))
-                    setTimeout(() => {
-                        Base.globalToast.hideLoading()
-                    }, 2000)
-                }
-            } else {
-                if (!ext?.isCollection) {
-                    Base.globalToast.success(I18n.t('assets.sendSucc'))
-                    setTimeout(() => {
-                        Base.globalToast.hideLoading()
-                    }, 2000)
-                }
+            // if (this.checkIota(nodeId) && !isNoRestake && residue > 0) {
+            //     const participationEvents = await Base.getLocalData('staking.participationEvents')
+            //     const { commencingList = [], upcomingList = [] } = participationEvents || {}
+            //     const tokens = [...commencingList, ...upcomingList].map((e) => {
+            //         return {
+            //             eventId: e.id
+            //         }
+            //     })
+            //     if (tokens.length > 0) {
+            //         this.isNeedRestake = 1
+            //         const stakeInfo = {
+            //             wallet: { ...fromInfo },
+            //             tokens,
+            //             amount: residue,
+            //             type: 1
+            //         }
+            //         Base.globalToast.success(I18n.t('assets.sendSuccRestakeTips'))
+            //         if (awaitStake) {
+            //             if (Base.isBrowser) {
+            //                 setTimeout(() => {
+            //                     Base.globalToast.showLoading()
+            //                 }, 2000)
+            //             }
+            //             try {
+            //                 await this.restakeAfterSend(stakeInfo)
+            //                 Base.globalToast.success(I18n.t('assets.restakeSuccTips'))
+            //                 if (Base.isBrowser) {
+            //                     setTimeout(() => {
+            //                         Base.globalToast.hideLoading()
+            //                     }, 2000)
+            //                 }
+            //             } catch (error) {
+            //                 Base.globalToast.hideLoading()
+            //                 console.log(error)
+            //             }
+            //         } else {
+            //             this.restakeAfterSend(stakeInfo)
+            //                 .then((res) => {
+            //                     Base.globalToast.success(I18n.t('assets.restakeSuccTips'))
+            //                     if (Base.isBrowser) {
+            //                         setTimeout(() => {
+            //                             Base.globalToast.hideLoading()
+            //                         }, 2000)
+            //                     }
+            //                 })
+            //                 .catch((error) => {
+            //                     Base.globalToast.hideLoading()
+            //                     console.log(error)
+            //                 })
+            //         }
+            //     } else {
+            //         Base.globalToast.success(I18n.t('assets.sendSucc'))
+            //         setTimeout(() => {
+            //             Base.globalToast.hideLoading()
+            //         }, 2000)
+            //     }
+            // } else {
+            if (!ext?.isCollection) {
+                Base.globalToast.success(I18n.t('assets.sendSucc'))
+                setTimeout(() => {
+                    Base.globalToast.hideLoading()
+                }, 2000)
             }
+            // }
             // restake end
             setTimeout(() => {
                 this.refreshAssets()
@@ -2756,7 +2771,7 @@ const IotaSDK = {
     },
     // handle output 404
     async outputData(outputId) {
-        let res = await Base.getLocalData(`outputId.${outputId}`)
+        let res = await Base.getLocalData(`outputIdV2.${outputId}`)
         if (!res) {
             try {
                 res = await this.requestQueue([
@@ -2765,12 +2780,31 @@ const IotaSDK = {
                         isHandlerError: true
                     })
                 ])
-                await Base.setLocalData(`outputId.${outputId}`, res)
+                if (res?.output?.metadata?.isSpent) {
+                    await Base.setLocalData(`outputIdV2.${outputId}`, res)
+                }
             } catch (error) {
                 return null
             }
         }
         return res?.output ? res?.output : res
+    },
+    async transactionData(transactionId) {
+        let res = await Base.getLocalData(`transactionId.${transactionId}`)
+        if (!res) {
+            try {
+                res = await this.requestQueue([
+                    // this.client.output(outputId),
+                    Http.GET(`${this.explorerApiUrl}/transaction/${this.curNode.network}/${transactionId}`, {
+                        isHandlerError: true
+                    })
+                ])
+                await Base.setLocalData(`transactionId.${transactionId}`, res)
+            } catch (error) {
+                return null
+            }
+        }
+        return res?.block ? res?.block : res
     },
     // handle message 404 ？
     async messageMetadata(messageId) {
@@ -2830,7 +2864,7 @@ const IotaSDK = {
         }
         return datas
     },
-    async getHisList(outputList, { address, nodeId }, smrOutputIds) {
+    async getHisList(outputList, { address, nodeId }, smrOutputIds, cursorInfo) {
         if (!this.client) {
             return Base.globalToast.error(I18n.t('user.nodeError') + ':' + (this?.curNode?.curNodeKey || this?.curNode?.name))
         }
@@ -2841,145 +2875,308 @@ const IotaSDK = {
                 let list = await this.getPastLogs(address, nodeId)
                 actionTime = new Date().getTime() - actionTime
                 Trace.actionLog(20, address, actionTime, Base.curLang, nodeId, nodeInfo.token)
-                return list
+                return [list]
             }
             return []
         } else {
-            let allList = []
-            if (this.checkSMR(nodeId)) {
-                let outputDatas = await this.batchRequest(
-                    smrOutputIds.map((e) => e.outputId),
-                    (arg) => this.outputData(arg)
-                )
-                outputDatas = outputDatas.filter((e) => !!e)
-                let blockDatas = await this.batchRequest(
-                    outputDatas.map((e) => (!e.metadata?.isSpent ? e.metadata.blockId : e.metadata?.transactionId)),
-                    (arg) => this.blockData(arg)
-                )
-                // let outputDatas = await Promise.all(smrOutputIds.map((e) => this.outputData(e.outputId)))
-                // const blockDatas = await Promise.all(outputDatas.map((e) => this.blockData(!e.metadata?.isSpent ? e.metadata.blockId : e.metadata?.transactionId)))
-                let blockIds = []
-                allList = outputDatas.map((e, i) => {
-                    if (!blockDatas[i]) {
-                        return null
+            const requestParams = {
+                isHandlerError: true,
+                pageSize: 50
+            }
+            if (cursorInfo?.cursor) {
+                requestParams.cursor = cursorInfo?.cursor
+                requestParams.sort = 'newest'
+            }
+            const transactionhistoryRes = await Http.GET(`${this.explorerApiUrl}/transactionhistory/${this.curNode.network}/${address}`, {
+                ...requestParams
+            })
+            const newCursor = transactionhistoryRes?.cursor
+            const transactionhistoryList = transactionhistoryRes?.items || []
+            const outputDatas = await this.batchRequest(
+                transactionhistoryList.map((e) => e.outputId),
+                (arg) => this.outputData(arg)
+            )
+            const outputListWithDetails = transactionhistoryList.map((e, i) => {
+                const details = outputDatas[i]
+                return {
+                    ...e,
+                    details,
+                    amount: details?.output?.amount
+                }
+            })
+            const groupOutputsByTransactionId = (outputsWithDetails) => {
+                const transactionIdToOutputs = new Map()
+                outputsWithDetails.forEach((output) => {
+                    const detailsMetadata = output?.details?.metadata
+                    if (!detailsMetadata) {
+                        return
                     }
-                    const { blockId, isSpent, transactionId, outputIndex } = e.metadata
-                    const isOldisSpent = blockIds.includes(blockId)
-                    blockIds.push(blockId)
-                    const blockData = blockDatas[i]?.transactionBlock || blockDatas[i]?.block || {}
-                    const unlockBlocks = blockData?.payload?.unlocks || []
-                    const unlockBlock = unlockBlocks.find((e) => e.signature)
-                    let payloadData = blockData?.payload?.essence?.payload?.data || ''
-                    try {
-                        payloadData = IotaObj.Converter.hexToUtf8(payloadData)
-                        payloadData = JSON.parse(payloadData)
-                    } catch (error) {
-                        payloadData = {}
+
+                    const transactionId = output.isSpent ? detailsMetadata.transactionIdSpent : detailsMetadata.transactionId
+
+                    if (!transactionId) {
+                        return
                     }
-                    return {
-                        // isSpent: isOldisSpent ? false : isSpent,
-                        isSpent: smrOutputIds[i].isSpent,
-                        timestamp: smrOutputIds[i].milestoneTimestamp,
-                        blockId: isSpent ? transactionId : blockId,
-                        outputBlockId: blockId,
-                        decimal: nodeInfo.decimal,
-                        unlockBlock,
-                        bech32Address: address,
-                        outputs: blockData?.payload?.essence?.outputs || [],
-                        output: e.output,
-                        mergeTransactionId: smrOutputIds[i].milestoneIndex,
-                        transactionId,
-                        transactionOutputIndex: outputIndex,
-                        outputSpent: isSpent,
-                        payloadData
-                    }
-                })
-                allList = allList.filter((e) => !!e)
-            } else {
-                let outputDatas = await this.batchRequest(outputList, (arg) => this.outputData(arg))
-                outputDatas = outputDatas.filter((e) => !!e)
-                let metadataList = await this.batchRequest(
-                    outputDatas.map((e) => e.messageId),
-                    (arg) => this.messageMetadata(arg)
-                )
-                // const outputDatas = await Promise.all(outputList.map((e) => this.outputData(e)))
-                // let metadataList = await Promise.all(outputDatas.map((e) => this.messageMetadata(e.messageId)))
-                const newMetadataList = []
-                const newOutputDatas = []
-                metadataList.forEach((e, i) => {
-                    if (e) {
-                        newMetadataList.push(e)
-                        newOutputDatas.push(outputDatas[i])
-                    }
-                })
-                const milestoneList = await this.batchRequest(
-                    newMetadataList.map((e) => e.referencedByMilestoneIndex),
-                    (arg) => this.milestone(arg)
-                )
-                const transactionFrom = await this.batchRequest(
-                    newOutputDatas.map((e) => e.transactionId),
-                    (arg) => this.transactionIncludedMessage(arg)
-                )
-                // const milestoneList = await Promise.all(newMetadataList.map((e) => this.milestone(e.referencedByMilestoneIndex)))
-                // const transactionFrom = await Promise.all(newOutputDatas.map((e) => this.transactionIncludedMessage(e.transactionId)))
-                milestoneList.forEach((e, i) => {
-                    const { isSpent, output, transactionId, outputIndex, messageId } = newOutputDatas[i]
-                    const { payload } = transactionFrom[i]
-                    const outputAddress = output.address.address
-                    let payloadData = payload?.essence?.payload?.data
-                    let payloadIndex = payload?.essence?.payload?.index
-                    const unlockBlocks = payload?.unlockBlocks || []
-                    const unlockBlock = unlockBlocks.find((e) => e.signature)
-                    try {
-                        payloadIndex = IotaObj.Converter.hexToUtf8(payloadIndex)
-                    } catch (error) {
-                        payloadIndex = ''
-                    }
-                    try {
-                        if (payloadIndex === 'PARTICIPATE') {
-                            payloadData = [...IotaObj.Converter.hexToBytes(payloadData)]
-                            payloadData.shift()
-                            payloadData = _chunk(payloadData, 33)
-                            payloadData = payloadData.map((e) => {
-                                e.pop()
-                                return IotaObj.Converter.bytesToHex(Uint8Array.from(e))
-                            })
+
+                    const addOutputToTransactionId = (transactionId, output) => {
+                        // if we don't have the transaction
+                        const previousOutputs = transactionIdToOutputs.get(transactionId)
+                        if (previousOutputs) {
+                            transactionIdToOutputs.set(transactionId, [...previousOutputs, output])
                         } else {
-                            payloadData = IotaObj.Converter.hexToUtf8(payloadData)
-                            payloadData = JSON.parse(payloadData)
+                            transactionIdToOutputs.set(transactionId, [output])
                         }
-                    } catch (error) {
-                        payloadData = payload?.essence?.payload?.data || {}
                     }
-                    allList.push({
-                        ...e,
-                        messageId,
-                        decimal: this.curNode?.decimal,
-                        isSpent,
-                        transactionId,
-                        token: this.curNode?.token,
-                        address: outputAddress,
-                        outputIndex,
-                        output,
-                        bech32Address: this.hexToBech32(outputAddress),
-                        amount: output.amount,
-                        inputs: payload?.essence?.inputs,
-                        payloadIndex,
-                        payloadData,
-                        outputs: payload?.essence?.outputs.map((d) => {
-                            return {
-                                ...d,
-                                bech32Address: this.hexToBech32(d.address.address)
-                            }
-                        }),
-                        unlockBlock
+                    addOutputToTransactionId(transactionId, output)
+                })
+
+                return transactionIdToOutputs
+            }
+
+            const calculateBalanceChange = (outputs) => {
+                return outputs.reduce((acc, output) => {
+                    const outputFromDetails = output?.details?.output
+
+                    if (!outputFromDetails?.amount) {
+                        console.warn('Output details not found for: ', output)
+                        return acc
+                    }
+
+                    let amount = Number(outputFromDetails.amount)
+                    const unlockConditions = output?.details?.output?.unlockConditions || []
+                    unlockConditions.forEach((condition) => {
+                        const returnAddress = condition?.returnAddress?.pubKeyHash
+                        if (returnAddress && !returnAddress.unixTime) {
+                            amount = Number(condition.amount || 0)
+                        }
+                    })
+                    if (output.isSpent) {
+                        amount = -1 * amount
+                    }
+                    return acc + amount
+                }, 0)
+            }
+            const isTransactionFromIotaStardustGenesis = (network, milestoneIndex) => {
+                return network === 'mainnet' && milestoneIndex === 7669900
+            }
+            const getTransactionHistoryRecords = (transactionIdToOutputs, network = 'mainnet') => {
+                const calculatedTransactions = []
+                transactionIdToOutputs.forEach((outputs, transactionId) => {
+                    const lastOutputTime = Math.max(...outputs.map((t) => t.milestoneTimestamp))
+                    const balanceChange = calculateBalanceChange(outputs)
+                    // const ago = moment(lastOutputTime * 1000).fromNow()
+
+                    const isGenesisByDate = outputs.map((t) => t.milestoneTimestamp).some((milestoneTimestamp) => milestoneTimestamp === 0)
+
+                    let stardustGenesisOutputId
+                    const isTransactionFromStardustGenesis = outputs.some(({ milestoneIndex, outputId }) => {
+                        const isGenesis = isTransactionFromIotaStardustGenesis(network, milestoneIndex)
+                        if (isGenesis) {
+                            stardustGenesisOutputId = outputId
+                        }
+
+                        return isGenesis
+                    })
+
+                    // const transactionLink = getTransactionLink(network, transactionId, isTransactionFromStardustGenesis, stardustGenesisOutputId)
+
+                    const isSpent = balanceChange <= 0
+
+                    calculatedTransactions.push({
+                        isGenesisByDate: isGenesisByDate,
+                        isTransactionFromStardustGenesis: isTransactionFromStardustGenesis,
+                        isSpent: isSpent,
+                        // transactionLink: transactionLink,
+                        transactionId: transactionId,
+                        timestamp: lastOutputTime,
+                        // dateFormatted: `${DateHelper.formatShort(lastOutputTime * 1000)} (${ago})`,
+                        balanceChange: balanceChange,
+                        // balanceChangeFormatted: (isSpent ? `-` : `+`) + (Math.abs(balanceChange) / Math.pow(10, this.curNode.decimal)).toFixed(2),
+                        // balanceChangeFormatted: (isSpent ? `-` : `+`) + formatAmount(Math.abs(balanceChange), tokenInfo, !isFormattedAmounts, 2, true),
+                        outputs: outputs
                     })
                 })
-                allList.sort((a, b) => a.timestamp - b.timestamp)
-                actionTime = new Date().getTime() - actionTime
-                Trace.actionLog(20, address, actionTime, Base.curLang, nodeId, nodeInfo.token)
+                return calculatedTransactions
             }
-            return allList
+
+            const transactionIdToOutputs = groupOutputsByTransactionId(outputListWithDetails)
+            const transactionsLocal = getTransactionHistoryRecords(transactionIdToOutputs, this.curNode.newwork)
+            let newList = JSON.parse(JSON.stringify(transactionsLocal))
+            const transactionList = await this.batchRequest(
+                newList.map((e) => e.transactionId),
+                (arg) => this.transactionData(arg)
+            )
+            const inputsOutpusIds = []
+            const getOutputId = (transactionId, outputIndex) => {
+                return `${transactionId}0${Number(outputIndex).toString(16)}00`
+            }
+            newList.forEach((e, i) => {
+                const payload = transactionList[i]?.payload || {}
+                e.payload = payload
+                e.toOutputs = payload?.essence?.outputs
+                const inputs = payload?.essence?.inputs || []
+                inputs.forEach((input) => {
+                    const outputId = getOutputId(input.transactionId, input.transactionOutputIndex)
+                    if (!inputsOutpusIds.includes(outputId)) {
+                        inputsOutpusIds.push(outputId)
+                    }
+                })
+            })
+            const inputsList = await this.batchRequest(
+                inputsOutpusIds.map((e) => e),
+                (arg) => this.outputData(arg)
+            )
+            newList.forEach((e, i) => {
+                const payload = transactionList[i]?.payload || {}
+                e.payload = payload
+                const inputs = payload?.essence?.inputs || []
+                const fromOutputs = []
+                inputs.forEach((input) => {
+                    const outputId = getOutputId(input.transactionId, input.transactionOutputIndex)
+                    const index = inputsOutpusIds.findIndex((e) => e == outputId)
+                    const output = inputsList[index]?.output
+                    if (index >= 0 && output) {
+                        fromOutputs.push(output)
+                    }
+                })
+                e.fromOutputs = fromOutputs
+            })
+            const nowTime = parseInt(new Date().getTime() / 1000)
+            newList = newList.filter((e) => {
+                const outputs = e?.toOutputs || []
+                let unlock = true
+                for (let i = 0; i < outputs.length; i++) {
+                    const output = outputs[i] || {}
+                    output.unlockConditions.forEach((d) => {
+                        if (d.unixTime || !!d.returnAddress) {
+                            unlock = false
+                        }
+                    })
+                }
+                return unlock
+            })
+            const getOtherAddress = (list, otherAddress) => {
+                let address = ''
+                for (let i = 0; i < list.length; i++) {
+                    const output = list[i]
+                    let unlockConditions = output?.unlockConditions || []
+                    const item = unlockConditions.find((d) => {
+                        const pubKeyHash = d?.address?.pubKeyHash
+                        return !!pubKeyHash && this.hexToBech32(pubKeyHash) != otherAddress
+                    })
+                    address = item?.address?.pubKeyHash || ''
+                    if (address) {
+                        break
+                    }
+                }
+                if (!address) {
+                    for (let i = 0; i < list.length; i++) {
+                        const output = list[i]
+                        let unlockConditions = output?.unlockConditions || []
+                        const item = unlockConditions.find((d) => {
+                            const pubKeyHash = d?.returnAddress?.pubKeyHash
+                            return !!pubKeyHash && this.hexToBech32(pubKeyHash) != otherAddress
+                        })
+                        address = item?.returnAddress?.pubKeyHash || ''
+                        if (address) {
+                            break
+                        }
+                    }
+                }
+                return this.hexToBech32(address)
+            }
+            // newList = newList.filter((e) => Number(e.balanceChange) != 0)
+            newList.forEach((e) => {
+                const fromOutputs = JSON.parse(JSON.stringify(e.fromOutputs))
+                const toOutputs = JSON.parse(JSON.stringify(e.toOutputs))
+                const hasReturnAddress = fromOutputs.find((d) => d.unlockConditions.find((c) => c.returnAddress))
+                if (!!hasReturnAddress) {
+                    // e.fromOutputs = toOutputs
+                    // e.toOutputs = fromOutputs
+                    // e.isSpent = !e.isSpent
+                    // e.balanceChange = -1 * e.balanceChange
+                    e.isAccept = true
+                }
+                if (e.isSpent) {
+                    e.from = address
+                    e.to = getOtherAddress([...e.toOutputs, ...e.fromOutputs], e.from)
+                } else {
+                    e.to = address
+                    e.from = getOtherAddress([...e.fromOutputs, ...e.toOutputs], e.to)
+                }
+
+                const dic = {}
+                const getTokenAmount = (output, isFrom) => {
+                    const unlockConditions = output.unlockConditions || []
+                    const item = unlockConditions.find((c) => c.address?.pubKeyHash)
+                    const hasReturn = unlockConditions.find((c) => c.returnAddress?.pubKeyHash)
+                    const address = item?.address?.pubKeyHash
+                    if (address && output.nativeTokens && output.nativeTokens.length && !hasReturn) {
+                        dic[address] = dic[address] || {}
+                        output.nativeTokens.forEach((t) => {
+                            // dic[address][t.id] = dic[address][t.id] || new BigNumber(0)
+                            dic[address][t.id] = dic[address][t.id] || {
+                                from: new BigNumber(0),
+                                to: new BigNumber(0)
+                            }
+                            if (isFrom) {
+                                dic[address][t.id].from = dic[address][t.id].from.plus(t.amount)
+                            } else {
+                                dic[address][t.id].to = dic[address][t.id].to.plus(t.amount)
+                            }
+                        })
+                    }
+                }
+                ;(e.toOutputs || []).forEach((d) => {
+                    getTokenAmount(d, false)
+                })
+                ;(e.fromOutputs || []).forEach((d) => {
+                    getTokenAmount(d, true)
+                })
+                let isToken = false
+                let tokenInfo = null
+                for (const i in dic) {
+                    for (const j in dic[i]) {
+                        const { from, to } = dic[i][j]
+                        if (!from.eq(to)) {
+                            isToken = true
+                            tokenInfo = {
+                                id: j,
+                                amount: Math.abs(from.minus(to).valueOf())
+                            }
+                        } else if (e.isAccept && !e.isSpent) {
+                            tokenInfo = {
+                                id: j,
+                                amount: from.valueOf()
+                            }
+                        }
+                    }
+                }
+                e.tokenInfo = tokenInfo
+                const nftInfo = e.fromOutputs.find((d) => !!d.nftId) || e.toOutputs.find((d) => !!d.nftId)
+                e.nftId = nftInfo?.nftId
+                e.nftInfo = nftInfo
+                const payload = e?.payload?.essence?.payload || {}
+                const { data, tag, type } = payload
+                if (data && tag) {
+                    let payloadData = IotaObj.Converter.hexToUtf8(data)
+                    e.payloadTag = IotaObj.Converter.hexToUtf8(tag)
+                    e.payloadType = type
+                    try {
+                        payloadData = JSON.parse(payloadData)
+                    } catch (error) {
+                        payloadData = null
+                    }
+                    e.payloadData = payloadData
+                    if (payloadData && payloadData.version == 1 && payloadData.unlock == 1) {
+                        e.from = payloadData.from || e.from
+                        e.to = payloadData.to || e.to
+                        e.balanceChange = payloadData.amount || e.amount
+                        e.isSpent = false
+                    }
+                }
+            })
+            return [newList, newCursor]
         }
     },
     set passwordDialog(dialog) {
@@ -3496,7 +3693,11 @@ const IotaSDK = {
                 if (info && info.data) {
                     try {
                         info = IotaObj.Converter.hexToUtf8(info.data)
-                        info = JSON.parse(info)
+                        try {
+                            info = JSON.parse(info)
+                        } catch (error) {
+                            info = {}
+                        }
                         let nftId = e?.output?.nftId
                         if (nftId == 0) {
                             nftId = IotaObj.TransactionHelper.resolveIdFromOutputId(outputIds[i])
@@ -4172,7 +4373,7 @@ const IotaSDK = {
             return { address, path }
         }
         let initialAddressState = {
-            accountIndex: 0,
+            accountIndex: path || 0,
             addressIndex: 0,
             isInternal: false
         }
@@ -4464,7 +4665,7 @@ const IotaSDK = {
         let outputSMRBalance = BigNumber(0) //
         const inputsAndSignatureKeyPairs = []
         let initialAddressState = {
-            accountIndex: 0,
+            accountIndex: path || 0,
             addressIndex: 0,
             isInternal: false
         }
@@ -4740,7 +4941,8 @@ const IotaSDK = {
                                   from: address, //main address
                                   to: toAddress,
                                   amount: sendAmount,
-                                  collection: 0
+                                  collection: 0,
+                                  version: 1
                               })
                           )
                 },
@@ -4769,9 +4971,9 @@ const IotaSDK = {
     getMinBalance(address) {
         return IotaObj.TransactionHelper.getStorageDeposit(this.getBasicTypeOutput(address, 0), this.info.protocol.rentStructure)
     },
-    getInitialAddressState() {
+    getInitialAddressState(path) {
         return {
-            accountIndex: 0,
+            accountIndex: path || 0,
             addressIndex: 0,
             isInternal: false
         }
@@ -4804,7 +5006,7 @@ const IotaSDK = {
             let outputs = []
             let inputsAndSignatureKeyPairs = []
             let initialAddressState = {
-                accountIndex: 0,
+                accountIndex: path || 0,
                 addressIndex: 0,
                 isInternal: false
             }
@@ -4939,7 +5141,7 @@ const IotaSDK = {
             }
             // After processing all nft output, Handle insufficient funds only once.
             if (outputSMRBalance.lt(0)) {
-                let initialAddressState = this.getInitialAddressState()
+                let initialAddressState = this.getInitialAddressState(path)
                 const addressOptions = this.getAddressOptions()
 
                 const sendOutput = this.getBasicTypeOutput(toAddress, outputSMRBalance.multipliedBy(-1).toNumber())
@@ -5003,7 +5205,8 @@ const IotaSDK = {
                                   from: address, //main address
                                   to: toAddress,
                                   amount: sendAmount,
-                                  collection: 0
+                                  collection: 0,
+                                  version: 1
                               })
                           )
                 },
@@ -5122,7 +5325,7 @@ const IotaSDK = {
         }
         if (output?.nativeTokens?.length || smrUnlockConditionAmount) {
             let initialAddressState = {
-                accountIndex: 0,
+                accountIndex: path || 0,
                 addressIndex: 0,
                 isInternal: false
             }
@@ -5150,10 +5353,11 @@ const IotaSDK = {
                 tag: IotaObj.Converter.utf8ToBytes('TanglePay'),
                 data: IotaObj.Converter.utf8ToBytes(
                     JSON.stringify({
-                        from: address,
+                        from: unlockAddress,
                         to: address,
                         amount,
-                        unlock: 1
+                        unlock: 1,
+                        version: 1
                     })
                 )
             },
@@ -5249,7 +5453,7 @@ const IotaSDK = {
                 }
             ]
             let initialAddressState = {
-                accountIndex: 0,
+                accountIndex: path || 0,
                 addressIndex: 0,
                 isInternal: false
             }
@@ -5273,11 +5477,12 @@ const IotaSDK = {
                 tag: IotaObj.Converter.utf8ToBytes('TanglePay'),
                 data: IotaObj.Converter.utf8ToBytes(
                     JSON.stringify({
-                        from: address,
+                        from: unlockAddress,
                         to: address,
                         nftId: outputData.output.nftId,
                         amount: 1,
-                        unlock: 1
+                        unlock: 1,
+                        version: 1
                     })
                 )
             },
