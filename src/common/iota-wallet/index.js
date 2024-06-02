@@ -1425,15 +1425,17 @@ const IotaSDK = {
         let hisRes = []
         let smrOutputIds = []
         if (this.checkSMR(this.curNode?.id)) {
-            hisRes = await Promise.all(
-                addressList.map((e) => {
-                    return Http.GET(`${this.explorerApiUrl}/transactionhistory/${this.curNode.network}/${e}`, {
-                        isHandlerError: true,
-                        pageSize: 1000,
-                        sort: 'newest'
+            try {
+                hisRes = await Promise.all(
+                    addressList.map((e) => {
+                        return Http.GET(`${this.explorerApiUrl}/transactionhistory/${this.curNode.network}/${e}`, {
+                            isHandlerError: true,
+                            pageSize: 1000,
+                            sort: 'newest'
+                        })
                     })
-                })
-            )
+                )
+            } catch (error) {}
             hisRes.forEach((e, i) => {
                 list = []
                 const smrHisOutputIds = (e?.items || []).map((e) => e)
@@ -1476,7 +1478,7 @@ const IotaSDK = {
                     const addressOutputs = addressOutputsRes?.outputs || []
 
                     addressList.forEach((e, i) => {
-                        if (addressOutputs[i].length > 0) {
+                        if (addressOutputs[i]?.length > 0) {
                             addressOutputs[i].forEach((c) => {
                                 if (!outputIds.includes(c)) {
                                     outputIds.push(c)
@@ -2887,9 +2889,12 @@ const IotaSDK = {
                 requestParams.cursor = cursorInfo?.cursor
                 requestParams.sort = 'newest'
             }
-            const transactionhistoryRes = await Http.GET(`${this.explorerApiUrl}/transactionhistory/${this.curNode.network}/${address}`, {
-                ...requestParams
-            })
+            let transactionhistoryRes = {}
+            try {
+                transactionhistoryRes = await Http.GET(`${this.explorerApiUrl}/transactionhistory/${this.curNode.network}/${address}`, {
+                    ...requestParams
+                })
+            } catch (error) {}
             const newCursor = transactionhistoryRes?.cursor
             const transactionhistoryList = transactionhistoryRes?.items || []
             const outputDatas = await this.batchRequest(
