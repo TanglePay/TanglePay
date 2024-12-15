@@ -40,7 +40,7 @@ const IOTA_NODE_ID = 1
 const shimmerTestnet = {
     id: 101,
     explorer: 'https://explorer.shimmer.network/testnet',
-    url: 'https://test.api.iotacat.com',
+    url: 'https://api.testnet.shimmer.network',
     name: 'eta',
     enName: 'Shimmer Beta',
     deName: 'Shimmer Beta',
@@ -58,13 +58,13 @@ const shimmerTestnet = {
 }
 const iotaTestnet = {
     id: 2,
-    url: 'https://api.lb-0.h.chrysalis-devnet.iota.cafe',
+    url: 'https://api.testnet.iotaledger.net',
     name: 'IOTA Devnet',
     enName: 'IOTA Devnet',
     deName: 'IOTA Devnet',
     zhName: 'IOTA 测试網絡',
     type: 1,
-    mqtt: 'wss://api.lb-0.h.chrysalis-devnet.iota.cafe:443/mqtt',
+    mqtt: 'wss://api.testnet.iotaledger.net:443',
     network: 'devnet',
     bech32HRP: 'atoi',
     token: 'IOTA',
@@ -315,14 +315,14 @@ const shimmerEvm = {
 const initNodeList = [
     {
         id: IOTA_NODE_ID,
-        url: 'https://austria.dlt.green',
+        url: 'https://vienna.dlt.green',
         explorer: 'https://explorer.iota.org/mainnet',
         name: 'IOTA Mainnet',
         enName: 'IOTA Mainnet',
         deName: 'IOTA Mainnet',
         zhName: 'IOTA 主網',
         type: 3,
-        mqtt: 'wss://austria.dlt.green:443/api/mqtt/v1',
+        mqtt: 'wss://vienna.dlt.green:443',
         network: 'mainnet',
         bech32HRP: 'iota',
         token: 'IOTA',
@@ -336,13 +336,13 @@ const initNodeList = [
     {
         id: 102,
         explorer: 'https://explorer.shimmer.network/shimmer',
-        url: 'https://mainnet.shimmer.node.tanglepay.com',
+        url: 'https://production.api.groupfi.ai',
         name: 'Shimmer Mainnet',
         enName: 'Shimmer Mainnet',
         deName: 'Shimmer Mainnet',
         zhName: 'Shimmer 主網',
         type: 3,
-        mqtt: 'wss://api.mainnet.shimmer.network:443/api/mqtt/v1',
+        mqtt: 'wss://production.api.groupfi.ai:443/api/mqtt/v1',
         network: 'shimmer',
         bech32HRP: 'smr',
         token: 'SMR',
@@ -496,7 +496,7 @@ const IotaSDK = {
     },
     async getDlt(node) {
         return new Promise((resolve, reject) => {
-            fetch(`https://dlt.green/api?dns=${node}&id=tanglepay&token=egm9jvee56sfjrohylvs0tkc6quwghyo`)
+            fetch(`https://stardust.dlt.green/api?dns=${node}&id=tanglepay&token=egm9jvee56sfjrohylvs0tkc6quwghyo`)
                 .then((res) => res.json())
                 .then((res) => {
                     resolve(res)
